@@ -1,2 +1,21 @@
-# ha-zivy-obraz
-Home Assistant integration for Živý Obraz ePaper displays
+# Živý Obraz – Home Assistant integration
+
+Integrace pro ePaper displeje služby **zivyobraz.eu**.
+
+## Funkce
+
+- automatické přidání panelů
+- automatické odebrání panelů
+- baterie
+- teplota
+- vlhkost
+- RSSI
+- last / next contact
+- overdue monitoring
+
+## Instalace
+
+1. HACS → Integrations
+2. Add custom repository
+3. vlož URL tohoto repozitáře
+4. Kategorie: Integration
