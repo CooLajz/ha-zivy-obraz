@@ -3,6 +3,7 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+import homeassistant.helpers.config_validation as cv
 
 from .const import (
     CONF_SCAN_INTERVAL,
@@ -10,11 +11,14 @@ from .const import (
     CONF_URL,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
+    DOMAIN,
     PLATFORMS,
 )
 from .coordinator import ZivyObrazCoordinator
 
 type ZivyObrazConfigEntry = ConfigEntry[ZivyObrazCoordinator]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
