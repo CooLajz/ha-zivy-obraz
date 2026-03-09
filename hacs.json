@@ -1,7 +1,6 @@
 {
   "name": "Živý Obraz",
   "content_in_root": false,
-  "domain": "zivy_obraz",
-  "country": ["CZ"],
+  "country": "CZ",
   "homeassistant": "2026.0.0"
 }
