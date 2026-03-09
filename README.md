@@ -19,5 +19,5 @@ Integrace pro ePaper displeje služby **zivyobraz.eu**.
 
 1. HACS → Integrations
 2. Add custom repository
-3. vlož URL tohoto repozitáře
+3. ADD URL of this repository
 4. Kategorie: Integration
