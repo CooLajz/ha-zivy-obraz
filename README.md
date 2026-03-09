@@ -1,3 +1,5 @@
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+
 # Živý Obraz – Home Assistant integration
 
 Integrace pro ePaper displeje služby **zivyobraz.eu**.
