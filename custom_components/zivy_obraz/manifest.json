@@ -1,0 +1,10 @@
+{
+  "domain": "zivy_obraz",
+  "name": "Živý Obraz",
+  "version": "2.0.0",
+  "documentation": "https://example.local/",
+  "requirements": [],
+  "codeowners": ["@ondra"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

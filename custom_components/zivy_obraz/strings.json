@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Živý Obraz",
+        "description": "Připojení k exportu panelů",
+        "data": {
+          "url": "Export URL",
+          "scan_interval": "Interval obnovy (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Tolerance zpoždění (min)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodařilo se připojit",
+      "invalid_json": "Endpoint nevrací validní JSON objekt",
+      "timeout": "Vypršel časový limit",
+      "unknown": "Neočekávaná chyba"
+    },
+    "abort": {
+      "already_configured": "Tato URL už je nakonfigurovaná"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Živý Obraz",
+        "description": "Upravit nastavení integrace",
+        "data": {
+          "url": "Export URL",
+          "scan_interval": "Interval obnovy (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Tolerance zpoždění (min)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodařilo se připojit",
+      "invalid_json": "Endpoint nevrací validní JSON objekt",
+      "timeout": "Vypršel časový limit",
+      "unknown": "Neočekávaná chyba"
+    }
+  }
+}
