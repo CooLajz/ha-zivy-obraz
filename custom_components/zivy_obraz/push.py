@@ -9,7 +9,6 @@ from urllib.parse import urlencode
 from aiohttp import ClientError
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
@@ -27,13 +26,14 @@ class ZivyObrazPushManager:
         hass: HomeAssistant,
         *,
         import_key: str,
-        label_name: str,
+        label_id: str,
         prefix: str,
         timeout: int,
     ) -> None:
+        """Initialize the push manager."""
         self.hass = hass
         self.import_key = import_key
-        self.label_name = label_name.strip()
+        self.label_id = label_id
         self.prefix = prefix.strip()
         self.timeout = timeout
         self.session = async_get_clientsession(hass)
@@ -44,8 +44,8 @@ class ZivyObrazPushManager:
 
         if not entity_pairs:
             _LOGGER.debug(
-                "Živý Obraz push skipped: no valid entities found for label '%s'",
-                self.label_name,
+                "Živý Obraz push skipped: no valid entities found for label_id '%s'",
+                self.label_id,
             )
             return
 
@@ -53,8 +53,8 @@ class ZivyObrazPushManager:
 
         if not batches:
             _LOGGER.debug(
-                "Živý Obraz push skipped: no request batches were generated for label '%s'",
-                self.label_name,
+                "Živý Obraz push skipped: no request batches were generated for label_id '%s'",
+                self.label_id,
             )
             return
 
@@ -63,23 +63,12 @@ class ZivyObrazPushManager:
 
     def _get_labeled_entity_states(self) -> list[tuple[str, str]]:
         """Return list of (param_name, state_value) for entities having the target label."""
-        label_registry = lr.async_get(self.hass)
         entity_registry = er.async_get(self.hass)
-
-        target_label_id: str | None = None
-        for label_id, entry in label_registry.labels.items():
-            if entry.name == self.label_name:
-                target_label_id = label_id
-                break
-
-        if target_label_id is None:
-            _LOGGER.debug("Živý Obraz label '%s' was not found", self.label_name)
-            return []
 
         pairs: list[tuple[str, str]] = []
 
         for entry in entity_registry.entities.values():
-            if target_label_id not in entry.labels:
+            if self.label_id not in entry.labels:
                 continue
 
             state_obj = self.hass.states.get(entry.entity_id)
@@ -92,9 +81,9 @@ class ZivyObrazPushManager:
         pairs.sort(key=lambda item: item[0])
 
         _LOGGER.debug(
-            "Živý Obraz push collected %s entities for label '%s'",
+            "Živý Obraz push collected %s entities for label_id '%s'",
             len(pairs),
-            self.label_name,
+            self.label_id,
         )
 
         return pairs
