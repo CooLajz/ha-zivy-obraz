@@ -99,14 +99,15 @@ To umožňuje používat více Home Assistant serverů se stejným Živým obraz
 
 ---
 
-### Interval odesílání
+### Interval odesílání a stahování
 
-Odesílání hodnot lze nastavit v sekundách.
+Odesílání hodnot a stahování informací z displejů lze nastavit v sekundách.
 
 Například: 300
 
+(Nastavte prosím interval v závislosti na obnově displejů. Častá aktualizace bude zbytečně zatěžovat servery služby Živý Obraz)
 
-Integrace pak každých 300 sekund odešle aktuální hodnoty entit.
+Integrace pak každých xx sekund odešle aktuální hodnoty entit a stáhne data z displejů.
 
 ---
 
@@ -164,9 +165,9 @@ garaz
 
 ---
 
-### Interval odesílání
+### Interval odesílání s stahování
 
-Jak často se mají hodnoty odesílat do Živého obrazu.
+Jak často se mají hodnoty odesílat do Živého obrazu a jak často se mají stahovat nová data ze serveru Živý Obraz. Nastavte prosím interval v závislosti na obnově displejů. Častá aktualizace bude zbytečně zatěžovat servery služby Živý Obraz
 
 ---
 
