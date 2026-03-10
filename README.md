@@ -91,8 +91,8 @@ Pro podporu více Home Assistant instalací lze nastavit **prefix**.
 Příklad: prefix = dum
 
 Výsledné proměnné v Živém obrazu:
-dum.sensor_teplota_kuchyne,
-dum.sensor_teplota_obyvak
+dum_sensor_teplota_kuchyne,
+dum_sensor_teplota_obyvak
 
 
 To umožňuje používat více Home Assistant serverů se stejným Živým obrazem.
@@ -271,8 +271,8 @@ Example: prefix = house
 
 
 Resulting variables:
-house.sensor_kitchen_temperature, 
-house.sensor_livingroom_temperature
+house_sensor_kitchen_temperature, 
+house_sensor_livingroom_temperature
 
 
 ---
