@@ -5,10 +5,15 @@
         "title": "Živý Obraz",
         "description": "Připojení k exportu panelů",
         "data": {
-          "url": "Export URL",
+          "export_key": "Export key",
           "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)"
+          "overdue_tolerance": "Tolerance zpoždění (min)",
+          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "import_key": "Import key",
+          "label": "Label entit pro odesílání",
+          "prefix": "Prefix názvu proměnných",
+          "push_interval": "Interval odesílání (s)"
         }
       }
     },
@@ -16,10 +21,11 @@
       "cannot_connect": "Nepodařilo se připojit",
       "invalid_json": "Endpoint nevrací validní JSON objekt",
       "timeout": "Vypršel časový limit",
-      "unknown": "Neočekávaná chyba"
+      "unknown": "Neočekávaná chyba",
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key"
     },
     "abort": {
-      "already_configured": "Tato URL už je nakonfigurovaná"
+      "already_configured": "Tento export key už je nakonfigurovaný"
     }
   },
   "options": {
@@ -28,10 +34,15 @@
         "title": "Živý Obraz",
         "description": "Upravit nastavení integrace",
         "data": {
-          "url": "Export URL",
+          "export_key": "Export key",
           "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)"
+          "overdue_tolerance": "Tolerance zpoždění (min)",
+          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "import_key": "Import key",
+          "label": "Label entit pro odesílání",
+          "prefix": "Prefix názvu proměnných",
+          "push_interval": "Interval odesílání (s)"
         }
       }
     },
@@ -39,7 +50,8 @@
       "cannot_connect": "Nepodařilo se připojit",
       "invalid_json": "Endpoint nevrací validní JSON objekt",
       "timeout": "Vypršel časový limit",
-      "unknown": "Neočekávaná chyba"
+      "unknown": "Neočekávaná chyba",
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key"
     }
   }
 }
