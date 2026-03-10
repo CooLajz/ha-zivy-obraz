@@ -6,6 +6,8 @@
         "description": "Připojení k exportu panelů",
         "data": {
           "export_key": "Export key",
+          "use_group_filter": "Použít filtr skupiny",
+          "group_id": "Group ID",
           "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Tolerance zpoždění (min)",
@@ -19,13 +21,12 @@
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
-      "invalid_json": "Endpoint nevrací validní JSON objekt",
+      "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",
-      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key"
-    },
-    "abort": {
-      "already_configured": "Tento export key už je nakonfigurovaný"
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
+      "invalid_group_id": "Group ID musí být celé číslo 0 nebo vyšší",
+      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněn Group ID"
     }
   },
   "options": {
@@ -35,6 +36,8 @@
         "description": "Upravit nastavení integrace",
         "data": {
           "export_key": "Export key",
+          "use_group_filter": "Použít filtr skupiny",
+          "group_id": "Group ID",
           "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Tolerance zpoždění (min)",
@@ -48,10 +51,12 @@
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
-      "invalid_json": "Endpoint nevrací validní JSON objekt",
+      "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",
-      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key"
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
+      "invalid_group_id": "Group ID musí být celé číslo 0 nebo vyšší",
+      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněn Group ID"
     }
   }
 }
