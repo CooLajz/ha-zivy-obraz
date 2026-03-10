@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import voluptuous as vol
 from aiohttp import ClientError, ContentTypeError
@@ -9,6 +10,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_EXPORT_KEY,
+    CONF_GROUP_ID,
     CONF_IMPORT_KEY,
     CONF_LABEL,
     CONF_OVERDUE_TOLERANCE,
@@ -17,6 +19,7 @@ from .const import (
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
+    CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
     DEFAULT_OVERDUE_TOLERANCE,
@@ -25,37 +28,78 @@ from .const import (
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
+    DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     ZIVY_OBRAZ_EXPORT_URL,
 )
 
 
-async def _validate_input(hass, data: dict) -> dict:
+async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     """Validate the user input."""
     session = async_get_clientsession(hass)
     timeout = data[CONF_TIMEOUT]
+
     url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={data[CONF_EXPORT_KEY]}&epapers=json"
+
+    if data.get(CONF_USE_GROUP_FILTER):
+        group_id = data.get(CONF_GROUP_ID)
+        if group_id is None:
+            raise ValueError("group_id_required")
+        url += f"&group_id={group_id}"
 
     async with asyncio.timeout(timeout):
         async with session.get(url, headers={"Accept": "application/json"}) as response:
             response.raise_for_status()
             payload = await response.json(content_type=None)
 
-    if not isinstance(payload, dict):
-        raise ValueError("Top-level JSON must be an object/dict")
+    if not isinstance(payload, (dict, list)):
+        raise ValueError("Top-level JSON must be an object/dict or list")
 
     return {"title": "Živý Obraz"}
 
 
-def _validate_push_settings(data: dict) -> None:
+def _validate_push_settings(data: dict[str, Any]) -> None:
     """Validate push-related settings."""
     if data.get(CONF_PUSH_ENABLED) and not data.get(CONF_IMPORT_KEY, "").strip():
         raise ValueError("import_key_required")
 
 
+def _normalize_group_id(value: str | None) -> int | None:
+    """Normalize optional group_id from UI input."""
+    if value is None:
+        return None
+
+    value = str(value).strip()
+    if value == "":
+        return None
+
+    group_id = int(value)
+    if group_id < 0:
+        raise ValueError("invalid_group_id")
+
+    return group_id
+
+
+def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Ensure fields are stored in a predictable format."""
+    prepared = dict(user_input)
+    prepared[CONF_USE_GROUP_FILTER] = bool(user_input.get(CONF_USE_GROUP_FILTER, False))
+    prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
+    return prepared
+
+
+def _display_group_id(value: Any) -> str:
+    """Convert stored group_id to UI value."""
+    if value is None:
+        return ""
+    return str(value)
+
+
 def _build_schema(
     *,
     export_key: str | None = None,
+    use_group_filter: bool = DEFAULT_USE_GROUP_FILTER,
+    group_id: str = "",
     scan_interval: int = DEFAULT_SCAN_INTERVAL,
     timeout: int = DEFAULT_TIMEOUT,
     overdue_tolerance: int = DEFAULT_OVERDUE_TOLERANCE,
@@ -69,6 +113,8 @@ def _build_schema(
     return vol.Schema(
         {
             vol.Required(CONF_EXPORT_KEY, default=export_key or ""): str,
+            vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter): bool,
+            vol.Optional(CONF_GROUP_ID, default=group_id): str,
             vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval): vol.All(
                 vol.Coerce(int),
                 vol.Range(min=30, max=86400),
@@ -99,15 +145,27 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        """Handle initial step."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            await self.async_set_unique_id(user_input[CONF_EXPORT_KEY])
-            self._abort_if_unique_id_configured()
-
             try:
-                _validate_push_settings(user_input)
-                info = await _validate_input(self.hass, user_input)
+                prepared_input = _prepare_user_input(user_input)
+                _validate_push_settings(prepared_input)
+
+                unique_group = (
+                    str(prepared_input[CONF_GROUP_ID])
+                    if prepared_input.get(CONF_USE_GROUP_FILTER)
+                    and prepared_input[CONF_GROUP_ID] is not None
+                    else "all"
+                )
+                await self.async_set_unique_id(
+                    f"{prepared_input[CONF_EXPORT_KEY]}::{unique_group}"
+                )
+                self._abort_if_unique_id_configured()
+
+                info = await _validate_input(self.hass, prepared_input)
+
             except TimeoutError:
                 errors["base"] = "timeout"
             except ClientError:
@@ -117,12 +175,16 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ValueError as err:
                 if str(err) == "import_key_required":
                     errors["base"] = "import_key_required"
+                elif str(err) == "invalid_group_id":
+                    errors["base"] = "invalid_group_id"
+                elif str(err) == "group_id_required":
+                    errors["base"] = "group_id_required"
                 else:
                     errors["base"] = "invalid_json"
             except Exception:
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title=info["title"], data=user_input)
+                return self.async_create_entry(title=info["title"], data=prepared_input)
 
         return self.async_show_form(
             step_id="user",
@@ -132,6 +194,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
+        """Return options flow."""
         return ZivyObrazOptionsFlow(config_entry)
 
 
@@ -139,15 +202,27 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
     """Handle options for Zivy Obraz."""
 
     def __init__(self, config_entry):
+        """Initialize options flow."""
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
+        """Manage the options."""
         errors: dict[str, str] = {}
 
         current_export_key = self._config_entry.options.get(
             CONF_EXPORT_KEY,
             self._config_entry.data.get(CONF_EXPORT_KEY, ""),
         )
+        current_use_group_filter = self._config_entry.options.get(
+            CONF_USE_GROUP_FILTER,
+            self._config_entry.data.get(CONF_USE_GROUP_FILTER, DEFAULT_USE_GROUP_FILTER),
+        )
+
+        if CONF_GROUP_ID in self._config_entry.options:
+            current_group_id = _display_group_id(self._config_entry.options.get(CONF_GROUP_ID))
+        else:
+            current_group_id = _display_group_id(self._config_entry.data.get(CONF_GROUP_ID))
+
         current_scan_interval = self._config_entry.options.get(
             CONF_SCAN_INTERVAL,
             self._config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -183,8 +258,9 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
-                _validate_push_settings(user_input)
-                await _validate_input(self.hass, user_input)
+                prepared_input = _prepare_user_input(user_input)
+                _validate_push_settings(prepared_input)
+                await _validate_input(self.hass, prepared_input)
             except TimeoutError:
                 errors["base"] = "timeout"
             except ClientError:
@@ -194,17 +270,23 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             except ValueError as err:
                 if str(err) == "import_key_required":
                     errors["base"] = "import_key_required"
+                elif str(err) == "invalid_group_id":
+                    errors["base"] = "invalid_group_id"
+                elif str(err) == "group_id_required":
+                    errors["base"] = "group_id_required"
                 else:
                     errors["base"] = "invalid_json"
             except Exception:
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title="", data=user_input)
+                return self.async_create_entry(title="", data=prepared_input)
 
         return self.async_show_form(
             step_id="init",
             data_schema=_build_schema(
                 export_key=current_export_key,
+                use_group_filter=current_use_group_filter,
+                group_id=current_group_id,
                 scan_interval=current_scan_interval,
                 timeout=current_timeout,
                 overdue_tolerance=current_overdue_tolerance,
