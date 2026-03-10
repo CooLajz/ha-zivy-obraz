@@ -70,7 +70,7 @@ Příklad výsledného requestu: https://in.zivyobraz.eu/?import_key=XXXX&dum.se
 
 Entity, které se mají odesílat do Živého obrazu, se vybírají pomocí **Labels**.
 
-Stačí přidat label: ZivyObraz
+Když jste v detailu Entity, stačí přidat label: ZivyObraz
 
 
 Integrace automaticky odešle všechny entity s tímto labelem.
