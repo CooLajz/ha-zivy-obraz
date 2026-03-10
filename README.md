@@ -31,10 +31,17 @@ Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejíc
 
 ### Metoda 2: Manuální instalace
 
+Download or clone this repository
+Copy the custom_components/zivy_obraz folder to your Home Assistant custom_components/ directory
+Restart Home Assistant
+Go to Settings > Devices & Services > Add Integration
+Search for "Živý Obraz" and follow the instructions
+
 1. Stáhněte nebo naklonujte tento repozitář
-2. Restartujte Home Assistant
-3. Jděte do nastavení > Devices & Services > Add Integration
-4. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
+2. Překopírujte adresář zivy_obraz do adresáře custom_components/ v instalaci Home Assistanta
+3. Restartujte Home Assistant
+4. Jděte do nastavení > Devices & Services > Add Integration
+5. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
 
 ---
 
