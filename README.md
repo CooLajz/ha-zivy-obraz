@@ -223,9 +223,7 @@ Example: prefix = house
 
 
 Resulting variables:
-
-
-house.sensor_kitchen_temperature
+house.sensor_kitchen_temperature, 
 house.sensor_livingroom_temperature
 
 
