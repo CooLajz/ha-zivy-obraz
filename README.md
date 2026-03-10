@@ -11,6 +11,34 @@ Integrace umožňuje:
 
 Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejích nebo dashboardech Živého obrazu.
 
+Instalacee
+
+Metoda 1: Přes HACS (doporučeno)
+
+Ujistěte se, že je HACS nainstalovaný
+
+Běžte di HACS > Integrations
+
+Klikněte na tři tečky vpravo a zvolte > Custom repositories
+
+Přidejte tuto URL: https://github.com/CooLajz/ha-zivy-obraz.git
+
+Vyhledejte "Živý Obraz" a stiskněte install
+
+Restartujte Home Assistant
+
+Metoda 2: Manuální instalace
+
+Stáhněte nebo naklonujte tento repozitář
+
+Zkopírujte do custom_components adresář zivy_obraz.
+
+Restartujte Home Assistant
+
+
+Jděte do nastavení > Devices & Services > Add Integration
+Vyhledejte "Živý Obraz" a vyplňte konfiguraci
+
 ---
 
 # 🇨🇿 Česky
@@ -173,6 +201,37 @@ It supports both:
 
 - reading panel data from Živý obraz
 - pushing Home Assistant entity states to Živý obraz
+
+
+Installation
+
+Method 1: Via HACS (recommended)
+
+Make sure HACS is installed
+
+Go to HACS > Integrations
+
+Click the three dots in the top right corner > Custom repositories
+
+Add this URL: https://github.com/CooLajz/ha-zivy-obraz.git
+
+Search for "Živý Obraz" and install
+
+Restart Home Assistant
+
+Method 2: Manual installation
+
+
+Download or clone this repository
+
+Copy the custom_components/zivy_obraz folder to your Home Assistant custom_components/ directory
+
+Restart Home Assistant
+
+Go to Settings > Devices & Services > Add Integration
+
+Search for "Živý Obraz" and follow the instructions
+
 
 ---
 
