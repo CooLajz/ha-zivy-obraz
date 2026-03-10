@@ -21,12 +21,12 @@ Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejíc
 ### Metoda 1: Přes HACS (doporučeno)
 
 1. Ujistěte se, že je HACS nainstalovaný
-2. Běžte do HACS > Integrations
-3. Klikněte na tři tečky vpravo a zvolte > Custom repositories
-4. Přidejte tuto URL: https://github.com/CooLajz/ha-zivy-obraz.git
-5. Vyhledejte "Živý Obraz" a stiskněte install
+2. Běžte do HACS integrace
+3. Klikněte na tři tečky vpravo a zvolte > Vlastní repozitáře
+4. Přidejte tuto URL: https://github.com/CooLajz/ha-zivy-obraz.git a TYP vyberte Integrace
+5. Vyhledejte v HACS "Živý Obraz" a stiskněte install
 6. Restartujte Home Assistant
-7. Jděte do nastavení > Devices & Services > Add Integration
+7. Jděte do nastavení > Zařízení a služby > + Přidat integraci
 8. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
 
 ### Metoda 2: Manuální instalace
@@ -203,9 +203,9 @@ It supports both:
 ### Method 1: Via HACS (recommended)
 
 1. Make sure [HACS](https://hacs.xyz/) is installed
-2. Go to HACS > Integrations
+2. Go to HACS Integration
 3. Click the three dots in the top right corner > Custom repositories
-4. Add this URL: https://github.com/CooLajz/ha-zivy-obraz.git
+4. Add this URL: https://github.com/CooLajz/ha-zivy-obraz.git and select Integration as TYPE
 5. Search for "Živý Obraz" and install
 6. Restart Home Assistant
 7. Go to **Settings** > **Devices & Services** > **Add Integration**
