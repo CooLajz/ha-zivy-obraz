@@ -104,6 +104,7 @@ Klíč pro čtení dat z Živého obrazu.
 
 Integrace automaticky vytvoří URL: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 
+export_key najdete po přihlášení do služby v záložce hodnoty (vyberte pouze klíč, pozor ať v klíči NENÍ i &epapers=json, atd...)
 
 ---
 
@@ -113,6 +114,7 @@ Pokud chcete posílat data z Home Assistant do Živého obrazu.
 
 https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 
+import_key najdete po přihlášení do služby v záložce hodnoty
 
 ---
 
