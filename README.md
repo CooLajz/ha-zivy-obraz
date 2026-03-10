@@ -79,10 +79,10 @@ To umožňuje používat více Home Assistant serverů se stejným Živým obraz
 
 Odesílání hodnot lze nastavit v sekundách.
 
-Například: 60
+Například: 300
 
 
-Integrace pak každých 60 sekund odešle aktuální hodnoty entit.
+Integrace pak každých 300 sekund odešle aktuální hodnoty entit.
 
 ---
 
@@ -158,3 +158,155 @@ Jak často se mají hodnoty odesílat do Živého obrazu.
 
 Integrace začne automaticky odesílat hodnoty.
 
+
+---
+
+# 🇬🇧 English
+
+## Features
+
+This integration connects **Home Assistant** with **Živý obraz (zivyobraz.eu)** dashboards.
+
+It supports both:
+
+- reading panel data from Živý obraz
+- pushing Home Assistant entity states to Živý obraz
+
+---
+
+### Reading data from Živý obraz
+
+The integration reads panel data using the export API: http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+
+
+Sensors are automatically created in Home Assistant:
+
+- `sensor`
+- `binary_sensor`
+
+These entities represent data from Živý obraz panels.
+
+---
+
+### Sending data to Živý obraz
+
+Home Assistant entity states can be pushed to Živý obraz using the import API: https://in.zivyobraz.eu/?import_key=XXXX
+
+Values are sent as HTTP GET parameters.
+
+Example request: https://in.zivyobraz.eu/?import_key=XXXX&house.sensor_kitchen_temperature=23.5
+
+---
+
+### Entity selection using Home Assistant Labels
+
+Entities are selected using **Home Assistant Labels**.
+
+Simply add the label: ZivyObraz
+
+All entities with this label will be sent automatically.
+
+Advantages:
+
+- no entity list configuration
+- no YAML
+- instant changes
+- easy filtering in Home Assistant UI
+
+---
+
+### Variable prefix
+
+A prefix can be configured to support multiple Home Assistant installations.
+
+Example: prefix = house
+
+
+Resulting variables:
+
+
+house.sensor_kitchen_temperature
+house.sensor_livingroom_temperature
+
+
+---
+
+### Push interval
+
+The update interval defines how often entity states are sent.
+
+Example: 300 seconds
+
+
+---
+
+### Automatic request batching
+
+If the generated URL becomes too long, the integration automatically splits it into multiple requests.
+
+This prevents URL length limits.
+
+---
+
+## Configuration
+
+The integration requires the following configuration.
+
+### Export key
+
+Used to read data from Živý obraz.
+
+The integration automatically builds the endpoint: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+
+
+---
+
+### Import key (optional)
+
+Required if you want to send Home Assistant data to Živý obraz.
+
+https://in.zivyobraz.eu/?import_key=IMPORT_KEY
+
+---
+
+### Label
+
+Label used to select entities to send.
+
+Default: ZivyObraz
+
+---
+
+### Prefix
+
+Optional variable prefix.
+
+Example:
+house
+garage
+office
+
+
+---
+
+### Push interval
+
+Defines how often values are sent to Živý obraz.
+
+---
+
+## Quick start
+
+1. Install the integration
+2. Enter your **Export key**
+3. (optional) Enter **Import key**
+4. Add label **ZivyObraz** to entities
+5. Done
+
+Home Assistant will automatically start sending entity states to Živý obraz.
+
+---
+
+## Disclaimer
+
+This project is **not affiliated with the Živý obraz service**.
