@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -10,6 +11,7 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import (
     CONF_EXPORT_KEY,
+    CONF_GROUP_ID,
     CONF_IMPORT_KEY,
     CONF_LABEL,
     CONF_PREFIX,
@@ -17,6 +19,7 @@ from .const import (
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
+    CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
     DEFAULT_PREFIX,
@@ -24,15 +27,28 @@ from .const import (
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
+    DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     PLATFORMS,
+    ZIVY_OBRAZ_EXPORT_URL,
 )
 from .coordinator import ZivyObrazCoordinator
+from .label_helper import async_ensure_label_exists
 from .push import ZivyObrazPushManager
+
+_LOGGER = logging.getLogger(__name__)
 
 type ZivyObrazConfigEntry = ConfigEntry[ZivyObrazCoordinator]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
+    """Build export URL from config."""
+    url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={export_key}&epapers=json"
+    if use_group_filter and group_id is not None:
+        url += f"&group_id={group_id}"
+    return url
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -44,11 +60,29 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:
     """Set up Zivy Obraz from a config entry."""
     export_key = entry.options.get(CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])
-    timeout = entry.options.get(CONF_TIMEOUT, entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT))
+
+    use_group_filter = entry.options.get(
+        CONF_USE_GROUP_FILTER,
+        entry.data.get(CONF_USE_GROUP_FILTER, DEFAULT_USE_GROUP_FILTER),
+    )
+
+    if CONF_GROUP_ID in entry.options:
+        raw_group_id = entry.options[CONF_GROUP_ID]
+    else:
+        raw_group_id = entry.data.get(CONF_GROUP_ID)
+
+    group_id = raw_group_id if use_group_filter else None
+
+    timeout = entry.options.get(
+        CONF_TIMEOUT,
+        entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+    )
     scan_interval = entry.options.get(
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
+
+    url = _build_export_url(export_key, use_group_filter, group_id)
 
     push_enabled = entry.options.get(
         CONF_PUSH_ENABLED,
@@ -73,7 +107,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
-        export_key=export_key,
+        url=url,
+        config_entry=entry,
         timeout=timeout,
         update_interval_seconds=scan_interval,
     )
@@ -86,27 +121,52 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     entry.runtime_data = coordinator
 
     push_unsub = None
-    if push_enabled and import_key.strip():
-        push_manager = ZivyObrazPushManager(
-            hass=hass,
-            import_key=import_key.strip(),
-            label_name=label,
-            prefix=prefix,
-            timeout=timeout,
-        )
+    push_label_id = None
 
-        push_unsub = async_track_time_interval(
-            hass,
-            push_manager.async_push,
-            timedelta(seconds=push_interval),
-        )
+    if push_enabled:
+        if import_key.strip():
+            push_label_id = await async_ensure_label_exists(hass, label)
 
-        entry.async_on_unload(push_unsub)
-        hass.async_create_task(push_manager.async_push())
+            if push_label_id:
+                _LOGGER.debug(
+                    "Živý Obraz push enabled with label '%s' (label_id=%s), prefix='%s', interval=%s",
+                    label,
+                    push_label_id,
+                    prefix,
+                    push_interval,
+                )
+
+                push_manager = ZivyObrazPushManager(
+                    hass=hass,
+                    import_key=import_key.strip(),
+                    label_id=push_label_id,
+                    prefix=prefix,
+                    timeout=timeout,
+                )
+
+                push_unsub = async_track_time_interval(
+                    hass,
+                    push_manager.async_push,
+                    timedelta(seconds=push_interval),
+                )
+
+                entry.async_on_unload(push_unsub)
+                hass.async_create_task(push_manager.async_push())
+            else:
+                _LOGGER.warning(
+                    "Živý Obraz push is enabled, but label '%s' could not be resolved or created",
+                    label,
+                )
+        else:
+            _LOGGER.debug(
+                "Živý Obraz push is enabled in config, but import_key is empty; push will not start"
+            )
 
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
         "push_unsub": push_unsub,
+        "push_label_id": push_label_id,
+        "push_label_name": label,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -115,7 +175,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> None:
-    """Handle options update."""
+    """Handle options update by fully reloading the config entry."""
+    _LOGGER.debug("Živý Obraz options updated; reloading config entry %s", entry.entry_id)
     await hass.config_entries.async_reload(entry.entry_id)
 
 
