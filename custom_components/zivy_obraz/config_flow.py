@@ -83,8 +83,17 @@ def _normalize_group_id(value: str | None) -> int | None:
 def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Ensure fields are stored in a predictable format."""
     prepared = dict(user_input)
+
     prepared[CONF_USE_GROUP_FILTER] = bool(user_input.get(CONF_USE_GROUP_FILTER, False))
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
+
+    # enforce minimum interval of 60 seconds
+    scan_interval = int(user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+    push_interval = int(user_input.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL))
+
+    prepared[CONF_SCAN_INTERVAL] = max(scan_interval, 60)
+    prepared[CONF_PUSH_INTERVAL] = max(push_interval, 60)
+
     return prepared
 
 
@@ -117,7 +126,7 @@ def _build_schema(
             vol.Optional(CONF_GROUP_ID, default=group_id): str,
             vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval): vol.All(
                 vol.Coerce(int),
-                vol.Range(min=30, max=86400),
+                vol.Range(min=60, max=86400),
             ),
             vol.Optional(CONF_TIMEOUT, default=timeout): vol.All(
                 vol.Coerce(int),
@@ -133,7 +142,7 @@ def _build_schema(
             vol.Optional(CONF_PREFIX, default=prefix): str,
             vol.Optional(CONF_PUSH_INTERVAL, default=push_interval): vol.All(
                 vol.Coerce(int),
-                vol.Range(min=30, max=86400),
+                vol.Range(min=60, max=86400),
             ),
         }
     )
@@ -159,6 +168,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     and prepared_input[CONF_GROUP_ID] is not None
                     else "all"
                 )
+
                 await self.async_set_unique_id(
                     f"{prepared_input[CONF_EXPORT_KEY]}::{unique_group}"
                 )
@@ -213,44 +223,56 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             CONF_EXPORT_KEY,
             self._config_entry.data.get(CONF_EXPORT_KEY, ""),
         )
+
         current_use_group_filter = self._config_entry.options.get(
             CONF_USE_GROUP_FILTER,
             self._config_entry.data.get(CONF_USE_GROUP_FILTER, DEFAULT_USE_GROUP_FILTER),
         )
 
         if CONF_GROUP_ID in self._config_entry.options:
-            current_group_id = _display_group_id(self._config_entry.options.get(CONF_GROUP_ID))
+            current_group_id = _display_group_id(
+                self._config_entry.options.get(CONF_GROUP_ID)
+            )
         else:
-            current_group_id = _display_group_id(self._config_entry.data.get(CONF_GROUP_ID))
+            current_group_id = _display_group_id(
+                self._config_entry.data.get(CONF_GROUP_ID)
+            )
 
         current_scan_interval = self._config_entry.options.get(
             CONF_SCAN_INTERVAL,
             self._config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         )
+
         current_timeout = self._config_entry.options.get(
             CONF_TIMEOUT,
             self._config_entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
         )
+
         current_overdue_tolerance = self._config_entry.options.get(
             CONF_OVERDUE_TOLERANCE,
             self._config_entry.data.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE),
         )
+
         current_push_enabled = self._config_entry.options.get(
             CONF_PUSH_ENABLED,
             self._config_entry.data.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED),
         )
+
         current_import_key = self._config_entry.options.get(
             CONF_IMPORT_KEY,
             self._config_entry.data.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY),
         )
+
         current_label = self._config_entry.options.get(
             CONF_LABEL,
             self._config_entry.data.get(CONF_LABEL, DEFAULT_LABEL),
         )
+
         current_prefix = self._config_entry.options.get(
             CONF_PREFIX,
             self._config_entry.data.get(CONF_PREFIX, DEFAULT_PREFIX),
         )
+
         current_push_interval = self._config_entry.options.get(
             CONF_PUSH_INTERVAL,
             self._config_entry.data.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL),
