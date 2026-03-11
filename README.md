@@ -11,6 +11,12 @@ Integrace umožňuje:
 
 Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejích nebo dashboardech Živého obrazu.
 
+<img width="1029" height="463" alt="image" src="https://github.com/user-attachments/assets/e7f070e5-5b02-4f0d-b973-71722696f1d4" />
+
+<img width="1013" height="965" alt="image" src="https://github.com/user-attachments/assets/7d26f9a6-aba8-48db-96e7-f59afe7de7e8" />
+
+<img width="559" height="1023" alt="image" src="https://github.com/user-attachments/assets/6b983349-e50d-49fd-a166-d2d576d0f61b" />
+
 ---
 
 
@@ -149,6 +155,7 @@ Label pro entity, které se mají odesílat.
 
 Výchozí hodnota: ZivyObraz
 
+<img width="558" height="784" alt="image" src="https://github.com/user-attachments/assets/dfb035d7-e665-4a0b-bf30-1e6fcca13994" />
 
 ---
 
