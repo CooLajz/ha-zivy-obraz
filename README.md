@@ -2,7 +2,7 @@
 
 # Home Assistant – Živý obraz integration
 
-Home Assistant integrace pro službu **Živý obraz (zivyobraz.eu)**.
+Home Assistant integrace pro službu **Živý obraz ([zivyobraz.eu](https://zivyobraz.eu))**.
 
 Integrace umožňuje:
 
