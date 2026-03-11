@@ -47,7 +47,6 @@ async def async_setup_entry(
         CONF_OVERDUE_TOLERANCE,
         entry.data.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE),
     )
-
     known_entity_ids: set[str] = set()
 
     def _build_entities_for_macs(macs: set[str]) -> list[ZivyObrazOverdueBinarySensor]:
@@ -58,6 +57,7 @@ async def async_setup_entry(
                 unique_id = f"{mac}_{description.key}"
                 if unique_id in known_entity_ids:
                     continue
+
                 known_entity_ids.add(unique_id)
                 entities.append(
                     ZivyObrazOverdueBinarySensor(
@@ -84,7 +84,8 @@ async def async_setup_entry(
 
 
 class ZivyObrazOverdueBinarySensor(
-    CoordinatorEntity[ZivyObrazCoordinator], BinarySensorEntity
+    CoordinatorEntity[ZivyObrazCoordinator],
+    BinarySensorEntity,
 ):
     """Binary sensor indicating whether the panel is overdue."""
 
@@ -97,6 +98,7 @@ class ZivyObrazOverdueBinarySensor(
         description: ZivyObrazBinarySensorDescription,
         overdue_tolerance_minutes: int,
     ) -> None:
+        """Initialize the binary sensor."""
         super().__init__(coordinator)
         self.entity_description = description
         self._mac = mac
@@ -105,18 +107,32 @@ class ZivyObrazOverdueBinarySensor(
 
     @property
     def _device_data(self) -> dict[str, Any]:
+        """Return current device data."""
         return self.coordinator.data.get(self._mac, {})
 
     @property
     def device_info(self) -> DeviceInfo:
+        """Return device info."""
         data = self._device_data
         caption = data.get("caption") or self._mac
+
         fw = data.get("fw")
+        fw_build = data.get("fw_build")
+        board_type = data.get("board_type")
+        display_type = data.get("display_type")
         x = data.get("x")
         y = data.get("y")
         colors = data.get("colors")
 
+        sw_version = None
+        if fw and fw_build:
+            sw_version = f"{fw} ({fw_build})"
+        elif fw:
+            sw_version = str(fw)
+
         model_parts: list[str] = []
+        if display_type:
+            model_parts.append(str(display_type))
         if x and y:
             model_parts.append(f"{x}x{y}")
         if colors:
@@ -127,14 +143,20 @@ class ZivyObrazOverdueBinarySensor(
             name=caption,
             manufacturer="Živý Obraz",
             model=" ".join(model_parts) if model_parts else None,
-            sw_version=fw,
+            hw_version=str(board_type) if board_type is not None else None,
+            sw_version=sw_version,
         )
 
     @property
     def available(self) -> bool:
-        return self.coordinator.last_update_success and self._mac in self.coordinator.data
+        """Return availability."""
+        return (
+            self.coordinator.last_update_success
+            and self._mac in self.coordinator.data
+        )
 
     def _parse_next_contact(self) -> datetime | None:
+        """Parse next_contact timestamp."""
         value = self._device_data.get("next_contact")
         if not value:
             return None
@@ -149,6 +171,7 @@ class ZivyObrazOverdueBinarySensor(
 
     @property
     def is_on(self) -> bool | None:
+        """Return whether the panel is overdue."""
         next_contact = self._parse_next_contact()
         if next_contact is None:
             return None
@@ -158,6 +181,7 @@ class ZivyObrazOverdueBinarySensor(
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        """Return extra attributes."""
         next_contact = self._parse_next_contact()
 
         if next_contact is None:
