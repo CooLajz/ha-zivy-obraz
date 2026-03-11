@@ -90,6 +90,13 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
+        key="ssid",
+        value_key="ssid",
+        name="WiFi SSID",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
         key="last_contact",
         value_key="last_contact",
         name="Last contact",
@@ -113,6 +120,38 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         key="group_id",
         value_key="group_id",
         name="Group ID",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="fw_build",
+        value_key="fw_build",
+        name="FW build",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="reset_reason",
+        value_key="reset_reason",
+        name="Reset reason",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="last_picture_download_ms",
+        value_key="last_picture_download_ms",
+        name="Last picture download",
+        native_unit_of_measurement="ms",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="last_display_refresh_ms",
+        value_key="last_display_refresh_ms",
+        name="Last display refresh",
+        native_unit_of_measurement="ms",
+        state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -226,12 +265,24 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
         """Return device info."""
         data = self._device_data
         caption = data.get("caption") or self._mac
+
         fw = data.get("fw")
+        fw_build = data.get("fw_build")
+        board_type = data.get("board_type")
+        display_type = data.get("display_type")
         x = data.get("x")
         y = data.get("y")
         colors = data.get("colors")
 
+        sw_version = None
+        if fw and fw_build:
+            sw_version = f"{fw} ({fw_build})"
+        elif fw:
+            sw_version = str(fw)
+
         model_parts: list[str] = []
+        if display_type:
+            model_parts.append(str(display_type))
         if x and y:
             model_parts.append(f"{x}x{y}")
         if colors:
@@ -242,7 +293,8 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             name=caption,
             manufacturer="Živý Obraz",
             model=" ".join(model_parts) if model_parts else None,
-            sw_version=fw,
+            hw_version=str(board_type) if board_type is not None else None,
+            sw_version=sw_version,
         )
 
     @property
@@ -289,6 +341,8 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             "pressure",
             "battery_volts",
             "rssi",
+            "last_picture_download_ms",
+            "last_display_refresh_ms",
         ):
             if value is None:
                 return None
@@ -297,7 +351,13 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             except (TypeError, ValueError):
                 return None
 
-        if self.entity_description.key in ("group_name", "group_id"):
+        if self.entity_description.key in (
+            "ssid",
+            "group_name",
+            "group_id",
+            "fw_build",
+            "reset_reason",
+        ):
             if value is None:
                 return None
             return str(value)
@@ -313,9 +373,16 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             "caption": data.get("caption"),
             "group_id": data.get("group_id"),
             "group_name": data.get("group_name"),
+            "ssid": data.get("ssid"),
+            "fw": data.get("fw"),
+            "fw_build": data.get("fw_build"),
+            "reset_reason": data.get("reset_reason"),
+            "board_type": data.get("board_type"),
+            "display_type": data.get("display_type"),
+            "last_picture_download_ms": data.get("last_picture_download_ms"),
+            "last_display_refresh_ms": data.get("last_display_refresh_ms"),
             "alias": data.get("alias"),
             "hwtype": data.get("hwtype"),
-            "fw": data.get("fw"),
             "content_mode": data.get("contentMode"),
             "is_external": data.get("isexternal"),
             "rotate": data.get("rotate"),
