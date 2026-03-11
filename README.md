@@ -20,7 +20,7 @@ Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejíc
 
 ### Metoda 1: Přes HACS (doporučeno)
 
-1. Ujistěte se, že je HACS nainstalovaný
+1. Ujistěte se, že je [HACS](https://hacs.xyz/) nainstalovaný
 2. Běžte do HACS integrace
 3. Klikněte na tři tečky vpravo a zvolte > Vlastní repozitáře
 4. Přidejte tuto URL: https://github.com/CooLajz/ha-zivy-obraz.git a TYP vyberte Integrace
@@ -34,7 +34,7 @@ Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejíc
 1. Stáhněte nebo naklonujte tento repozitář
 2. Překopírujte adresář zivy_obraz do adresáře custom_components/ v instalaci Home Assistanta
 3. Restartujte Home Assistant
-4. Jděte do nastavení > Devices & Services > Add Integration
+4. Jděte do nastavení > Zařízení a služby > + Přidat integraci
 5. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
 
 ---
