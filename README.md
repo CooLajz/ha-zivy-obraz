@@ -11,7 +11,11 @@ Integrace umožňuje:
 
 Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejích nebo dashboardech Živého obrazu.
 
+**Zobrazení seznamu zařízení ze služby Živý Obraz v Home Assistantovi:**
+
 <img width="1029" height="463" alt="image" src="https://github.com/user-attachments/assets/e7f070e5-5b02-4f0d-b973-71722696f1d4" />
+
+**Detailní zobrazení jednoho zařízení ze služby Živý Obraz v Home Assistantovi:**
 
 <img width="1013" height="965" alt="image" src="https://github.com/user-attachments/assets/7d26f9a6-aba8-48db-96e7-f59afe7de7e8" />
 
@@ -74,7 +78,8 @@ Příklad výsledného requestu: https://in.zivyobraz.eu/?import_key=XXXX&dum.se
 
 Entity, které se mají odesílat do Živého obrazu, se vybírají pomocí **Labels**.
 
-Když jste v detailu Entity, stačí přidat label: ZivyObraz
+**Když jste v detailu Entity, stačí přidat label: ZivyObraz (možnost zvolit vastní Label v konfiguraci integrace)**
+<img width="558" height="784" alt="image" src="https://github.com/user-attachments/assets/dfb035d7-e665-4a0b-bf30-1e6fcca13994" />
 
 
 Integrace automaticky odešle všechny entity s tímto labelem.
@@ -153,7 +158,7 @@ Label pro entity, které se mají odesílat.
 
 Výchozí hodnota: ZivyObraz
 
-<img width="558" height="784" alt="image" src="https://github.com/user-attachments/assets/dfb035d7-e665-4a0b-bf30-1e6fcca13994" />
+Pokud Label již neexistuje, bude v HA vytvořen.
 
 ---
 
