@@ -15,8 +15,6 @@ Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejíc
 
 <img width="1013" height="965" alt="image" src="https://github.com/user-attachments/assets/7d26f9a6-aba8-48db-96e7-f59afe7de7e8" />
 
-<img width="559" height="1023" alt="image" src="https://github.com/user-attachments/assets/6b983349-e50d-49fd-a166-d2d576d0f61b" />
-
 ---
 
 
