@@ -92,15 +92,17 @@ class ZivyObrazPushManager:
         """Convert entity_id into a safe query parameter name."""
         sanitized = entity_id.strip().lower()
         sanitized = sanitized.replace(".", "_")
-        sanitized = re.sub(r"[^a-z0-9_]+", "_", sanitized)
+        sanitized = re.sub(r"[^\w]+", "_", sanitized, flags=re.UNICODE)
         sanitized = re.sub(r"_+", "_", sanitized).strip("_")
 
         if self.prefix:
-            safe_prefix = re.sub(r"[^a-zA-Z0-9_.-]+", "_", self.prefix).strip("._-")
+            safe_prefix = self.prefix.strip()
+            safe_prefix = re.sub(r"[^\w.-]+", "_", safe_prefix, flags=re.UNICODE)
+            safe_prefix = re.sub(r"_+", "_", safe_prefix).strip("._-")
             if safe_prefix:
                 return f"{safe_prefix}.{sanitized}"
 
-        return sanitized
+        return sanitized        
 
     def _build_param_batches(
         self,
