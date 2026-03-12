@@ -20,13 +20,12 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
+from .device import build_device_info
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,6 +51,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         value_key="battery_volts",
         name="Battery voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -175,8 +175,7 @@ async def async_setup_entry(
             return True
 
         device_data = coordinator.data.get(mac, {})
-        value = device_data.get(description.value_key)
-        return value is not None
+        return device_data.get(description.value_key) is not None
 
     def _build_entities_for_macs(macs: set[str]) -> list[ZivyObrazSensor]:
         entities: list[ZivyObrazSensor] = []
@@ -250,52 +249,27 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._mac = mac
+        self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
         self._attr_unique_id = f"{mac}_{description.key}"
         self._attr_entity_registry_enabled_default = (
             description.entity_registry_enabled_default
         )
 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from coordinator."""
+        self._device_data_cache = self.coordinator.data.get(self._mac, {})
+        super()._handle_coordinator_update()
+
     @property
     def _device_data(self) -> dict[str, Any]:
-        """Return current device data."""
-        return self.coordinator.data.get(self._mac, {})
+        """Return cached device data."""
+        return self._device_data_cache
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self):
         """Return device info."""
-        data = self._device_data
-        caption = data.get("caption") or self._mac
-
-        fw = data.get("fw")
-        fw_build = data.get("fw_build")
-        board_type = data.get("board_type")
-        display_type = data.get("display_type")
-        x = data.get("x")
-        y = data.get("y")
-        colors = data.get("colors")
-
-        sw_version = None
-        if fw and fw_build:
-            sw_version = f"{fw} ({fw_build})"
-        elif fw:
-            sw_version = str(fw)
-
-        model_parts: list[str] = []
-        if display_type:
-            model_parts.append(str(display_type))
-        if x and y:
-            model_parts.append(f"{x}x{y}")
-        if colors:
-            model_parts.append(str(colors))
-
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._mac)},
-            name=caption,
-            manufacturer="Živý Obraz",
-            model=" ".join(model_parts) if model_parts else None,
-            hw_version=str(board_type) if board_type is not None else None,
-            sw_version=sw_version,
-        )
+        return build_device_info(self._mac, self._device_data)
 
     @property
     def available(self) -> bool:
@@ -328,18 +302,20 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
                 value = int(value)
             except (TypeError, ValueError):
                 return None
+            return max(0, min(value, 100))
 
-            if value > 100:
-                return 100
-            if value < 0:
-                return 0
-            return value
+        if self.entity_description.key == "battery_volts":
+            if value is None:
+                return None
+            try:
+                return round(float(value), 2)
+            except (TypeError, ValueError):
+                return None
 
         if self.entity_description.key in (
             "temperature",
             "humidity",
             "pressure",
-            "battery_volts",
             "rssi",
             "last_picture_download_ms",
             "last_display_refresh_ms",
@@ -363,30 +339,3 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             return str(value)
 
         return value
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra attributes."""
-        data = self._device_data
-        return {
-            "mac": self._mac,
-            "caption": data.get("caption"),
-            "group_id": data.get("group_id"),
-            "group_name": data.get("group_name"),
-            "ssid": data.get("ssid"),
-            "fw": data.get("fw"),
-            "fw_build": data.get("fw_build"),
-            "reset_reason": data.get("reset_reason"),
-            "board_type": data.get("board_type"),
-            "display_type": data.get("display_type"),
-            "last_picture_download_ms": data.get("last_picture_download_ms"),
-            "last_display_refresh_ms": data.get("last_display_refresh_ms"),
-            "alias": data.get("alias"),
-            "hwtype": data.get("hwtype"),
-            "content_mode": data.get("contentMode"),
-            "is_external": data.get("isexternal"),
-            "rotate": data.get("rotate"),
-            "lut": data.get("lut"),
-            "wakeup_reason": data.get("wakeupReason"),
-            "capabilities": data.get("capabilities"),
-        }
