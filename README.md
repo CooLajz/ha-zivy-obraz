@@ -136,9 +136,10 @@ Po instalaci integrace je potřeba vyplnit:
 
 Klíč pro čtení dat z Živého obrazu.
 
-Integrace automaticky vytvoří URL: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+**Integrace automaticky vytvoří URL: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json**
 
 export_key najdete po přihlášení do služby v záložce hodnoty (vyberte pouze klíč, pozor ať v klíči NENÍ i &epapers=json, atd...)
+<img width="1310" height="337" alt="image" src="https://github.com/user-attachments/assets/304bc683-3f6c-4867-bb0b-0c81c393c618" />
 
 ---
 
