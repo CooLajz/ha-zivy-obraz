@@ -117,13 +117,6 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSensorDescription(
-        key="group_id",
-        value_key="group_id",
-        name="Group ID",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    ZivyObrazSensorDescription(
         key="fw_build",
         value_key="fw_build",
         name="FW build",
@@ -330,7 +323,6 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
         if self.entity_description.key in (
             "ssid",
             "group_name",
-            "group_id",
             "fw_build",
             "reset_reason",
         ):
@@ -339,3 +331,12 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             return str(value)
 
         return value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra attributes only where they add value."""
+        if self.entity_description.key == "group_name":
+            group_id = self._device_data.get("group_id")
+            if group_id is not None:
+                return {"group_id": group_id}
+        return None
