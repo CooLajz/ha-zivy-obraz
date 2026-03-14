@@ -14,7 +14,7 @@ Integrace umožňuje **obousměrnou komunikaci** mezi Home Assistant a službou 
 - čtení dat z panelů Živého obrazu (Export API)
 - odesílání hodnot z Home Assistant (Import API)
 
-Díky tomu lze zobrazovat data z Home Assistant na e-paper displejích napojených na službu Živého obrazu
+Díky tomu lze zobrazovat data z Home Assistant na e-paper displejích napojených na službu Živého obrazu a v Home Assistant zobrazovat stavy e-paper displejů ze služby Živý obraz.
 
 ---
 
