@@ -1,370 +1,538 @@
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+# Home Assistant – Živý obraz Integration
 
-# Home Assistant – Živý obraz integration
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![GitHub release](https://img.shields.io/github/release/CooLajz/ha-zivy-obraz.svg)](https://github.com/CooLajz/ha-zivy-obraz/releases)
+[![License](https://img.shields.io/github/license/CooLajz/ha-zivy-obraz.svg)](LICENSE)
+![Hassfest](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hassfest.yaml/badge.svg)
+![HACS Validation](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hacs.yaml/badge.svg)
 
-Home Assistant integrace pro službu **Živý obraz ([zivyobraz.eu](https://zivyobraz.eu))**.
+Home Assistant integrace pro službu **Živý obraz**  
+https://zivyobraz.eu
 
-Integrace umožňuje:
+Integrace umožňuje **obousměrnou komunikaci** mezi Home Assistant a službou Živý obraz:
 
-- číst data z panelů Živého obrazu (export API)
-- posílat hodnoty z Home Assistant do Živého obrazu (import API)
+- čtení dat z panelů Živého obrazu (Export API)
+- odesílání hodnot z Home Assistant (Import API)
 
-Díky tomu lze jednoduše zobrazovat data z Home Assistant na e-paper displejích nebo dashboardech Živého obrazu.
+Díky tomu lze zobrazovat data z Home Assistant na:
 
-**Zobrazení seznamu zařízení ze služby Živý Obraz v Home Assistantovi:**
+- e-paper displejích Živého obrazu
+- dashboardech služby Živý obraz
+
+---
+
+# Table of Contents
+
+- 🇨🇿 **Česky**
+  - [Instalace](#instalace)
+  - [Funkce](#funkce)
+  - [Konfigurace](#konfigurace)
+  - [Použití](#použití)
+  - [Architektura](#architektura)
+
+- 🇬🇧 **English**
+  - [Installation](#installation)
+  - [Features](#features)
+  - [Configuration](#configuration)
+  - [Usage](#usage)
+  - [Architecture](#architecture-1)
+
+- [Contribution](#contribution)
+
+---
+
+# 🇨🇿 Dokumentace (Česky)
+
+## Screenshoty
+
+**Seznam zařízení ze služby Živý obraz v Home Assistant**
 
 <img width="1029" height="463" alt="image" src="https://github.com/user-attachments/assets/e7f070e5-5b02-4f0d-b973-71722696f1d4" />
 
-**Detailní zobrazení jednoho zařízení ze služby Živý Obraz v Home Assistantovi:**
+**Detail zařízení**
 
 <img width="1013" height="965" alt="image" src="https://github.com/user-attachments/assets/7d26f9a6-aba8-48db-96e7-f59afe7de7e8" />
 
 ---
 
+# Instalace
 
-# 🇨🇿 Česky
+## Instalace přes HACS (doporučeno)
 
-## Instalace
+1. Nainstalujte **HACS**
+2. Otevřete **HACS → Integrations**
+3. Klikněte na **tři tečky vpravo nahoře**
+4. Vyberte **Custom repositories**
+5. Přidejte repozitář
 
-### Metoda 1: Přes HACS (doporučeno)
+```
+https://github.com/CooLajz/ha-zivy-obraz
+```
 
-1. Ujistěte se, že je [HACS](https://hacs.xyz/) nainstalovaný
-2. Běžte do HACS integrace
-3. Klikněte na tři tečky vpravo a zvolte > Vlastní repozitáře
-4. Přidejte tuto URL: https://github.com/CooLajz/ha-zivy-obraz.git a TYP vyberte Integrace
-5. Vyhledejte v HACS "Živý Obraz" a stiskněte install
-6. Restartujte Home Assistant
-7. Jděte do nastavení > Zařízení a služby > + Přidat integraci
-8. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
+Typ:
 
-### Metoda 2: Manuální instalace
+```
+Integration
+```
 
-1. Stáhněte nebo naklonujte tento repozitář
-2. Překopírujte adresář zivy_obraz do adresáře custom_components/ v instalaci Home Assistanta
-3. Restartujte Home Assistant
-4. Jděte do nastavení > Zařízení a služby > + Přidat integraci
-5. Vyhledejte "Živý Obraz" a vyplňte konfiguraci
+6. Vyhledejte **Živý Obraz**
+7. Klikněte **Install**
+8. Restartujte Home Assistant
+9. Jděte do
+
+```
+Settings → Devices & Services → Add Integration
+```
+
+10. Vyhledejte **Živý Obraz**
 
 ---
 
-## Funkce
+## Manuální instalace
 
-Integrace podporuje:
+1. Stáhněte nebo naklonujte tento repozitář
+2. Zkopírujte složku
 
-### Čtení dat z Živého obrazu
-Integrace dokáže načítat data z exportního API: http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+```
+custom_components/zivy_obraz
+```
 
-Z exportovaných dat jsou automaticky vytvořeny:
+do adresáře `custom_components`
+
+3. Restartujte Home Assistant
+4. Přidejte integraci přes
+
+```
+Settings → Devices & Services → Add Integration
+```
+
+---
+
+# Funkce
+
+## Čtení dat ze Živého obrazu
+
+Integrace načítá data z exportního API:
+
+```
+http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+```
+
+Z těchto dat se automaticky vytvoří entity:
 
 - `sensor`
 - `binary_sensor`
 
-Tyto entity reprezentují data z panelů Živého obrazu.
+---
+
+## Odesílání dat do Živého obrazu
+
+Integrace může odesílat hodnoty z Home Assistant pomocí Import API:
+
+```
+https://in.zivyobraz.eu/?import_key=XXXX
+```
+
+Příklad requestu:
+
+```
+https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
+```
 
 ---
 
-### Odesílání dat do Živého obrazu
+## Výběr entit pomocí Labels
 
-Integrace může také odesílat hodnoty entit z Home Assistant na Živý obraz pomocí import API: https://in.zivyobraz.eu/?import_key=XXXX
+Entity se vybírají pomocí **Home Assistant Labels**.
 
-Hodnoty jsou odesílány jako HTTP GET parametry.
+Stačí přidat label:
 
-Příklad výsledného requestu: https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
+```
+ZivyObraz
+```
 
-
----
-
-### Výběr entit pomocí Home Assistant Labels
-
-Entity, které se mají odesílat do Živého obrazu, se vybírají pomocí **Labels**.
-
-**Když jste v detailu Entity, stačí přidat label: ZivyObraz (možnost zvolit vastní Label v konfiguraci integrace)**
 <img width="558" height="784" alt="image" src="https://github.com/user-attachments/assets/dfb035d7-e665-4a0b-bf30-1e6fcca13994" />
-
 
 Integrace automaticky odešle všechny entity s tímto labelem.
 
-Výhody tohoto přístupu:
+Výhody:
 
-- žádná konfigurace seznamu entit
 - žádný YAML
-- okamžitá změna po přidání labelu
-- snadné filtrování v seznamu entit
+- není nutné konfigurovat seznam entit
+- změny jsou okamžité
+- snadné filtrování
 
 ---
 
-### Prefix proměnných
+## Prefix proměnných
 
-Pro podporu více Home Assistant instalací lze nastavit **prefix**.
-
-Příklad: prefix = dum
-
-Výsledné proměnné v Živém obrazu:
-dum_sensor_teplota_kuchyne,
-dum_sensor_teplota_obyvak
-
-
-To umožňuje používat více Home Assistant serverů se stejným Živým obrazem.
-
----
-
-### Interval odesílání a stahování
-
-Odesílání hodnot a stahování informací z displejů lze nastavit v sekundách.
-
-Například: 300
-
-(Nastavte prosím interval v závislosti na obnově displejů. Častá aktualizace bude zbytečně zatěžovat servery služby Živý Obraz)
-
-Integrace pak každých xx sekund odešle aktuální hodnoty entit a stáhne data z displejů.
-
----
-
-### Automatické dělení dlouhých URL
-
-Pokud by URL obsahovala příliš mnoho parametrů, integrace ji automaticky rozdělí do více requestů.
-
-Tím se zabrání překročení maximální délky URL.
-
----
-
-## Konfigurace
-
-Po instalaci integrace je potřeba vyplnit:
-
-### Export key
-
-Klíč pro čtení dat z Živého obrazu.
-
-**Integrace automaticky vytvoří URL: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json**
-
-export_key najdete po přihlášení do služby v záložce hodnoty (vyberte pouze klíč, pozor ať v klíči NENÍ i &epapers=json, atd...)
-<img width="1310" height="337" alt="image" src="https://github.com/user-attachments/assets/304bc683-3f6c-4867-bb0b-0c81c393c618" />
-
----
-
-### Import key (volitelné)
-
-Pokud chcete posílat data z Home Assistant do Živého obrazu.
-
-https://in.zivyobraz.eu/?import_key=IMPORT_KEY
-
-import_key najdete po přihlášení do služby v záložce hodnoty
-
----
-
-### Label
-
-Label pro entity, které se mají odesílat.
-
-Výchozí hodnota: ZivyObraz
-
-Pokud Label již neexistuje, bude v HA vytvořen.
-
----
-
-### Prefix
-
-Volitelný prefix proměnných.
+Pro více Home Assistant instalací lze nastavit prefix.
 
 Například:
+
+```
+dum
+```
+
+Proměnné pak budou:
+
+```
+dum_sensor_teplota_kuchyne
+dum_sensor_teplota_obyvak
+```
+
+---
+
+## Interval aktualizace
+
+Interval odesílání i stahování dat se nastavuje v sekundách.
+
+Například:
+
+```
+300
+```
+
+Doporučujeme nastavit interval podle obnovy displejů.
+
+---
+
+## Automatické dělení dlouhých URL
+
+Pokud URL obsahuje příliš mnoho parametrů, integrace ji automaticky rozdělí do více requestů.
+
+---
+
+# Konfigurace
+
+Po instalaci je potřeba vyplnit:
+
+## Export key
+
+Klíč pro čtení dat.
+
+```
+http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+```
+
+Klíč najdete po přihlášení do služby v sekci **Hodnoty**.
+
+---
+
+## Import key (volitelné)
+
+Pro odesílání dat.
+
+```
+https://in.zivyobraz.eu/?import_key=IMPORT_KEY
+```
+
+---
+
+## Label
+
+Výchozí label:
+
+```
+ZivyObraz
+```
+
+---
+
+## Prefix
+
+Volitelný prefix.
+
+Například:
+
+```
 dum
 byt
 chata
 garaz
-
-
----
-
-### Interval odesílání s stahování
-
-Jak často se mají hodnoty odesílat do Živého obrazu a jak často se mají stahovat nová data ze serveru Živý Obraz. Nastavte prosím interval v závislosti na obnově displejů. Častá aktualizace bude zbytečně zatěžovat servery služby Živý Obraz
+```
 
 ---
 
-## Postup použití
+## Interval
 
-1️⃣ Nainstaluj integraci
+Určuje jak často se data odesílají a stahují.
 
-2️⃣ Zadej **Export key**
+---
 
-3️⃣ (volitelně) zadej **Import key**
+# Použití
 
-4️⃣ Přidej label `ZivyObraz` k entitám
-
+1️⃣ Nainstalujte integraci  
+2️⃣ Zadejte **Export key**  
+3️⃣ (volitelně) zadejte **Import key**  
+4️⃣ Přidejte label `ZivyObraz` k entitám  
 5️⃣ Hotovo
 
 Integrace začne automaticky odesílat hodnoty.
 
+---
+
+# Architektura
+
+Integrace používá dvě API služby Živý obraz.
+
+### Export API (čtení dat)
+
+```
+Home Assistant
+      │
+      ▼
+out.zivyobraz.eu
+      │
+      ▼
+panel data → Home Assistant sensors
+```
+
+### Import API (odesílání dat)
+
+```
+Home Assistant entities
+      │
+      ▼
+in.zivyobraz.eu
+      │
+      ▼
+Živý obraz displays
+```
 
 ---
 
-# 🇬🇧 English
+---
 
-## Features
-
-This integration connects **Home Assistant** with **Živý obraz (zivyobraz.eu)** dashboards.
-
-It supports both:
-
-- reading panel data from Živý obraz
-- pushing Home Assistant entity states to Živý obraz
+# 🇬🇧 Documentation (English)
 
 ## Installation
 
-### Method 1: Via HACS (recommended)
+### Install via HACS (recommended)
 
-1. Make sure [HACS](https://hacs.xyz/) is installed
-2. Go to HACS Integration
-3. Click the three dots in the top right corner > Custom repositories
-4. Add this URL: https://github.com/CooLajz/ha-zivy-obraz.git and select Integration as TYPE
-5. Search for "Živý Obraz" and install
-6. Restart Home Assistant
-7. Go to **Settings** > **Devices & Services** > **Add Integration**
-8. Search for "Živý Obraz" and follow the instructions
+1. Install **HACS**
+2. Open **HACS → Integrations**
+3. Click **three dots**
+4. Select **Custom repositories**
+5. Add repository
 
-### Method 2: Manual installation
+```
+https://github.com/CooLajz/ha-zivy-obraz
+```
 
-1. Download or clone this repository
-2. Copy the `custom_components/zivy_obraz` folder to your Home Assistant `custom_components/` directory
-3. Restart Home Assistant
-4. Go to **Settings** > **Devices & Services** > **Add Integration**
-5. Search for "Živý Obraz" and follow the instructions
+Type:
 
+```
+Integration
+```
+
+6. Search for **Živý Obraz**
+7. Click **Install**
+8. Restart Home Assistant
+9. Go to
+
+```
+Settings → Devices & Services → Add Integration
+```
+
+10. Search for **Živý Obraz**
 
 ---
 
-### Reading data from Živý obraz
+## Manual installation
 
-The integration reads panel data using the export API: http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+1. Download or clone this repository
+2. Copy folder
 
+```
+custom_components/zivy_obraz
+```
 
-Sensors are automatically created in Home Assistant:
+into `custom_components`
+
+3. Restart Home Assistant
+4. Add integration via
+
+```
+Settings → Devices & Services → Add Integration
+```
+
+---
+
+# Features
+
+## Reading data
+
+The integration reads panel data from:
+
+```
+http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+```
+
+Entities created automatically:
 
 - `sensor`
 - `binary_sensor`
 
-These entities represent data from Živý obraz panels.
-
 ---
 
-### Sending data to Živý obraz
+## Sending data
 
-Home Assistant entity states can be pushed to Živý obraz using the import API: https://in.zivyobraz.eu/?import_key=XXXX
+Home Assistant values can be sent using:
 
-Values are sent as HTTP GET parameters.
-
-Example request: https://in.zivyobraz.eu/?import_key=XXXX&house.sensor_kitchen_temperature=23.5
-
----
-
-### Entity selection using Home Assistant Labels
-
-Entities are selected using **Home Assistant Labels**.
-
-Simply add the label: ZivyObraz
-
-All entities with this label will be sent automatically.
-
-Advantages:
-
-- no entity list configuration
-- no YAML
-- instant changes
-- easy filtering in Home Assistant UI
-
----
-
-### Variable prefix
-
-A prefix can be configured to support multiple Home Assistant installations.
-
-Example: prefix = house
-
-
-Resulting variables:
-house_sensor_kitchen_temperature, 
-house_sensor_livingroom_temperature
-
-
----
-
-### Push interval
-
-The update interval defines how often entity states are sent.
-
-Example: 300 seconds
-
-
----
-
-### Automatic request batching
-
-If the generated URL becomes too long, the integration automatically splits it into multiple requests.
-
-This prevents URL length limits.
-
----
-
-## Configuration
-
-The integration requires the following configuration.
-
-### Export key
-
-Used to read data from Živý obraz.
-
-The integration automatically builds the endpoint: http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
-
-
----
-
-### Import key (optional)
-
-Required if you want to send Home Assistant data to Živý obraz.
-
-https://in.zivyobraz.eu/?import_key=IMPORT_KEY
-
----
-
-### Label
-
-Label used to select entities to send.
-
-Default: ZivyObraz
-
----
-
-### Prefix
-
-Optional variable prefix.
+```
+https://in.zivyobraz.eu/?import_key=XXXX
+```
 
 Example:
-house
-garage
-office
 
-
----
-
-### Push interval
-
-Defines how often values are sent to Živý obraz.
+```
+https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
+```
 
 ---
 
-## Quick start
+## Selecting entities using Labels
 
-1. Install the integration
-2. Enter your **Export key**
-3. (optional) Enter **Import key**
-4. Add label **ZivyObraz** to entities
-5. Done
+Entities are selected using Home Assistant **Labels**.
 
-Home Assistant will automatically start sending entity states to Živý obraz.
+Add label:
+
+```
+ZivyObraz
+```
+
+All entities with this label will be automatically sent.
 
 ---
 
-## Disclaimer
+## Variable prefix
 
-This project is **not affiliated with the Živý obraz service**.
+Supports multiple Home Assistant installations.
+
+Example:
+
+```
+dum
+```
+
+Variables will appear as:
+
+```
+dum_sensor_teplota_kuchyne
+dum_sensor_teplota_obyvak
+```
+
+---
+
+## Update interval
+
+Send and fetch interval in seconds.
+
+Example:
+
+```
+300
+```
+
+---
+
+## Automatic splitting of long URLs
+
+If a request becomes too long, the integration automatically splits it into multiple requests.
+
+---
+
+# Configuration
+
+## Export key
+
+Used for reading data.
+
+```
+http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+```
+
+---
+
+## Import key (optional)
+
+Used for sending data.
+
+```
+https://in.zivyobraz.eu/?import_key=IMPORT_KEY
+```
+
+---
+
+## Label
+
+Default:
+
+```
+ZivyObraz
+```
+
+---
+
+## Prefix
+
+Optional prefix.
+
+```
+dum
+byt
+chata
+garaz
+```
+
+---
+
+## Interval
+
+Defines how often data is sent and fetched.
+
+---
+
+# Usage
+
+1️⃣ Install integration  
+2️⃣ Enter **Export key**  
+3️⃣ (Optional) enter **Import key**  
+4️⃣ Add label `ZivyObraz` to entities  
+5️⃣ Done
+
+The integration will automatically start sending values.
+
+---
+
+# Architecture
+
+### Export API
+
+```
+Home Assistant → out.zivyobraz.eu → panel data → sensors
+```
+
+### Import API
+
+```
+Home Assistant entities → in.zivyobraz.eu → displays
+```
+
+---
+
+# Contribution
+
+Contributions are welcome.
+
+If you find a bug or have an idea for improvement:
+
+- open an **Issue**
+- or create a **Pull Request**
+
+Please include:
+
+- description of the problem
+- Home Assistant version
+- logs if relevant
