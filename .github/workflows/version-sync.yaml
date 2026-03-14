@@ -1,0 +1,43 @@
+name: Sync manifest version
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Update manifest.json
+        run: |
+          python - <<EOF
+          import json
+          from pathlib import Path
+
+          version = "${{ env.VERSION }}"
+          path = Path("custom_components/zivy_obraz/manifest.json")
+
+          data = json.loads(path.read_text())
+          data["version"] = version
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          EOF
+
+      - name: Commit version update
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add custom_components/zivy_obraz/manifest.json
+          git commit -m "Sync manifest version to $VERSION" || echo "No changes"
+          git push
