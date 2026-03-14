@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 from typing import Any
 
 import voluptuous as vol
@@ -13,6 +14,7 @@ from .const import (
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
     CONF_LABEL,
+    CONF_OVERDUE_NOTIFICATION,
     CONF_OVERDUE_TOLERANCE,
     CONF_PREFIX,
     CONF_PUSH_ENABLED,
@@ -22,6 +24,7 @@ from .const import (
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
+    DEFAULT_OVERDUE_NOTIFICATION,
     DEFAULT_OVERDUE_TOLERANCE,
     DEFAULT_PREFIX,
     DEFAULT_PUSH_ENABLED,
@@ -86,13 +89,26 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
 
     prepared[CONF_USE_GROUP_FILTER] = bool(user_input.get(CONF_USE_GROUP_FILTER, False))
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
+    prepared[CONF_OVERDUE_NOTIFICATION] = bool(
+        user_input.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION)
+    )
 
-    # enforce minimum interval of 60 seconds
+    # Enforce minimum interval of 60 seconds
     scan_interval = int(user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
     push_interval = int(user_input.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL))
 
-    prepared[CONF_SCAN_INTERVAL] = max(scan_interval, 60)
-    prepared[CONF_PUSH_INTERVAL] = max(push_interval, 60)
+    scan_interval = max(scan_interval, 60)
+    push_interval = max(push_interval, 60)
+
+    prepared[CONF_SCAN_INTERVAL] = scan_interval
+    prepared[CONF_PUSH_INTERVAL] = push_interval
+
+    # overdue_tolerance is in minutes and must be at least the scan interval
+    overdue_tolerance = int(
+        user_input.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE)
+    )
+    min_overdue_tolerance = math.ceil(scan_interval / 60)
+    prepared[CONF_OVERDUE_TOLERANCE] = max(overdue_tolerance, min_overdue_tolerance)
 
     return prepared
 
@@ -112,6 +128,7 @@ def _build_schema(
     scan_interval: int = DEFAULT_SCAN_INTERVAL,
     timeout: int = DEFAULT_TIMEOUT,
     overdue_tolerance: int = DEFAULT_OVERDUE_TOLERANCE,
+    overdue_notification: bool = DEFAULT_OVERDUE_NOTIFICATION,
     push_enabled: bool = DEFAULT_PUSH_ENABLED,
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
@@ -132,6 +149,10 @@ def _build_schema(
                 vol.Coerce(int),
                 vol.Range(min=5, max=120),
             ),
+            vol.Optional(
+                CONF_OVERDUE_NOTIFICATION,
+                default=overdue_notification,
+            ): bool,
             vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance): vol.All(
                 vol.Coerce(int),
                 vol.Range(min=0, max=10080),
@@ -250,7 +271,16 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
 
         current_overdue_tolerance = self._config_entry.options.get(
             CONF_OVERDUE_TOLERANCE,
-            self._config_entry.data.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE),
+            self._config_entry.data.get(
+                CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE
+            ),
+        )
+
+        current_overdue_notification = self._config_entry.options.get(
+            CONF_OVERDUE_NOTIFICATION,
+            self._config_entry.data.get(
+                CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION
+            ),
         )
 
         current_push_enabled = self._config_entry.options.get(
@@ -312,6 +342,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 scan_interval=current_scan_interval,
                 timeout=current_timeout,
                 overdue_tolerance=current_overdue_tolerance,
+                overdue_notification=current_overdue_notification,
                 push_enabled=current_push_enabled,
                 import_key=current_import_key,
                 label=current_label,
