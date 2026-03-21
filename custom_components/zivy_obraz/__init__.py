@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -38,7 +39,7 @@ from .push import ZivyObrazPushManager
 
 _LOGGER = logging.getLogger(__name__)
 
-type ZivyObrazConfigEntry = ConfigEntry[ZivyObrazCoordinator]
+ZivyObrazConfigEntry: TypeAlias = ConfigEntry[ZivyObrazCoordinator]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
