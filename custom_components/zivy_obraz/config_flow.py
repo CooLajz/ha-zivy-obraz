@@ -55,8 +55,8 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
             response.raise_for_status()
             payload = await response.json(content_type=None)
 
-    if not isinstance(payload, (dict, list)):
-        raise ValueError("Top-level JSON must be an object/dict or list")
+    if not isinstance(payload, dict):
+        raise ValueError("Top-level JSON must be an object/dict")
 
     return {"title": "Živý Obraz"}
 
