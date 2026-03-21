@@ -60,7 +60,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:
     """Set up Zivy Obraz from a config entry."""
-    export_key = entry.options.get(CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])
+    export_key = str(entry.options.get(CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])).strip()
 
     use_group_filter = entry.options.get(
         CONF_USE_GROUP_FILTER,
@@ -85,14 +85,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     url = _build_export_url(export_key, use_group_filter, group_id)
 
-    push_enabled = entry.options.get(
+    push_enabled = bool(
+        entry.options.get(
         CONF_PUSH_ENABLED,
         entry.data.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED),
     )
-    import_key = entry.options.get(
-        CONF_IMPORT_KEY,
-        entry.data.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY),
     )
+    import_key = str(
+        entry.options.get(
+            CONF_IMPORT_KEY,
+            entry.data.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY),
+        )
+        or ""
+    ).strip()
     label = entry.options.get(
         CONF_LABEL,
         entry.data.get(CONF_LABEL, DEFAULT_LABEL),
@@ -125,7 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     push_label_id = None
 
     if push_enabled:
-        if import_key.strip():
+        if import_key:
             push_label_id = await async_ensure_label_exists(hass, label)
 
             if push_label_id:
@@ -139,7 +144,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
                 push_manager = ZivyObrazPushManager(
                     hass=hass,
-                    import_key=import_key.strip(),
+                    import_key=import_key,
                     label_id=push_label_id,
                     prefix=prefix,
                     timeout=timeout,

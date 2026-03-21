@@ -63,8 +63,15 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
 
 def _validate_push_settings(data: dict[str, Any]) -> None:
     """Validate push-related settings."""
-    if data.get(CONF_PUSH_ENABLED) and not data.get(CONF_IMPORT_KEY, "").strip():
+    if data.get(CONF_PUSH_ENABLED) and not _normalize_api_key(data.get(CONF_IMPORT_KEY)):
         data[CONF_PUSH_ENABLED] = False
+
+
+def _normalize_api_key(value: Any) -> str:
+    """Normalize optional API key values from UI/storage."""
+    if value is None:
+        return ""
+    return str(value).strip()
 
 
 def _normalize_group_id(value: str | None) -> int | None:
@@ -92,9 +99,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_OVERDUE_NOTIFICATION] = bool(
         user_input.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION)
     )
-    prepared[CONF_IMPORT_KEY] = str(
+    prepared[CONF_IMPORT_KEY] = _normalize_api_key(
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
-    ).strip()
+    )
     prepared[CONF_PUSH_ENABLED] = bool(
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
@@ -318,14 +325,14 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             self._config_entry.data.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL),
         )
 
-        has_export_key = bool(str(current_export_key).strip())
-        has_import_key = bool(str(current_import_key).strip())
+        has_export_key = bool(_normalize_api_key(current_export_key))
+        has_import_key = bool(_normalize_api_key(current_import_key))
 
         if user_input is not None:
             try:
                 merged_input = {
-                    CONF_EXPORT_KEY: current_export_key,
-                    CONF_IMPORT_KEY: current_import_key,
+                    CONF_EXPORT_KEY: _normalize_api_key(current_export_key),
+                    CONF_IMPORT_KEY: _normalize_api_key(current_import_key),
                     **user_input,
                 }
                 prepared_input = _prepare_user_input(merged_input)
