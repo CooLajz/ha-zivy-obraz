@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Živý Obraz",
+        "description": "Připojení k exportu panelů",
+        "data": {
+          "export_key": "Export key",
+          "use_group_filter": "Použít filtr skupiny",
+          "group_id": "ID skupiny",
+          "scan_interval": "Interval obnovy (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Tolerance zpoždění (min)",
+          "overdue_notification": "Vytvářet oznámení při problému Overdue",
+          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "import_key": "Import key",
+          "label": "Štítek entit pro odesílání",
+          "prefix": "Prefix názvu proměnných",
+          "push_interval": "Interval odesílání (s)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodařilo se připojit",
+      "invalid_json": "Endpoint nevrací validní JSON",
+      "timeout": "Vypršel časový limit",
+      "unknown": "Neočekávaná chyba",
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
+      "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
+      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny"
+    },
+    "abort": {
+      "already_configured": "Tento export key a filtr skupiny už jsou nakonfigurované"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Živý Obraz",
+        "description": "Upravit nastavení integrace",
+        "data": {
+          "export_key": "Export key",
+          "use_group_filter": "Použít filtr skupiny",
+          "group_id": "ID skupiny",
+          "scan_interval": "Interval obnovy (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Tolerance zpoždění (min)",
+          "overdue_notification": "Vytvářet oznámení při problému Overdue",
+          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "import_key": "Import key",
+          "label": "Štítek entit pro odesílání",
+          "prefix": "Prefix názvu proměnných",
+          "push_interval": "Interval odesílání (s)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodařilo se připojit",
+      "invalid_json": "Endpoint nevrací validní JSON",
+      "timeout": "Vypršel časový limit",
+      "unknown": "Neočekávaná chyba",
+      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
+      "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
+      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Živý Obraz",
+        "description": "Connect to panel export",
+        "data": {
+          "export_key": "Export key",
+          "use_group_filter": "Enable group filter",
+          "group_id": "Group ID",
+          "scan_interval": "Refresh interval (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Overdue tolerance (min)",
+          "overdue_notification": "Create notifications for Overdue issues",
+          "push_enabled": "Enable push to Živý Obraz",
+          "import_key": "Import key",
+          "label": "Entity label for push",
+          "prefix": "Variable name prefix",
+          "push_interval": "Push interval (s)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_json": "Endpoint does not return valid JSON",
+      "timeout": "Request timed out",
+      "unknown": "Unexpected error",
+      "import_key_required": "Import key is required when push is enabled",
+      "invalid_group_id": "Group ID must be an integer 0 or higher",
+      "group_id_required": "Group ID is required when group filter is enabled"
+    },
+    "abort": {
+      "already_configured": "This export key and group filter are already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Živý Obraz",
+        "description": "Edit integration settings",
+        "data": {
+          "export_key": "Export key",
+          "use_group_filter": "Enable group filter",
+          "group_id": "Group ID",
+          "scan_interval": "Refresh interval (s)",
+          "timeout": "HTTP timeout (s)",
+          "overdue_tolerance": "Overdue tolerance (min)",
+          "overdue_notification": "Create notifications for Overdue issues",
+          "push_enabled": "Enable push to Živý Obraz",
+          "import_key": "Import key",
+          "label": "Entity label for push",
+          "prefix": "Variable name prefix",
+          "push_interval": "Push interval (s)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_json": "Endpoint does not return valid JSON",
+      "timeout": "Request timed out",
+      "unknown": "Unexpected error",
+      "import_key_required": "Import key is required when push is enabled",
+      "invalid_group_id": "Group ID must be an integer 0 or higher",
+      "group_id_required": "Group ID is required when group filter is enabled"
+    }
+  }
+}
