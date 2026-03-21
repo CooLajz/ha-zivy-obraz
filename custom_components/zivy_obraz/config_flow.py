@@ -64,7 +64,7 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
 def _validate_push_settings(data: dict[str, Any]) -> None:
     """Validate push-related settings."""
     if data.get(CONF_PUSH_ENABLED) and not data.get(CONF_IMPORT_KEY, "").strip():
-        raise ValueError("import_key_required")
+        data[CONF_PUSH_ENABLED] = False
 
 
 def _normalize_group_id(value: str | None) -> int | None:
@@ -91,6 +91,12 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
     prepared[CONF_OVERDUE_NOTIFICATION] = bool(
         user_input.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION)
+    )
+    prepared[CONF_IMPORT_KEY] = str(
+        user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
+    ).strip()
+    prepared[CONF_PUSH_ENABLED] = bool(
+        user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
 
     # Enforce minimum interval of 60 seconds
@@ -138,42 +144,37 @@ def _build_schema(
     push_interval: int = DEFAULT_PUSH_INTERVAL,
 ) -> vol.Schema:
     """Build config schema."""
-    schema: dict[Any, Any] = {
-        vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter): bool,
-        vol.Optional(CONF_GROUP_ID, default=group_id): str,
-        vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=60, max=86400),
-        ),
-        vol.Optional(CONF_TIMEOUT, default=timeout): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=5, max=120),
-        ),
-        vol.Optional(
-            CONF_OVERDUE_NOTIFICATION,
-            default=overdue_notification,
-        ): bool,
-        vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=0, max=10080),
-        ),
-        vol.Optional(CONF_PUSH_ENABLED, default=push_enabled): bool,
-        vol.Optional(CONF_LABEL, default=label): str,
-        vol.Optional(CONF_PREFIX, default=prefix): str,
-        vol.Optional(CONF_PUSH_INTERVAL, default=push_interval): vol.All(
-            vol.Coerce(int),
-            vol.Range(min=60, max=86400),
-        ),
-    }
+    schema: dict[Any, Any] = {}
 
     if show_export_key:
-        schema = {
-            vol.Required(CONF_EXPORT_KEY, default=export_key or ""): str,
-            **schema,
-        }
+        schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
+
+    schema[vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter)] = bool
+    schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
+    schema[vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval)] = vol.All(
+        vol.Coerce(int),
+        vol.Range(min=60, max=86400),
+    )
+    schema[vol.Optional(CONF_TIMEOUT, default=timeout)] = vol.All(
+        vol.Coerce(int),
+        vol.Range(min=5, max=120),
+    )
+    schema[vol.Optional(CONF_OVERDUE_NOTIFICATION, default=overdue_notification)] = bool
+    schema[vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance)] = vol.All(
+        vol.Coerce(int),
+        vol.Range(min=0, max=10080),
+    )
+    schema[vol.Optional(CONF_PUSH_ENABLED, default=push_enabled)] = bool
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
+
+    schema[vol.Optional(CONF_LABEL, default=label)] = str
+    schema[vol.Optional(CONF_PREFIX, default=prefix)] = str
+    schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
+        vol.Coerce(int),
+        vol.Range(min=60, max=86400),
+    )
 
     return vol.Schema(schema)
 
