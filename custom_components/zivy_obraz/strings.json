@@ -3,65 +3,65 @@
     "step": {
       "user": {
         "title": "Živý Obraz",
-        "description": "Připojení k exportu panelů",
+        "description": "Connect to panel export",
         "data": {
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
+          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "scan_interval": "Interval obnovy (s)",
+          "scan_interval": "Refresh interval (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)",
-          "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "overdue_tolerance": "Overdue tolerance (min)",
+          "overdue_notification": "Create notifications for Overdue issues",
+          "push_enabled": "Enable push to Živý Obraz",
           "import_key": "Import key",
-          "label": "Label entit pro odesílání",
-          "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)"
+          "label": "Entity label for push",
+          "prefix": "Variable name prefix",
+          "push_interval": "Push interval (s)"
         }
       }
     },
     "error": {
-      "cannot_connect": "Nepodařilo se připojit",
-      "invalid_json": "Endpoint nevrací validní JSON",
-      "timeout": "Vypršel časový limit",
-      "unknown": "Neočekávaná chyba",
-      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
-      "invalid_group_id": "Group ID musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněn Group ID"
+      "cannot_connect": "Failed to connect",
+      "invalid_json": "Endpoint does not return valid JSON",
+      "timeout": "Request timed out",
+      "unknown": "Unexpected error",
+      "import_key_required": "Import key is required when push is enabled",
+      "invalid_group_id": "Group ID must be an integer 0 or higher",
+      "group_id_required": "Group ID is required when group filter is enabled"
     },
     "abort": {
-      "already_configured": "Tento export key a group filtr už jsou nakonfigurované"
+      "already_configured": "This export key and group filter are already configured"
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Živý Obraz",
-        "description": "Upravit nastavení integrace",
+        "description": "Edit integration settings",
         "data": {
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
+          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "scan_interval": "Interval obnovy (s)",
+          "scan_interval": "Refresh interval (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)",
-          "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "overdue_tolerance": "Overdue tolerance (min)",
+          "overdue_notification": "Create notifications for Overdue issues",
+          "push_enabled": "Enable push to Živý Obraz",
           "import_key": "Import key",
-          "label": "Label entit pro odesílání",
-          "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)"
+          "label": "Entity label for push",
+          "prefix": "Variable name prefix",
+          "push_interval": "Push interval (s)"
         }
       }
     },
     "error": {
-      "cannot_connect": "Nepodařilo se připojit",
-      "invalid_json": "Endpoint nevrací validní JSON",
-      "timeout": "Vypršel časový limit",
-      "unknown": "Neočekávaná chyba",
-      "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
-      "invalid_group_id": "Group ID musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněn Group ID"
+      "cannot_connect": "Failed to connect",
+      "invalid_json": "Endpoint does not return valid JSON",
+      "timeout": "Request timed out",
+      "unknown": "Unexpected error",
+      "import_key_required": "Import key is required when push is enabled",
+      "invalid_group_id": "Group ID must be an integer 0 or higher",
+      "group_id_required": "Group ID is required when group filter is enabled"
     }
   }
 }
