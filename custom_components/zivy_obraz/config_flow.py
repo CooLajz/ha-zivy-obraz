@@ -162,7 +162,7 @@ def _build_schema(
         vol.Coerce(int),
         vol.Range(min=60, max=86400),
     )
-    schema[vol.Optional(CONF_TIMEOUT, default=timeout)] = vol.All(
+    schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
         vol.Range(min=5, max=120),
     )
