@@ -212,7 +212,7 @@ Klíč pro čtení dat.
 http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 ```
 
-Klíč najdete po přihlášení do služby v sekci **Hodnoty**.
+Klíč najdete po přihlášení do služby v sekci **Účet**.
 
 ---
 
@@ -223,6 +223,8 @@ Pro odesílání dat.
 ```
 https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 ```
+
+Klíč najdete po přihlášení do služby v sekci **Účet**.
 
 ---
 
