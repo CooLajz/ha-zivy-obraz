@@ -15,6 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
+from .device import build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -161,6 +162,45 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     self.config_entry.entry_id,
                 )
 
+    async def _async_sync_device_metadata(
+        self,
+        normalized: dict[str, dict[str, Any]],
+    ) -> None:
+        """Synchronize device registry metadata with current JSON data."""
+        device_registry = dr.async_get(self.hass)
+
+        for mac, data in normalized.items():
+            device = device_registry.async_get_device(identifiers={(DOMAIN, mac)})
+            if device is None:
+                continue
+
+            new_metadata = build_device_registry_metadata(data)
+
+            updates: dict[str, str | None] = {}
+
+            if device.manufacturer != new_metadata["manufacturer"]:
+                updates["manufacturer"] = new_metadata["manufacturer"]
+
+            if device.model != new_metadata["model"]:
+                updates["model"] = new_metadata["model"]
+
+            if device.hw_version != new_metadata["hw_version"]:
+                updates["hw_version"] = new_metadata["hw_version"]
+
+            if device.sw_version != new_metadata["sw_version"]:
+                updates["sw_version"] = new_metadata["sw_version"]
+
+            if not updates:
+                continue
+
+            device_registry.async_update_device(device.id, **updates)
+
+            _LOGGER.info(
+                "Updated Živý Obraz device metadata for %s: %s",
+                mac,
+                ", ".join(f"{key}={value}" for key, value in updates.items()),
+            )
+
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from remote JSON endpoint."""
         data = await self._async_fetch_json()
@@ -193,6 +233,8 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
         if removed_macs:
             await self._async_remove_devices(removed_macs)
+
+        await self._async_sync_device_metadata(normalized)
 
         self.known_macs = current_macs
         return normalized
