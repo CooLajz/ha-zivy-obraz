@@ -46,6 +46,16 @@ def _build_hw_version(data: dict[str, Any]) -> str | None:
     return str(board_type)
 
 
+def build_device_name(mac: str, data: dict[str, Any]) -> str:
+    """Build device name shown in Home Assistant."""
+    caption = data.get("caption")
+    if caption is None:
+        return mac
+
+    normalized_caption = str(caption).strip()
+    return normalized_caption or mac
+
+
 def build_device_registry_metadata(data: dict[str, Any]) -> dict[str, str | None]:
     """Build metadata used for Home Assistant device registry updates."""
     return {
@@ -58,12 +68,11 @@ def build_device_registry_metadata(data: dict[str, Any]) -> dict[str, str | None
 
 def build_device_info(mac: str, data: dict[str, Any]) -> DeviceInfo:
     """Build Home Assistant device info for a Živý Obraz device."""
-    caption = data.get("caption") or mac
     metadata = build_device_registry_metadata(data)
 
     return DeviceInfo(
         identifiers={(DOMAIN, mac)},
-        name=caption,
+        name=build_device_name(mac, data),
         manufacturer=metadata["manufacturer"],
         model=metadata["model"],
         hw_version=metadata["hw_version"],

@@ -100,9 +100,9 @@ class ZivyObrazPushManager:
             safe_prefix = re.sub(r"[^\w.-]+", "_", safe_prefix, flags=re.UNICODE)
             safe_prefix = re.sub(r"_+", "_", safe_prefix).strip("._-")
             if safe_prefix:
-                return f"{safe_prefix}.{sanitized}"
+                return f"{safe_prefix}_{sanitized}"
 
-        return sanitized        
+        return sanitized
 
     def _build_param_batches(
         self,

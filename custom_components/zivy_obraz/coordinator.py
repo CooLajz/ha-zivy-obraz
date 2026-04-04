@@ -15,7 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
-from .device import build_device_registry_metadata
+from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -175,8 +175,12 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 continue
 
             new_metadata = build_device_registry_metadata(data)
+            new_name = build_device_name(mac, data)
 
             updates: dict[str, str | None] = {}
+
+            if device.name_by_user is None and device.name != new_name:
+                updates["name"] = new_name
 
             if device.manufacturer != new_metadata["manufacturer"]:
                 updates["manufacturer"] = new_metadata["manufacturer"]
