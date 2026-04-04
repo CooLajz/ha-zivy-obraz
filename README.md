@@ -152,6 +152,8 @@ ZivyObraz
 
 Integrace automaticky odešle všechny entity s tímto labelem.
 
+Stejný label lze přidat i na celý device. V takovém případě integrace odešle všechny jeho viditelné a aktivní entity, takže není nutné tagovat každou entitu zvlášť.
+
 Výhody:
 
 - žádný YAML

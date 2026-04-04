@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from aiohttp import ClientError
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -62,13 +63,14 @@ class ZivyObrazPushManager:
             await self._async_send_batch(batch)
 
     def _get_labeled_entity_states(self) -> list[tuple[str, str]]:
-        """Return list of (param_name, state_value) for entities having the target label."""
+        """Return list of (param_name, state_value) for entities selected for push."""
         entity_registry = er.async_get(self.hass)
+        device_registry = dr.async_get(self.hass)
 
         pairs: list[tuple[str, str]] = []
 
         for entry in entity_registry.entities.values():
-            if self.label_id not in entry.labels:
+            if not self._is_selected_for_push(entry, device_registry):
                 continue
 
             state_obj = self.hass.states.get(entry.entity_id)
@@ -87,6 +89,27 @@ class ZivyObrazPushManager:
         )
 
         return pairs
+
+    def _is_selected_for_push(
+        self,
+        entry: er.RegistryEntry,
+        device_registry: dr.DeviceRegistry,
+    ) -> bool:
+        """Return True if the entity is eligible for push for the configured label."""
+        if self.label_id in entry.labels:
+            return True
+
+        if entry.hidden_by is not None or entry.disabled_by is not None:
+            return False
+
+        if not entry.device_id:
+            return False
+
+        device_entry = device_registry.async_get(entry.device_id)
+        if device_entry is None:
+            return False
+
+        return self.label_id in getattr(device_entry, "labels", set())
 
     def _make_param_name(self, entity_id: str) -> str:
         """Convert entity_id into a safe query parameter name."""
