@@ -17,6 +17,7 @@ from .const import (
     CONF_OVERDUE_NOTIFICATION,
     CONF_OVERDUE_TOLERANCE,
     CONF_PREFIX,
+    CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
@@ -150,6 +151,13 @@ def _get_config_value(
     if key in config_entry.options:
         return config_entry.options[key]
     return config_entry.data.get(key, default)
+
+
+def _get_current_prefix(config_entry) -> str:
+    """Return the effective stored prefix, preserving explicit empty override."""
+    if config_entry.options.get(CONF_PREFIX_OVERRIDE):
+        return _normalize_prefix(config_entry.options.get(CONF_PREFIX))
+    return _normalize_prefix(_get_config_value(config_entry, CONF_PREFIX, DEFAULT_PREFIX))
 
 
 def _build_schema(
@@ -321,9 +329,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
         )
         current_label = _get_config_value(self._config_entry, CONF_LABEL, DEFAULT_LABEL)
-        current_prefix = _get_config_value(
-            self._config_entry, CONF_PREFIX, DEFAULT_PREFIX
-        )
+        current_prefix = _get_current_prefix(self._config_entry)
         current_push_interval = _get_config_value(
             self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
         )
@@ -359,6 +365,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             except Exception:
                 errors["base"] = "unknown"
             else:
+                prepared_input[CONF_PREFIX_OVERRIDE] = True
                 return self.async_create_entry(title="", data=prepared_input)
 
         schema = _build_schema(

@@ -16,6 +16,7 @@ from .const import (
     CONF_IMPORT_KEY,
     CONF_LABEL,
     CONF_PREFIX,
+    CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
@@ -49,6 +50,13 @@ def _get_config_value(entry: ConfigEntry, key: str, default):
     if key in entry.options:
         return entry.options[key]
     return entry.data.get(key, default)
+
+
+def _get_prefix_value(entry: ConfigEntry) -> str:
+    """Return effective prefix, preserving explicit empty override from options."""
+    if entry.options.get(CONF_PREFIX_OVERRIDE):
+        return str(entry.options.get(CONF_PREFIX, "") or "").strip()
+    return str(_get_config_value(entry, CONF_PREFIX, DEFAULT_PREFIX) or "").strip()
 
 
 def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
@@ -103,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         or ""
     ).strip()
     label = _get_config_value(entry, CONF_LABEL, DEFAULT_LABEL)
-    prefix = str(_get_config_value(entry, CONF_PREFIX, DEFAULT_PREFIX) or "").strip()
+    prefix = _get_prefix_value(entry)
     push_interval = _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
 
     coordinator = ZivyObrazCoordinator(

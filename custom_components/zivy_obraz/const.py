@@ -14,6 +14,7 @@ CONF_PUSH_ENABLED = "push_enabled"
 CONF_IMPORT_KEY = "import_key"
 CONF_LABEL = "label"
 CONF_PREFIX = "prefix"
+CONF_PREFIX_OVERRIDE = "prefix_override"
 CONF_PUSH_INTERVAL = "push_interval"
 
 DEFAULT_SCAN_INTERVAL = 300
