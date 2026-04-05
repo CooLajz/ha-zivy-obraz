@@ -44,6 +44,13 @@ ZivyObrazConfigEntry: TypeAlias = ConfigEntry[ZivyObrazCoordinator]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
+def _get_config_value(entry: ConfigEntry, key: str, default):
+    """Return options value when present, otherwise fallback to entry data/default."""
+    if key in entry.options:
+        return entry.options[key]
+    return entry.data.get(key, default)
+
+
 def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
     """Build export URL from config."""
     url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={export_key}&epapers=json"
@@ -60,11 +67,12 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:
     """Set up Zivy Obraz from a config entry."""
-    export_key = str(entry.options.get(CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])).strip()
+    export_key = str(_get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])).strip()
 
-    use_group_filter = entry.options.get(
+    use_group_filter = _get_config_value(
+        entry,
         CONF_USE_GROUP_FILTER,
-        entry.data.get(CONF_USE_GROUP_FILTER, DEFAULT_USE_GROUP_FILTER),
+        DEFAULT_USE_GROUP_FILTER,
     )
 
     if CONF_GROUP_ID in entry.options:
@@ -74,42 +82,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     group_id = raw_group_id if use_group_filter else None
 
-    timeout = entry.options.get(
-        CONF_TIMEOUT,
-        entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
-    )
-    scan_interval = entry.options.get(
-        CONF_SCAN_INTERVAL,
-        entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-    )
+    timeout = _get_config_value(entry, CONF_TIMEOUT, DEFAULT_TIMEOUT)
+    scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     url = _build_export_url(export_key, use_group_filter, group_id)
 
     push_enabled = bool(
-        entry.options.get(
-        CONF_PUSH_ENABLED,
-        entry.data.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED),
-    )
+        _get_config_value(
+            entry,
+            CONF_PUSH_ENABLED,
+            DEFAULT_PUSH_ENABLED,
+        )
     )
     import_key = str(
-        entry.options.get(
+        _get_config_value(
+            entry,
             CONF_IMPORT_KEY,
-            entry.data.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY),
+            DEFAULT_IMPORT_KEY,
         )
         or ""
     ).strip()
-    label = entry.options.get(
-        CONF_LABEL,
-        entry.data.get(CONF_LABEL, DEFAULT_LABEL),
-    )
-    prefix = entry.options.get(
-        CONF_PREFIX,
-        entry.data.get(CONF_PREFIX, DEFAULT_PREFIX),
-    )
-    push_interval = entry.options.get(
-        CONF_PUSH_INTERVAL,
-        entry.data.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL),
-    )
+    label = _get_config_value(entry, CONF_LABEL, DEFAULT_LABEL)
+    prefix = str(_get_config_value(entry, CONF_PREFIX, DEFAULT_PREFIX) or "").strip()
+    push_interval = _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,

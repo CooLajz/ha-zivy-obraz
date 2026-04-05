@@ -74,6 +74,13 @@ def _normalize_api_key(value: Any) -> str:
     return str(value).strip()
 
 
+def _normalize_prefix(value: Any) -> str:
+    """Normalize optional variable prefix from UI/storage."""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
 def _normalize_group_id(value: str | None) -> int | None:
     """Normalize optional group_id from UI input."""
     if value is None:
@@ -102,6 +109,7 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_IMPORT_KEY] = _normalize_api_key(
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
     )
+    prepared[CONF_PREFIX] = _normalize_prefix(user_input.get(CONF_PREFIX, DEFAULT_PREFIX))
     prepared[CONF_PUSH_ENABLED] = bool(
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
@@ -131,6 +139,17 @@ def _display_group_id(value: Any) -> str:
     if value is None:
         return ""
     return str(value)
+
+
+def _get_config_value(
+    config_entry,
+    key: str,
+    default: Any,
+) -> Any:
+    """Return options value when present, otherwise fallback to entry data/default."""
+    if key in config_entry.options:
+        return config_entry.options[key]
+    return config_entry.data.get(key, default)
 
 
 def _build_schema(
@@ -257,14 +276,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
 
-        current_export_key = self._config_entry.options.get(
-            CONF_EXPORT_KEY,
-            self._config_entry.data.get(CONF_EXPORT_KEY, ""),
-        )
-
-        current_use_group_filter = self._config_entry.options.get(
+        current_export_key = _get_config_value(self._config_entry, CONF_EXPORT_KEY, "")
+        current_use_group_filter = _get_config_value(
+            self._config_entry,
             CONF_USE_GROUP_FILTER,
-            self._config_entry.data.get(CONF_USE_GROUP_FILTER, DEFAULT_USE_GROUP_FILTER),
+            DEFAULT_USE_GROUP_FILTER,
         )
 
         if CONF_GROUP_ID in self._config_entry.options:
@@ -276,53 +292,34 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 self._config_entry.data.get(CONF_GROUP_ID)
             )
 
-        current_scan_interval = self._config_entry.options.get(
-            CONF_SCAN_INTERVAL,
-            self._config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        current_scan_interval = _get_config_value(
+            self._config_entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
         )
-
-        current_timeout = self._config_entry.options.get(
-            CONF_TIMEOUT,
-            self._config_entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+        current_timeout = _get_config_value(
+            self._config_entry, CONF_TIMEOUT, DEFAULT_TIMEOUT
         )
-
-        current_overdue_tolerance = self._config_entry.options.get(
+        current_overdue_tolerance = _get_config_value(
+            self._config_entry,
             CONF_OVERDUE_TOLERANCE,
-            self._config_entry.data.get(
-                CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE
-            ),
+            DEFAULT_OVERDUE_TOLERANCE,
         )
-
-        current_overdue_notification = self._config_entry.options.get(
+        current_overdue_notification = _get_config_value(
+            self._config_entry,
             CONF_OVERDUE_NOTIFICATION,
-            self._config_entry.data.get(
-                CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION
-            ),
+            DEFAULT_OVERDUE_NOTIFICATION,
         )
-
-        current_push_enabled = self._config_entry.options.get(
-            CONF_PUSH_ENABLED,
-            self._config_entry.data.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED),
+        current_push_enabled = _get_config_value(
+            self._config_entry, CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED
         )
-
-        current_import_key = self._config_entry.options.get(
-            CONF_IMPORT_KEY,
-            self._config_entry.data.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY),
+        current_import_key = _get_config_value(
+            self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
         )
-
-        current_label = self._config_entry.options.get(
-            CONF_LABEL,
-            self._config_entry.data.get(CONF_LABEL, DEFAULT_LABEL),
+        current_label = _get_config_value(self._config_entry, CONF_LABEL, DEFAULT_LABEL)
+        current_prefix = _get_config_value(
+            self._config_entry, CONF_PREFIX, DEFAULT_PREFIX
         )
-
-        current_prefix = self._config_entry.options.get(
-            CONF_PREFIX,
-            self._config_entry.data.get(CONF_PREFIX, DEFAULT_PREFIX),
-        )
-
-        current_push_interval = self._config_entry.options.get(
-            CONF_PUSH_INTERVAL,
-            self._config_entry.data.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL),
+        current_push_interval = _get_config_value(
+            self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
         )
 
         has_export_key = bool(_normalize_api_key(current_export_key))
