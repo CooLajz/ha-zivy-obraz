@@ -196,7 +196,7 @@ def _build_schema(
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
-    schema[vol.Optional(CONF_PREFIX, default=prefix)] = str
+    schema[vol.Optional(CONF_PREFIX)] = str
     schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
         vol.Coerce(int),
         vol.Range(min=60, max=86400),
@@ -253,9 +253,15 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 return self.async_create_entry(title=info["title"], data=prepared_input)
 
+        schema = _build_schema()
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {CONF_PREFIX: DEFAULT_PREFIX},
+        )
+
         return self.async_show_form(
             step_id="user",
-            data_schema=_build_schema(),
+            data_schema=schema,
             errors=errors,
         )
 
@@ -355,23 +361,29 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             else:
                 return self.async_create_entry(title="", data=prepared_input)
 
+        schema = _build_schema(
+            show_export_key=not has_export_key,
+            show_import_key=not has_import_key,
+            export_key=current_export_key,
+            use_group_filter=current_use_group_filter,
+            group_id=current_group_id,
+            scan_interval=current_scan_interval,
+            timeout=current_timeout,
+            overdue_tolerance=current_overdue_tolerance,
+            overdue_notification=current_overdue_notification,
+            push_enabled=current_push_enabled,
+            import_key=current_import_key,
+            label=current_label,
+            prefix=current_prefix,
+            push_interval=current_push_interval,
+        )
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {CONF_PREFIX: current_prefix},
+        )
+
         return self.async_show_form(
             step_id="init",
-            data_schema=_build_schema(
-                show_export_key=not has_export_key,
-                show_import_key=not has_import_key,
-                export_key=current_export_key,
-                use_group_filter=current_use_group_filter,
-                group_id=current_group_id,
-                scan_interval=current_scan_interval,
-                timeout=current_timeout,
-                overdue_tolerance=current_overdue_tolerance,
-                overdue_notification=current_overdue_notification,
-                push_enabled=current_push_enabled,
-                import_key=current_import_key,
-                label=current_label,
-                prefix=current_prefix,
-                push_interval=current_push_interval,
-            ),
+            data_schema=schema,
             errors=errors,
         )
