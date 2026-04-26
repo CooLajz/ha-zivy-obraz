@@ -186,8 +186,10 @@ service: zivy_obraz.push_values
 data:
   name: "Chata"
   values:
-    custom_message: "Ahoj ze Home Assistant"
-    custom_temperature: "23.5"
+    - variable: "custom_message"
+      value: "Ahoj ze Home Assistant"
+    - variable: "custom_temperature"
+      value: "23.5"
 ```
 
 Pokud není vyplněn `name` ani `entry_id`, hodnoty se odešlou do všech
@@ -525,8 +527,10 @@ service: zivy_obraz.push_values
 data:
   name: "Cottage"
   values:
-    custom_message: "Hello from Home Assistant"
-    custom_temperature: "23.5"
+    - variable: "custom_message"
+      value: "Hello from Home Assistant"
+    - variable: "custom_temperature"
+      value: "23.5"
 ```
 
 If neither `name` nor `entry_id` is provided, values are sent to all loaded

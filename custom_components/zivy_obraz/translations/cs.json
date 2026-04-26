@@ -117,7 +117,7 @@
         },
         "values": {
           "name": "Hodnoty",
-          "description": "Mapa názvů proměnných Živého obrazu a jejich hodnot."
+          "description": "Seznam názvů proměnných Živého obrazu a jejich hodnot."
         }
       }
     }

@@ -77,10 +77,24 @@ PUSH_VALUES_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
-        vol.Required(ATTR_VALUES): vol.All(
-            dict,
-            vol.Length(min=1),
-            vol.Schema({cv.string: vol.Any(str, int, float, bool)}),
+        vol.Required(ATTR_VALUES): vol.Any(
+            vol.All(
+                dict,
+                vol.Length(min=1),
+                vol.Schema({cv.string: vol.Any(str, int, float, bool)}),
+            ),
+            vol.All(
+                list,
+                vol.Length(min=1),
+                [
+                    vol.Schema(
+                        {
+                            vol.Required(ATTR_VARIABLE): cv.string,
+                            vol.Required(ATTR_VALUE): vol.Any(str, int, float, bool),
+                        }
+                    )
+                ],
+            ),
         ),
     }
 )
@@ -119,11 +133,17 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         await _async_handle_custom_push(
             hass,
             call,
-            {call.data[ATTR_VARIABLE]: call.data[ATTR_VALUE]},
+            _normalize_custom_values(
+                {call.data[ATTR_VARIABLE]: call.data[ATTR_VALUE]}
+            ),
         )
 
     async def _async_handle_push_values_service(call: ServiceCall) -> None:
-        await _async_handle_custom_push(hass, call, call.data[ATTR_VALUES])
+        await _async_handle_custom_push(
+            hass,
+            call,
+            _normalize_custom_values(call.data[ATTR_VALUES]),
+        )
 
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH):
         hass.services.async_register(
@@ -266,16 +286,10 @@ async def _async_handle_manual_push(
 async def _async_handle_custom_push(
     hass: HomeAssistant,
     call: ServiceCall,
-    values: dict[str, str | int | float | bool],
+    values: dict[str, str],
 ) -> None:
     """Handle custom value push service calls."""
-    normalized_values = {
-        str(key).strip(): str(value)
-        for key, value in values.items()
-        if str(key).strip() and str(key).strip() != "import_key"
-    }
-
-    if not normalized_values:
+    if not values:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="push_values_empty",
@@ -299,7 +313,7 @@ async def _async_handle_custom_push(
                 translation_placeholders={"entry": str(entry_id)},
             )
 
-        await _async_push_entry_values(entry_id, entry_data, normalized_values)
+        await _async_push_entry_values(entry_id, entry_data, values)
         return
 
     if name:
@@ -335,12 +349,12 @@ async def _async_handle_custom_push(
         await _async_push_entry_values(
             selected_entry.entry_id,
             entry_data,
-            normalized_values,
+            values,
         )
         return
 
     push_tasks = [
-        _async_push_entry_values(entry_id, entry_data, normalized_values)
+        _async_push_entry_values(entry_id, entry_data, values)
         for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
         if entry_data.get("push_manager") is not None
     ]
@@ -352,6 +366,28 @@ async def _async_handle_custom_push(
         )
 
     await asyncio.gather(*push_tasks)
+
+
+def _normalize_custom_values(
+    values: (
+        dict[str, str | int | float | bool]
+        | list[dict[str, str | int | float | bool]]
+    ),
+) -> dict[str, str]:
+    """Normalize custom service values from map or list form."""
+    if isinstance(values, dict):
+        raw_items = values.items()
+    else:
+        raw_items = (
+            (item[ATTR_VARIABLE], item[ATTR_VALUE])
+            for item in values
+        )
+
+    return {
+        str(key).strip(): str(value)
+        for key, value in raw_items
+        if str(key).strip() and str(key).strip() != "import_key"
+    }
 
 
 async def _async_push_entry(entry_id: str, entry_data: dict) -> None:

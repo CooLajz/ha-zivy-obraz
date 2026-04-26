@@ -65,10 +65,26 @@ push_values:
         text:
     values:
       name: Values
-      description: Map of Živý Obraz variable names and values.
+      description: List of Živý Obraz variable names and values.
       required: true
       example:
-        custom_message: "Hello from Home Assistant"
-        custom_temperature: "23.5"
+        - variable: "custom_message"
+          value: "Hello from Home Assistant"
+        - variable: "custom_temperature"
+          value: "23.5"
       selector:
         object:
+          multiple: true
+          label_field: variable
+          description_field: value
+          fields:
+            variable:
+              label: Variable name
+              required: true
+              selector:
+                text:
+            value:
+              label: Value
+              required: true
+              selector:
+                text:
