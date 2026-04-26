@@ -7,7 +7,7 @@ from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -120,13 +120,18 @@ async def _async_handle_manual_push(
     name = call.data.get(ATTR_NAME)
 
     if entry_id and name:
-        raise HomeAssistantError("Use either entry_id or name, not both")
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_entry_id_and_name",
+        )
 
     if entry_id:
         entry_data = hass.data.get(DOMAIN, {}).get(entry_id)
         if entry_data is None:
-            raise HomeAssistantError(
-                f"Živý Obraz config entry '{entry_id}' is not loaded"
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_entry_not_loaded",
+                translation_placeholders={"entry": str(entry_id)},
             )
 
         await _async_push_entry(entry_id, entry_data)
@@ -140,20 +145,26 @@ async def _async_handle_manual_push(
         ]
 
         if not matches:
-            raise HomeAssistantError(
-                f"Živý Obraz config entry named '{name}' was not found"
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_name_not_found",
+                translation_placeholders={"name": str(name)},
             )
 
         if len(matches) > 1:
-            raise HomeAssistantError(
-                f"Živý Obraz config entry name '{name}' is not unique; use entry_id"
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_name_not_unique",
+                translation_placeholders={"name": str(name)},
             )
 
         selected_entry = matches[0]
         entry_data = hass.data.get(DOMAIN, {}).get(selected_entry.entry_id)
         if entry_data is None:
-            raise HomeAssistantError(
-                f"Živý Obraz config entry '{name}' is not loaded"
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_entry_not_loaded",
+                translation_placeholders={"entry": str(name)},
             )
 
         await _async_push_entry(selected_entry.entry_id, entry_data)
@@ -166,8 +177,9 @@ async def _async_handle_manual_push(
     ]
 
     if not push_tasks:
-        raise HomeAssistantError(
-            "No loaded Živý Obraz config entries are ready for push"
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_no_entries_ready",
         )
 
     await asyncio.gather(*push_tasks)
@@ -178,8 +190,10 @@ async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
     push_manager = entry_data.get("push_manager")
 
     if push_manager is None:
-        raise HomeAssistantError(
-            f"Živý Obraz config entry '{entry_id}' is not ready for push"
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_entry_not_ready",
+            translation_placeholders={"entry": str(entry_id)},
         )
 
     await push_manager.async_push()

@@ -81,5 +81,25 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "push_entry_id_and_name": {
+      "message": "Use either config entry ID or instance name, not both."
+    },
+    "push_entry_not_loaded": {
+      "message": "Živý Obraz config entry \"{entry}\" is not loaded."
+    },
+    "push_name_not_found": {
+      "message": "Živý Obraz instance named \"{name}\" was not found."
+    },
+    "push_name_not_unique": {
+      "message": "Živý Obraz instance name \"{name}\" is not unique. Use the config entry ID."
+    },
+    "push_no_entries_ready": {
+      "message": "No loaded Živý Obraz config entries are ready for push."
+    },
+    "push_entry_not_ready": {
+      "message": "Živý Obraz config entry \"{entry}\" is not ready for push."
+    }
   }
 }

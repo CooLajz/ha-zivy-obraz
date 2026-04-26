@@ -81,5 +81,25 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "push_entry_id_and_name": {
+      "message": "Použijte buď ID konfigurační položky, nebo název instance, ne obojí."
+    },
+    "push_entry_not_loaded": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není načtená."
+    },
+    "push_name_not_found": {
+      "message": "Instance Živého obrazu s názvem \"{name}\" nebyla nalezena."
+    },
+    "push_name_not_unique": {
+      "message": "Název instance Živého obrazu \"{name}\" není jedinečný. Použijte ID konfigurační položky."
+    },
+    "push_no_entries_ready": {
+      "message": "Žádná načtená instance Živého obrazu není připravená k odeslání."
+    },
+    "push_entry_not_ready": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není připravená k odeslání."
+    }
   }
 }
