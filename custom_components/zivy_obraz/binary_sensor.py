@@ -45,6 +45,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
 )
 
 PUSH_PROBLEM_STATUSES = {"failed", "partial_failure", "no_batches"}
+SYNC_PROBLEM_STATUSES = {"failed"}
 
 
 async def async_setup_entry(
@@ -92,6 +93,7 @@ async def async_setup_entry(
         return entities
 
     initial_entities = _build_entities_for_macs(set(coordinator.data.keys()))
+    initial_entities.append(ZivyObrazSyncProblemBinarySensor(entry, coordinator))
     if push_manager is not None:
         initial_entities.append(ZivyObrazPushProblemBinarySensor(entry, push_manager))
 
@@ -363,5 +365,51 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
             "last_error": diagnostics.last_error,
             "last_push": diagnostics.last_push.isoformat()
             if diagnostics.last_push
+            else None,
+        }
+
+
+class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
+    """Binary sensor indicating whether the last sync attempt had a problem."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Sync problem"
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        coordinator: ZivyObrazCoordinator,
+    ) -> None:
+        """Initialize the sync problem binary sensor."""
+        self._coordinator = coordinator
+        self._attr_unique_id = f"{entry.entry_id}_sync_problem"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            name=f"Živý Obraz - {entry.title}",
+            manufacturer="Živý Obraz",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Handle entity added to hass."""
+        self.async_on_remove(
+            self._coordinator.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the last sync attempt had a problem."""
+        return self._coordinator.diagnostics.status in SYNC_PROBLEM_STATUSES
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return current sync problem details."""
+        diagnostics = self._coordinator.diagnostics
+        return {
+            "status": diagnostics.status,
+            "last_error": diagnostics.last_error,
+            "last_sync": diagnostics.last_sync.isoformat()
+            if diagnostics.last_sync
             else None,
         }

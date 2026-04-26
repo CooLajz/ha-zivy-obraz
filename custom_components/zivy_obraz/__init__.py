@@ -158,27 +158,31 @@ def _entry_name(entry: ConfigEntry) -> str:
     ).strip()
 
 
-def _push_device_identifier(entry: ConfigEntry) -> tuple[str, str]:
-    """Return the diagnostic push device identifier for a config entry."""
+def _diagnostic_device_identifier(entry: ConfigEntry) -> tuple[str, str]:
+    """Return the diagnostic device identifier for a config entry."""
     return (DOMAIN, f"{entry.entry_id}_push")
 
 
-def _push_device_name(entry_name: str) -> str:
-    """Return the diagnostic push device name."""
+def _diagnostic_device_name(entry_name: str) -> str:
+    """Return the diagnostic device name."""
     return f"Živý Obraz - {entry_name}"
 
 
-def _sync_push_device_name(hass: HomeAssistant, entry: ConfigEntry, entry_name: str) -> None:
-    """Keep the diagnostic push device name aligned with the config entry name."""
+def _sync_diagnostic_device_name(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    entry_name: str,
+) -> None:
+    """Keep the diagnostic device name aligned with the config entry name."""
     device_registry = dr.async_get(hass)
     device = device_registry.async_get_device(
-        identifiers={_push_device_identifier(entry)}
+        identifiers={_diagnostic_device_identifier(entry)}
     )
 
     if device is None:
         return
 
-    new_name = _push_device_name(entry_name)
+    new_name = _diagnostic_device_name(entry_name)
     if device.name != new_name:
         device_registry.async_update_device(device.id, name=new_name)
 
@@ -401,7 +405,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     entry_name = _entry_name(entry)
     if entry.title != entry_name:
         hass.config_entries.async_update_entry(entry, title=entry_name)
-    _sync_push_device_name(hass, entry, entry_name)
+    _sync_diagnostic_device_name(hass, entry, entry_name)
 
     export_key = str(
         _get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])

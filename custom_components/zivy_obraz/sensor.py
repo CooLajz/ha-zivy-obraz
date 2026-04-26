@@ -175,6 +175,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         name="Last push",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_last_successful_push",
@@ -188,6 +189,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         value_key="status",
         name="Push status",
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_pushed_entities",
@@ -195,6 +197,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         name="Pushed entities",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_skipped_entities",
@@ -202,6 +205,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         name="Skipped entities",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_request_batches",
@@ -209,6 +213,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         name="Request batches",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
 )
 
@@ -227,6 +232,7 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         name="Last sync",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazSyncSensorDescription(
         key="sync_last_successful_sync",
@@ -240,6 +246,7 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         value_key="status",
         name="Sync status",
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazSyncSensorDescription(
         key="sync_next_sync",
@@ -254,6 +261,7 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         name="Device count",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
 )
 
@@ -500,6 +508,9 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
         self.entity_description = description
         self._push_manager = push_manager
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_entity_registry_enabled_default = (
+            description.entity_registry_enabled_default
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_push")},
             name=f"Živý Obraz - {entry.title}",
@@ -561,6 +572,9 @@ class ZivyObrazSyncDiagnosticSensor(
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_entity_registry_enabled_default = (
+            description.entity_registry_enabled_default
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_push")},
             name=f"Živý Obraz - {entry.title}",

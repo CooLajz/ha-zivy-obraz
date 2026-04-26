@@ -189,8 +189,7 @@ načtených instancí s nastaveným Import key.
 
 ## Diagnostika odesílání
 
-Pokud je vyplněný Import key, integrace vytvoří pro danou instanci samostatné
-diagnostické zařízení:
+Integrace vytvoří pro danou instanci samostatné diagnostické zařízení:
 
 ```
 Živý Obraz - Název instance
@@ -220,6 +219,11 @@ Stejné diagnostické zařízení obsahuje také entity pro načítání dat z E
 - `Sync status`
 - `Next sync`
 - `Device count`
+- `Sync problem`
+
+Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
+entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
+ve výchozím stavu skryté a lze je zapnout ručně v Home Assistant.
 
 ---
 
@@ -529,8 +533,8 @@ instances with an Import key configured.
 
 ## Push diagnostics
 
-When an Import key is configured, the integration creates a separate diagnostic
-device for the integration instance:
+The integration creates a separate diagnostic device for the integration
+instance:
 
 ```
 Živý Obraz - Instance name
@@ -560,6 +564,11 @@ The same diagnostic device also exposes Export API synchronization entities:
 - `Sync status`
 - `Next sync`
 - `Device count`
+- `Sync problem`
+
+Main operational entities are enabled by default. Detailed diagnostic entities
+such as `Push status`, `Sync status`, counters, and variable previews are hidden
+by default and can be enabled manually in Home Assistant.
 
 ---
 
