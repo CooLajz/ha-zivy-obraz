@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 from .const import (
+    ATTR_ENTRY_ID,
+    ATTR_NAME,
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
     CONF_LABEL,
+    CONF_NAME,
     CONF_PREFIX,
     CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
@@ -24,6 +29,7 @@ from .const import (
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
+    DEFAULT_NAME,
     DEFAULT_PREFIX,
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
@@ -32,6 +38,7 @@ from .const import (
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     PLATFORMS,
+    SERVICE_PUSH,
     ZIVY_OBRAZ_EXPORT_URL,
 )
 from .coordinator import ZivyObrazCoordinator
@@ -43,6 +50,13 @@ _LOGGER = logging.getLogger(__name__)
 ZivyObrazConfigEntry: TypeAlias = ConfigEntry[ZivyObrazCoordinator]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+PUSH_SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTRY_ID): cv.string,
+        vol.Optional(ATTR_NAME): cv.string,
+    }
+)
 
 
 def _get_config_value(entry: ConfigEntry, key: str, default):
@@ -70,12 +84,116 @@ def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration."""
     hass.data.setdefault(DOMAIN, {})
+
+    async def _async_handle_push_service(call: ServiceCall) -> None:
+        await _async_handle_manual_push(hass, call)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_PUSH):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_PUSH,
+            _async_handle_push_service,
+            schema=PUSH_SERVICE_SCHEMA,
+        )
+
     return True
+
+
+def _entry_name(entry: ConfigEntry) -> str:
+    """Return user-facing name for a config entry."""
+    return str(
+        _get_config_value(
+            entry,
+            CONF_NAME,
+            entry.title or DEFAULT_NAME,
+        )
+        or DEFAULT_NAME
+    ).strip()
+
+
+async def _async_handle_manual_push(
+    hass: HomeAssistant,
+    call: ServiceCall,
+) -> None:
+    """Handle manual push service call."""
+    entry_id = call.data.get(ATTR_ENTRY_ID)
+    name = call.data.get(ATTR_NAME)
+
+    if entry_id and name:
+        raise HomeAssistantError("Use either entry_id or name, not both")
+
+    if entry_id:
+        entry_data = hass.data.get(DOMAIN, {}).get(entry_id)
+        if entry_data is None:
+            raise HomeAssistantError(
+                f"Živý Obraz config entry '{entry_id}' is not loaded"
+            )
+
+        await _async_push_entry(entry_id, entry_data)
+        return
+
+    if name:
+        matches = [
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if _entry_name(entry) == name
+        ]
+
+        if not matches:
+            raise HomeAssistantError(
+                f"Živý Obraz config entry named '{name}' was not found"
+            )
+
+        if len(matches) > 1:
+            raise HomeAssistantError(
+                f"Živý Obraz config entry name '{name}' is not unique; use entry_id"
+            )
+
+        selected_entry = matches[0]
+        entry_data = hass.data.get(DOMAIN, {}).get(selected_entry.entry_id)
+        if entry_data is None:
+            raise HomeAssistantError(
+                f"Živý Obraz config entry '{name}' is not loaded"
+            )
+
+        await _async_push_entry(selected_entry.entry_id, entry_data)
+        return
+
+    push_tasks = [
+        _async_push_entry(entry_id, entry_data)
+        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
+        if entry_data.get("push_manager") is not None
+    ]
+
+    if not push_tasks:
+        raise HomeAssistantError(
+            "No loaded Živý Obraz config entries are ready for push"
+        )
+
+    await asyncio.gather(*push_tasks)
+
+
+async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
+    """Push one loaded config entry."""
+    push_manager = entry_data.get("push_manager")
+
+    if push_manager is None:
+        raise HomeAssistantError(
+            f"Živý Obraz config entry '{entry_id}' is not ready for push"
+        )
+
+    await push_manager.async_push()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:
     """Set up Zivy Obraz from a config entry."""
-    export_key = str(_get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])).strip()
+    entry_name = _entry_name(entry)
+    if entry.title != entry_name:
+        hass.config_entries.async_update_entry(entry, title=entry_name)
+
+    export_key = str(
+        _get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])
+    ).strip()
 
     use_group_filter = _get_config_value(
         entry,
@@ -131,28 +249,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     push_unsub = None
     push_label_id = None
+    push_manager = None
 
-    if push_enabled:
-        if import_key:
-            push_label_id = await async_ensure_label_exists(hass, label)
+    if import_key:
+        push_label_id = await async_ensure_label_exists(hass, label)
 
-            if push_label_id:
+        if push_label_id:
+            push_manager = ZivyObrazPushManager(
+                hass=hass,
+                import_key=import_key,
+                label_id=push_label_id,
+                prefix=prefix,
+                timeout=timeout,
+            )
+
+            _LOGGER.debug(
+                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s'",
+                label,
+                push_label_id,
+                prefix,
+            )
+
+            if push_enabled:
                 _LOGGER.debug(
-                    "Živý Obraz push enabled with label '%s' (label_id=%s), prefix='%s', interval=%s",
-                    label,
-                    push_label_id,
-                    prefix,
+                    "Živý Obraz scheduled push enabled for '%s', interval=%s",
+                    entry_name,
                     push_interval,
                 )
-
-                push_manager = ZivyObrazPushManager(
-                    hass=hass,
-                    import_key=import_key,
-                    label_id=push_label_id,
-                    prefix=prefix,
-                    timeout=timeout,
-                )
-
                 push_unsub = async_track_time_interval(
                     hass,
                     push_manager.async_push,
@@ -161,18 +284,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
                 entry.async_on_unload(push_unsub)
                 hass.async_create_task(push_manager.async_push())
-            else:
-                _LOGGER.warning(
-                    "Živý Obraz push is enabled, but label '%s' could not be resolved or created",
-                    label,
-                )
         else:
-            _LOGGER.debug(
-                "Živý Obraz push is enabled in config, but import_key is empty; push will not start"
+            _LOGGER.warning(
+                "Živý Obraz push is configured, but label '%s' could not be resolved or created",
+                label,
             )
+    elif push_enabled:
+        _LOGGER.debug(
+            "Živý Obraz push is enabled in config, but import_key is empty; push will not start"
+        )
 
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
+        "push_manager": push_manager,
         "push_unsub": push_unsub,
         "push_label_id": push_label_id,
         "push_label_name": label,

@@ -14,6 +14,7 @@ from .const import (
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
     CONF_LABEL,
+    CONF_NAME,
     CONF_OVERDUE_NOTIFICATION,
     CONF_OVERDUE_TOLERANCE,
     CONF_PREFIX,
@@ -25,6 +26,7 @@ from .const import (
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
+    DEFAULT_NAME,
     DEFAULT_OVERDUE_NOTIFICATION,
     DEFAULT_OVERDUE_TOLERANCE,
     DEFAULT_PREFIX,
@@ -82,6 +84,15 @@ def _normalize_prefix(value: Any) -> str:
     return str(value).strip()
 
 
+def _normalize_name(value: Any) -> str:
+    """Normalize config entry display name."""
+    if value is None:
+        return DEFAULT_NAME
+
+    name = str(value).strip()
+    return name or DEFAULT_NAME
+
+
 def _normalize_group_id(value: str | None) -> int | None:
     """Normalize optional group_id from UI input."""
     if value is None:
@@ -102,6 +113,7 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Ensure fields are stored in a predictable format."""
     prepared = dict(user_input)
 
+    prepared[CONF_NAME] = _normalize_name(user_input.get(CONF_NAME, DEFAULT_NAME))
     prepared[CONF_USE_GROUP_FILTER] = bool(user_input.get(CONF_USE_GROUP_FILTER, False))
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
     prepared[CONF_OVERDUE_NOTIFICATION] = bool(
@@ -164,6 +176,7 @@ def _build_schema(
     *,
     show_export_key: bool = True,
     show_import_key: bool = True,
+    name: str = DEFAULT_NAME,
     export_key: str | None = None,
     use_group_filter: bool = DEFAULT_USE_GROUP_FILTER,
     group_id: str = "",
@@ -179,6 +192,8 @@ def _build_schema(
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
+
+    schema[vol.Required(CONF_NAME, default=name)] = str
 
     if show_export_key:
         schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
@@ -239,7 +254,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 self._abort_if_unique_id_configured()
 
-                info = await _validate_input(self.hass, prepared_input)
+                await _validate_input(self.hass, prepared_input)
 
             except TimeoutError:
                 errors["base"] = "timeout"
@@ -259,7 +274,10 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception:
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title=info["title"], data=prepared_input)
+                return self.async_create_entry(
+                    title=prepared_input[CONF_NAME],
+                    data=prepared_input,
+                )
 
         schema = _build_schema()
         schema = self.add_suggested_values_to_schema(
@@ -290,6 +308,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
 
+        current_name = _get_config_value(
+            self._config_entry,
+            CONF_NAME,
+            self._config_entry.title or DEFAULT_NAME,
+        )
         current_export_key = _get_config_value(self._config_entry, CONF_EXPORT_KEY, "")
         current_use_group_filter = _get_config_value(
             self._config_entry,
@@ -366,11 +389,16 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "unknown"
             else:
                 prepared_input[CONF_PREFIX_OVERRIDE] = True
+                self.hass.config_entries.async_update_entry(
+                    self._config_entry,
+                    title=prepared_input[CONF_NAME],
+                )
                 return self.async_create_entry(title="", data=prepared_input)
 
         schema = _build_schema(
             show_export_key=not has_export_key,
             show_import_key=not has_import_key,
+            name=current_name,
             export_key=current_export_key,
             use_group_filter=current_use_group_filter,
             group_id=current_group_id,

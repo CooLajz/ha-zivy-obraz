@@ -136,6 +136,35 @@ Příklad requestu:
 https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
 ```
 
+## Ruční odeslání hodnot
+
+Hodnoty lze odeslat okamžitě pomocí služby:
+
+```yaml
+service: zivy_obraz.push
+```
+
+Bez parametrů služba odešle všechny načtené instance integrace, které mají
+nastavený Import key.
+
+Konkrétní instanci lze vybrat podle jejího názvu:
+
+```yaml
+service: zivy_obraz.push
+data:
+  name: "Chata"
+```
+
+Nebo přes přesné ID config entry:
+
+```yaml
+service: zivy_obraz.push
+data:
+  entry_id: "abc123"
+```
+
+Pokud má více instancí stejný název, použijte `entry_id`.
+
 ---
 
 ## Výběr entit pomocí Labels
@@ -390,6 +419,35 @@ Example:
 ```
 https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
 ```
+
+## Manual push
+
+Values can be sent immediately using the service:
+
+```yaml
+service: zivy_obraz.push
+```
+
+Without parameters, the service pushes all loaded integration instances that
+have an Import key configured.
+
+Select one instance by its configured name:
+
+```yaml
+service: zivy_obraz.push
+data:
+  name: "Cottage"
+```
+
+Or use the exact config entry ID:
+
+```yaml
+service: zivy_obraz.push
+data:
+  entry_id: "abc123"
+```
+
+If multiple instances share the same name, use `entry_id`.
 
 ---
 

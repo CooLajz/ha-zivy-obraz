@@ -5,6 +5,7 @@
         "title": "Živý Obraz",
         "description": "Připojení k exportu panelů",
         "data": {
+          "name": "Název instance",
           "export_key": "Export key",
           "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
@@ -39,6 +40,7 @@
         "title": "Živý Obraz",
         "description": "Upravit nastavení integrace",
         "data": {
+          "name": "Název instance",
           "export_key": "Export key",
           "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
