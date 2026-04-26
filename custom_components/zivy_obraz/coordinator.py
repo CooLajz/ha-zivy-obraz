@@ -68,6 +68,11 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.diagnostics.next_sync = dt_util.now() + self.update_interval
 
     @callback
+    def _notify_diagnostic_listeners(self) -> None:
+        """Notify coordinator listeners about diagnostic-only changes."""
+        self.async_update_listeners()
+
+    @callback
     def async_add_new_device_listener(
         self, listener: Callable[[set[str]], None]
     ) -> CALLBACK_TYPE:
@@ -235,6 +240,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             self.diagnostics.status = "failed"
             self.diagnostics.last_error = str(err)
             self._set_next_sync()
+            self._notify_diagnostic_listeners()
             raise
 
         normalized: dict[str, dict[str, Any]] = {}
@@ -274,4 +280,5 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.diagnostics.device_count = len(normalized)
         self.diagnostics.last_error = None
         self._set_next_sync()
+        self._notify_diagnostic_listeners()
         return normalized
