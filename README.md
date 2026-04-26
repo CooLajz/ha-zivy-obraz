@@ -177,7 +177,7 @@ data:
   name: "Chata"
   values:
     - variable: "custom_message"
-      value: "Ahoj ze Home Assistant"
+      value: "Ahoj z Home Assistantu"
     - variable: "custom_temperature"
       value: "23.5"
 ```
