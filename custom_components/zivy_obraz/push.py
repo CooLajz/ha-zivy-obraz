@@ -36,6 +36,9 @@ class PushDiagnostics:
     variables: dict[str, str] = field(default_factory=dict)
     variables_total: int = 0
     variables_truncated: bool = False
+    skipped_variables: dict[str, str] = field(default_factory=dict)
+    skipped_variables_total: int = 0
+    skipped_variables_truncated: bool = False
 
 
 @dataclass
@@ -44,6 +47,7 @@ class _PushEntityCollection:
 
     pairs: list[tuple[str, str]]
     skipped_entities: int
+    skipped_pairs: list[tuple[str, str]]
 
 
 class ZivyObrazPushManager:
@@ -96,6 +100,16 @@ class ZivyObrazPushManager:
             len(variables) > MAX_DIAGNOSTIC_VARIABLES
         )
 
+    def _set_skipped_variable_preview(self, variables: dict[str, str]) -> None:
+        """Store a bounded skipped variable preview for HA state attributes."""
+        self.diagnostics.skipped_variables_total = len(variables)
+        self.diagnostics.skipped_variables = dict(
+            list(variables.items())[:MAX_DIAGNOSTIC_VARIABLES]
+        )
+        self.diagnostics.skipped_variables_truncated = (
+            len(variables) > MAX_DIAGNOSTIC_VARIABLES
+        )
+
     async def async_push(self, _now: Any = None) -> None:
         """Push current labeled entity states to Živý Obraz."""
         pushed_at = dt_util.now()
@@ -105,6 +119,7 @@ class ZivyObrazPushManager:
         self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
         self.diagnostics.skipped_entities = collection.skipped_entities
+        self._set_skipped_variable_preview(dict(collection.skipped_pairs))
         self.diagnostics.request_batches = 0
         self.diagnostics.last_error = None
 
@@ -163,6 +178,7 @@ class ZivyObrazPushManager:
         device_registry = dr.async_get(self.hass)
 
         pairs: list[tuple[str, str]] = []
+        skipped_pairs: list[tuple[str, str]] = []
         skipped_entities = 0
 
         for entry in entity_registry.entities.values():
@@ -172,6 +188,9 @@ class ZivyObrazPushManager:
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
                 skipped_entities += 1
+                skipped_pairs.append(
+                    (self._make_param_name(entry.entity_id), "invalid_state")
+                )
                 continue
 
             param_name = self._make_param_name(entry.entity_id)
@@ -188,6 +207,7 @@ class ZivyObrazPushManager:
         return _PushEntityCollection(
             pairs=pairs,
             skipped_entities=skipped_entities,
+            skipped_pairs=skipped_pairs,
         )
 
     def _is_selected_for_push(
@@ -252,6 +272,9 @@ class ZivyObrazPushManager:
 
             if len(f"{ZIVY_OBRAZ_PUSH_URL}?{single_encoded}") > MAX_PUSH_URL_LENGTH:
                 self.diagnostics.skipped_entities += 1
+                skipped_variables = dict(self.diagnostics.skipped_variables)
+                skipped_variables[key] = "url_too_long"
+                self._set_skipped_variable_preview(skipped_variables)
                 _LOGGER.warning(
                     "Živý Obraz push skipped entity '%s' because a single parameter exceeds URL length limit",
                     key,

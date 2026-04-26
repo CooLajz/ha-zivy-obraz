@@ -450,4 +450,7 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
             "variables": diagnostics.variables,
             "variables_total": diagnostics.variables_total,
             "variables_truncated": diagnostics.variables_truncated,
+            "skipped_variables": diagnostics.skipped_variables,
+            "skipped_variables_total": diagnostics.skipped_variables_total,
+            "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
         }
