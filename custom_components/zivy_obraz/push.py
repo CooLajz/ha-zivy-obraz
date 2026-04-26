@@ -19,6 +19,7 @@ from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
+MAX_DIAGNOSTIC_VARIABLES = 50
 
 
 @dataclass
@@ -33,6 +34,8 @@ class PushDiagnostics:
     request_batches: int = 0
     last_error: str | None = None
     variables: dict[str, str] = field(default_factory=dict)
+    variables_total: int = 0
+    variables_truncated: bool = False
 
 
 @dataclass
@@ -83,13 +86,23 @@ class ZivyObrazPushManager:
         for listener in list(self._listeners):
             listener()
 
+    def _set_variable_preview(self, variables: dict[str, str]) -> None:
+        """Store a bounded variable preview for HA state attributes."""
+        self.diagnostics.variables_total = len(variables)
+        self.diagnostics.variables = dict(
+            list(variables.items())[:MAX_DIAGNOSTIC_VARIABLES]
+        )
+        self.diagnostics.variables_truncated = (
+            len(variables) > MAX_DIAGNOSTIC_VARIABLES
+        )
+
     async def async_push(self, _now: Any = None) -> None:
         """Push current labeled entity states to Živý Obraz."""
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
         entity_pairs = collection.pairs
         self.diagnostics.last_push = pushed_at
-        self.diagnostics.variables = dict(entity_pairs)
+        self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
         self.diagnostics.skipped_entities = collection.skipped_entities
         self.diagnostics.request_batches = 0
@@ -107,12 +120,13 @@ class ZivyObrazPushManager:
         batches = self._build_param_batches(entity_pairs)
         self.diagnostics.request_batches = len(batches)
         self.diagnostics.pushed_entities = sum(len(batch) - 1 for batch in batches)
-        self.diagnostics.variables = {
+        sent_variables = {
             key: value
             for batch in batches
             for key, value in batch.items()
             if key != "import_key"
         }
+        self._set_variable_preview(sent_variables)
 
         if not batches:
             self.diagnostics.status = "no_batches"

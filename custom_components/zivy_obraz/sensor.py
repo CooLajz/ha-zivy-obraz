@@ -448,4 +448,6 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
         return {
             "last_error": diagnostics.last_error,
             "variables": diagnostics.variables,
+            "variables_total": diagnostics.variables_total,
+            "variables_truncated": diagnostics.variables_truncated,
         }
