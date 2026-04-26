@@ -351,6 +351,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 async def _async_update_listener(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> None:
     """Handle options update by fully reloading the config entry."""
     _LOGGER.debug("Živý Obraz options updated; reloading config entry %s", entry.entry_id)
+    entry_name = _entry_name(entry)
+    if entry.title != entry_name:
+        hass.config_entries.async_update_entry(entry, title=entry_name)
     await hass.config_entries.async_reload(entry.entry_id)
 
 

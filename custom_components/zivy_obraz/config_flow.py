@@ -389,10 +389,6 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "unknown"
             else:
                 prepared_input[CONF_PREFIX_OVERRIDE] = True
-                self.hass.config_entries.async_update_entry(
-                    self._config_entry,
-                    title=prepared_input[CONF_NAME],
-                )
                 return self.async_create_entry(title="", data=prepared_input)
 
         schema = _build_schema(
