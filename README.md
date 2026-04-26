@@ -167,6 +167,30 @@ Pokud má více instancí stejný název, použijte `entry_id`.
 
 ---
 
+## Diagnostika odesílání
+
+Pokud je vyplněný Import key, integrace vytvoří pro danou instanci samostatné
+diagnostické zařízení:
+
+```
+Živý Obraz - Název instance
+```
+
+Pod tímto zařízením jsou dostupné diagnostické entity pro poslední odeslání:
+
+- `Last push`
+- `Last successful push`
+- `Push status`
+- `Pushed entities`
+- `Skipped entities`
+- `Request batches`
+- `Push problem`
+
+Senzor `Push status` obsahuje v atributech také poslední chybu a náhled
+odesílaných proměnných.
+
+---
+
 ## Výběr entit pomocí Labels
 
 Entity se vybírají pomocí **Home Assistant Labels**.
@@ -448,6 +472,30 @@ data:
 ```
 
 If multiple instances share the same name, use `entry_id`.
+
+---
+
+## Push diagnostics
+
+When an Import key is configured, the integration creates a separate diagnostic
+device for the integration instance:
+
+```
+Živý Obraz - Instance name
+```
+
+The device exposes diagnostic entities for the last push attempt:
+
+- `Last push`
+- `Last successful push`
+- `Push status`
+- `Pushed entities`
+- `Skipped entities`
+- `Request batches`
+- `Push problem`
+
+The `Push status` sensor also exposes the last error and a preview of pushed
+variables as attributes.
 
 ---
 

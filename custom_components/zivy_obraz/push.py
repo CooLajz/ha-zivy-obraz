@@ -1,22 +1,46 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass, field
 import logging
 import re
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlencode
 
 from aiohttp import ClientError
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 
 from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
 
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
+
+
+@dataclass
+class PushDiagnostics:
+    """Diagnostic state for the last push attempt."""
+
+    status: str = "idle"
+    last_push: Any = None
+    last_successful_push: Any = None
+    pushed_entities: int = 0
+    skipped_entities: int = 0
+    request_batches: int = 0
+    last_error: str | None = None
+    variables: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class _PushEntityCollection:
+    """Collected push payload and diagnostics."""
+
+    pairs: list[tuple[str, str]]
+    skipped_entities: int
 
 
 class ZivyObrazPushManager:
@@ -38,36 +62,94 @@ class ZivyObrazPushManager:
         self.prefix = prefix.strip()
         self.timeout = timeout
         self.session = async_get_clientsession(hass)
+        self.diagnostics = PushDiagnostics()
+        self._listeners: list[Callable[[], None]] = []
+
+    @callback
+    def async_add_listener(self, listener: Callable[[], None]) -> CALLBACK_TYPE:
+        """Listen for push diagnostic updates."""
+        self._listeners.append(listener)
+
+        @callback
+        def _remove_listener() -> None:
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+
+        return _remove_listener
+
+    @callback
+    def _notify_listeners(self) -> None:
+        """Notify diagnostic entities about updated push state."""
+        for listener in list(self._listeners):
+            listener()
 
     async def async_push(self, _now: Any = None) -> None:
         """Push current labeled entity states to Živý Obraz."""
-        entity_pairs = self._get_labeled_entity_states()
+        pushed_at = dt_util.now()
+        collection = self._get_labeled_entity_states()
+        entity_pairs = collection.pairs
+        self.diagnostics.last_push = pushed_at
+        self.diagnostics.variables = dict(entity_pairs)
+        self.diagnostics.pushed_entities = 0
+        self.diagnostics.skipped_entities = collection.skipped_entities
+        self.diagnostics.request_batches = 0
+        self.diagnostics.last_error = None
 
         if not entity_pairs:
+            self.diagnostics.status = "no_entities"
             _LOGGER.debug(
                 "Živý Obraz push skipped: no valid entities found for label_id '%s'",
                 self.label_id,
             )
+            self._notify_listeners()
             return
 
         batches = self._build_param_batches(entity_pairs)
+        self.diagnostics.request_batches = len(batches)
+        self.diagnostics.pushed_entities = sum(len(batch) - 1 for batch in batches)
+        self.diagnostics.variables = {
+            key: value
+            for batch in batches
+            for key, value in batch.items()
+            if key != "import_key"
+        }
 
         if not batches:
+            self.diagnostics.status = "no_batches"
             _LOGGER.debug(
                 "Živý Obraz push skipped: no request batches were generated for label_id '%s'",
                 self.label_id,
             )
+            self._notify_listeners()
             return
 
-        for batch in batches:
-            await self._async_send_batch(batch)
+        failed_batches = 0
+        last_error: str | None = None
 
-    def _get_labeled_entity_states(self) -> list[tuple[str, str]]:
+        for batch in batches:
+            error = await self._async_send_batch(batch)
+            if error is not None:
+                failed_batches += 1
+                last_error = error
+
+        if failed_batches == 0:
+            self.diagnostics.status = "success"
+            self.diagnostics.last_successful_push = pushed_at
+        elif failed_batches == len(batches):
+            self.diagnostics.status = "failed"
+        else:
+            self.diagnostics.status = "partial_failure"
+
+        self.diagnostics.last_error = last_error
+        self._notify_listeners()
+
+    def _get_labeled_entity_states(self) -> _PushEntityCollection:
         """Return list of (param_name, state_value) for entities selected for push."""
         entity_registry = er.async_get(self.hass)
         device_registry = dr.async_get(self.hass)
 
         pairs: list[tuple[str, str]] = []
+        skipped_entities = 0
 
         for entry in entity_registry.entities.values():
             if not self._is_selected_for_push(entry, device_registry):
@@ -75,6 +157,7 @@ class ZivyObrazPushManager:
 
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
+                skipped_entities += 1
                 continue
 
             param_name = self._make_param_name(entry.entity_id)
@@ -88,7 +171,10 @@ class ZivyObrazPushManager:
             self.label_id,
         )
 
-        return pairs
+        return _PushEntityCollection(
+            pairs=pairs,
+            skipped_entities=skipped_entities,
+        )
 
     def _is_selected_for_push(
         self,
@@ -151,6 +237,7 @@ class ZivyObrazPushManager:
             single_encoded = urlencode(single_candidate)
 
             if len(f"{ZIVY_OBRAZ_PUSH_URL}?{single_encoded}") > MAX_PUSH_URL_LENGTH:
+                self.diagnostics.skipped_entities += 1
                 _LOGGER.warning(
                     "Živý Obraz push skipped entity '%s' because a single parameter exceeds URL length limit",
                     key,
@@ -167,8 +254,8 @@ class ZivyObrazPushManager:
 
         return batches
 
-    async def _async_send_batch(self, params: dict[str, str]) -> None:
-        """Send one GET request batch."""
+    async def _async_send_batch(self, params: dict[str, str]) -> str | None:
+        """Send one GET request batch and return an error message on failure."""
         try:
             async with asyncio.timeout(self.timeout):
                 async with self.session.get(ZIVY_OBRAZ_PUSH_URL, params=params) as response:
@@ -176,5 +263,9 @@ class ZivyObrazPushManager:
                     _LOGGER.debug("Živý Obraz push payload sent: %s", params)
         except TimeoutError:
             _LOGGER.warning("Živý Obraz push timeout")
+            return "Timeout"
         except ClientError as err:
             _LOGGER.warning("Živý Obraz push failed: %s", err)
+            return str(err)
+
+        return None

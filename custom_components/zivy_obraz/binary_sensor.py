@@ -13,6 +13,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -22,9 +23,11 @@ from .const import (
     CONF_OVERDUE_TOLERANCE,
     DEFAULT_OVERDUE_NOTIFICATION,
     DEFAULT_OVERDUE_TOLERANCE,
+    DOMAIN,
 )
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
+from .push import ZivyObrazPushManager
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -41,6 +44,8 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
     ),
 )
 
+PUSH_PROBLEM_STATUSES = {"failed", "partial_failure", "no_batches"}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -56,6 +61,9 @@ async def async_setup_entry(
     overdue_notification = entry.options.get(
         CONF_OVERDUE_NOTIFICATION,
         entry.data.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION),
+    )
+    push_manager: ZivyObrazPushManager | None = (
+        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
     )
     known_entity_ids: set[str] = set()
 
@@ -84,6 +92,9 @@ async def async_setup_entry(
         return entities
 
     initial_entities = _build_entities_for_macs(set(coordinator.data.keys()))
+    if push_manager is not None:
+        initial_entities.append(ZivyObrazPushProblemBinarySensor(entry, push_manager))
+
     if initial_entities:
         async_add_entities(initial_entities)
 
@@ -307,4 +318,50 @@ class ZivyObrazOverdueBinarySensor(
             "overdue_after": overdue_after.isoformat() if overdue_after else None,
             "minutes_since_expected_contact": max(expected_contact_minutes_ago, 0),
             "minutes_overdue": max(delta_minutes, 0),
+        }
+
+
+class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
+    """Binary sensor indicating whether the last push attempt had a problem."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Push problem"
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        push_manager: ZivyObrazPushManager,
+    ) -> None:
+        """Initialize the push problem binary sensor."""
+        self._push_manager = push_manager
+        self._attr_unique_id = f"{entry.entry_id}_push_problem"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            name=f"Živý Obraz - {entry.title}",
+            manufacturer="Živý Obraz",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Handle entity added to hass."""
+        self.async_on_remove(
+            self._push_manager.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the last push attempt had a problem."""
+        return self._push_manager.diagnostics.status in PUSH_PROBLEM_STATUSES
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return current push problem details."""
+        diagnostics = self._push_manager.diagnostics
+        return {
+            "status": diagnostics.status,
+            "last_error": diagnostics.last_error,
+            "last_push": diagnostics.last_push.isoformat()
+            if diagnostics.last_push
+            else None,
         }

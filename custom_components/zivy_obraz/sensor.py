@@ -20,12 +20,15 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
+from .push import ZivyObrazPushManager
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -34,6 +37,13 @@ class ZivyObrazSensorDescription(SensorEntityDescription):
 
     value_key: str
     create_if_missing: bool = False
+
+
+@dataclass(frozen=True, kw_only=True)
+class ZivyObrazPushSensorDescription(SensorEntityDescription):
+    """Sensor description for Živý Obraz push diagnostics."""
+
+    value_key: str
 
 
 SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
@@ -150,6 +160,50 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
     ),
 )
 
+PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
+    ZivyObrazPushSensorDescription(
+        key="push_last_push",
+        value_key="last_push",
+        name="Last push",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazPushSensorDescription(
+        key="push_last_successful_push",
+        value_key="last_successful_push",
+        name="Last successful push",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazPushSensorDescription(
+        key="push_status",
+        value_key="status",
+        name="Push status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazPushSensorDescription(
+        key="push_pushed_entities",
+        value_key="pushed_entities",
+        name="Pushed entities",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazPushSensorDescription(
+        key="push_skipped_entities",
+        value_key="skipped_entities",
+        name="Skipped entities",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazPushSensorDescription(
+        key="push_request_batches",
+        value_key="request_batches",
+        name="Request batches",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -159,6 +213,9 @@ async def async_setup_entry(
     """Set up Živý Obraz sensors from a config entry."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
     known_entity_ids: set[str] = set()
+    push_manager: ZivyObrazPushManager | None = (
+        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
+    )
 
     def _should_create_entity(
         mac: str, description: ZivyObrazSensorDescription
@@ -205,6 +262,12 @@ async def async_setup_entry(
         return entities
 
     initial_entities = _build_entities_for_macs(set(coordinator.data.keys()))
+    if push_manager is not None:
+        initial_entities.extend(
+            ZivyObrazPushDiagnosticSensor(entry, push_manager, description)
+            for description in PUSH_SENSOR_DESCRIPTIONS
+        )
+
     if initial_entities:
         async_add_entities(initial_entities)
 
@@ -340,3 +403,49 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
             if group_id is not None:
                 return {"group_id": group_id}
         return None
+
+
+class ZivyObrazPushDiagnosticSensor(SensorEntity):
+    """Representation of one Živý Obraz push diagnostic sensor."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        push_manager: ZivyObrazPushManager,
+        description: ZivyObrazPushSensorDescription,
+    ) -> None:
+        """Initialize the push diagnostic sensor."""
+        self.entity_description = description
+        self._push_manager = push_manager
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            name=f"Živý Obraz - {entry.title}",
+            manufacturer="Živý Obraz",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Handle entity added to hass."""
+        self.async_on_remove(
+            self._push_manager.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def native_value(self):
+        """Return push diagnostic value."""
+        diagnostics = self._push_manager.diagnostics
+        return getattr(diagnostics, self.entity_description.value_key)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra details for the push status sensor."""
+        if self.entity_description.key != "push_status":
+            return None
+
+        diagnostics = self._push_manager.diagnostics
+        return {
+            "last_error": diagnostics.last_error,
+            "variables": diagnostics.variables,
+        }
