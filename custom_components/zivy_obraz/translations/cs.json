@@ -65,5 +65,21 @@
       "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
       "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny"
     }
+  },
+  "services": {
+    "push": {
+      "name": "Odeslat hodnoty",
+      "description": "Okamžitě odešle vybrané hodnoty entit z Home Assistant do Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfigurační položky",
+          "description": "Volitelné ID konfigurační položky. Pokud zůstane prázdné, odešlou se všechny nakonfigurované instance."
+        },
+        "name": {
+          "name": "Název instance",
+          "description": "Volitelný název instance. Pokud zůstane prázdný, odešlou se všechny nakonfigurované instance."
+        }
+      }
+    }
   }
 }

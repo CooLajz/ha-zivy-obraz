@@ -65,5 +65,21 @@
       "invalid_group_id": "Group ID must be an integer 0 or higher",
       "group_id_required": "Group ID is required when group filter is enabled"
     }
+  },
+  "services": {
+    "push": {
+      "name": "Push values",
+      "description": "Send selected Home Assistant entity values to Živý Obraz immediately.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry ID",
+          "description": "Optional config entry ID. Leave empty to push all configured instances."
+        },
+        "name": {
+          "name": "Instance name",
+          "description": "Optional instance name. Leave empty to push all configured instances."
+        }
+      }
+    }
   }
 }
