@@ -167,6 +167,34 @@ Pokud má více instancí stejný název, použijte `entry_id`.
 
 ---
 
+## Ruční odeslání vlastních hodnot
+
+Jednu vlastní hodnotu lze odeslat službou:
+
+```yaml
+service: zivy_obraz.push_value
+data:
+  name: "Chata"
+  variable: "custom_message"
+  value: "Ahoj ze Home Assistant"
+```
+
+Více vlastních hodnot lze odeslat najednou službou:
+
+```yaml
+service: zivy_obraz.push_values
+data:
+  name: "Chata"
+  values:
+    custom_message: "Ahoj ze Home Assistant"
+    custom_temperature: "23.5"
+```
+
+Pokud není vyplněn `name` ani `entry_id`, hodnoty se odešlou do všech
+načtených instancí s nastaveným Import key.
+
+---
+
 ## Diagnostika odesílání
 
 Pokud je vyplněný Import key, integrace vytvoří pro danou instanci samostatné
@@ -475,6 +503,34 @@ data:
 ```
 
 If multiple instances share the same name, use `entry_id`.
+
+---
+
+## Manual custom value push
+
+Send one custom value using:
+
+```yaml
+service: zivy_obraz.push_value
+data:
+  name: "Cottage"
+  variable: "custom_message"
+  value: "Hello from Home Assistant"
+```
+
+Send multiple custom values using:
+
+```yaml
+service: zivy_obraz.push_values
+data:
+  name: "Cottage"
+  values:
+    custom_message: "Hello from Home Assistant"
+    custom_temperature: "23.5"
+```
+
+If neither `name` nor `entry_id` is provided, values are sent to all loaded
+instances with an Import key configured.
 
 ---
 

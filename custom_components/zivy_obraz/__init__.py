@@ -16,6 +16,9 @@ import voluptuous as vol
 from .const import (
     ATTR_ENTRY_ID,
     ATTR_NAME,
+    ATTR_VALUE,
+    ATTR_VALUES,
+    ATTR_VARIABLE,
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
@@ -40,6 +43,8 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     SERVICE_PUSH,
+    SERVICE_PUSH_VALUE,
+    SERVICE_PUSH_VALUES,
     ZIVY_OBRAZ_EXPORT_URL,
 )
 from .coordinator import ZivyObrazCoordinator
@@ -56,6 +61,27 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
+    }
+)
+
+PUSH_VALUE_SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTRY_ID): cv.string,
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Required(ATTR_VARIABLE): cv.string,
+        vol.Required(ATTR_VALUE): vol.Any(str, int, float, bool),
+    }
+)
+
+PUSH_VALUES_SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTRY_ID): cv.string,
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Required(ATTR_VALUES): vol.All(
+            dict,
+            vol.Length(min=1),
+            vol.Schema({cv.string: vol.Any(str, int, float, bool)}),
+        ),
     }
 )
 
@@ -89,12 +115,38 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     async def _async_handle_push_service(call: ServiceCall) -> None:
         await _async_handle_manual_push(hass, call)
 
+    async def _async_handle_push_value_service(call: ServiceCall) -> None:
+        await _async_handle_custom_push(
+            hass,
+            call,
+            {call.data[ATTR_VARIABLE]: call.data[ATTR_VALUE]},
+        )
+
+    async def _async_handle_push_values_service(call: ServiceCall) -> None:
+        await _async_handle_custom_push(hass, call, call.data[ATTR_VALUES])
+
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH):
         hass.services.async_register(
             DOMAIN,
             SERVICE_PUSH,
             _async_handle_push_service,
             schema=PUSH_SERVICE_SCHEMA,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUE):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_PUSH_VALUE,
+            _async_handle_push_value_service,
+            schema=PUSH_VALUE_SERVICE_SCHEMA,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUES):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_PUSH_VALUES,
+            _async_handle_push_values_service,
+            schema=PUSH_VALUES_SERVICE_SCHEMA,
         )
 
     return True
@@ -211,6 +263,97 @@ async def _async_handle_manual_push(
     await asyncio.gather(*push_tasks)
 
 
+async def _async_handle_custom_push(
+    hass: HomeAssistant,
+    call: ServiceCall,
+    values: dict[str, str | int | float | bool],
+) -> None:
+    """Handle custom value push service calls."""
+    normalized_values = {
+        str(key).strip(): str(value)
+        for key, value in values.items()
+        if str(key).strip() and str(key).strip() != "import_key"
+    }
+
+    if not normalized_values:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_values_empty",
+        )
+
+    entry_id = call.data.get(ATTR_ENTRY_ID)
+    name = call.data.get(ATTR_NAME)
+
+    if entry_id and name:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_entry_id_and_name",
+        )
+
+    if entry_id:
+        entry_data = hass.data.get(DOMAIN, {}).get(entry_id)
+        if entry_data is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_entry_not_loaded",
+                translation_placeholders={"entry": str(entry_id)},
+            )
+
+        await _async_push_entry_values(entry_id, entry_data, normalized_values)
+        return
+
+    if name:
+        matches = [
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if _entry_name(entry) == name
+        ]
+
+        if not matches:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_name_not_found",
+                translation_placeholders={"name": str(name)},
+            )
+
+        if len(matches) > 1:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_name_not_unique",
+                translation_placeholders={"name": str(name)},
+            )
+
+        selected_entry = matches[0]
+        entry_data = hass.data.get(DOMAIN, {}).get(selected_entry.entry_id)
+        if entry_data is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="push_entry_not_loaded",
+                translation_placeholders={"entry": str(name)},
+            )
+
+        await _async_push_entry_values(
+            selected_entry.entry_id,
+            entry_data,
+            normalized_values,
+        )
+        return
+
+    push_tasks = [
+        _async_push_entry_values(entry_id, entry_data, normalized_values)
+        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
+        if entry_data.get("push_manager") is not None
+    ]
+
+    if not push_tasks:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_no_entries_ready",
+        )
+
+    await asyncio.gather(*push_tasks)
+
+
 async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
     """Push one loaded config entry."""
     push_manager = entry_data.get("push_manager")
@@ -223,6 +366,24 @@ async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
         )
 
     await push_manager.async_push()
+
+
+async def _async_push_entry_values(
+    entry_id: str,
+    entry_data: dict,
+    values: dict[str, str],
+) -> None:
+    """Push custom values to one loaded config entry."""
+    push_manager = entry_data.get("push_manager")
+
+    if push_manager is None:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="push_entry_not_ready",
+            translation_placeholders={"entry": str(entry_id)},
+        )
+
+    await push_manager.async_push_values(values)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:

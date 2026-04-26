@@ -13,3 +13,62 @@ push:
       description: Optional instance name. Leave empty to push all configured instances.
       selector:
         text:
+
+push_value:
+  name: Push custom value
+  description: Send one custom value to Živý Obraz immediately.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional config entry ID. Leave empty to push to all configured instances.
+      example: "abc123"
+      selector:
+        config_entry:
+          integration: zivy_obraz
+    name:
+      name: Instance name
+      description: Optional instance name. Leave empty to push to all configured instances.
+      example: "Cottage"
+      selector:
+        text:
+    variable:
+      name: Variable name
+      description: Name of the Živý Obraz variable to send.
+      required: true
+      example: "custom_message"
+      selector:
+        text:
+    value:
+      name: Value
+      description: Value to send.
+      required: true
+      example: "Hello from Home Assistant"
+      selector:
+        text:
+
+push_values:
+  name: Push custom values
+  description: Send multiple custom values to Živý Obraz immediately.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional config entry ID. Leave empty to push to all configured instances.
+      example: "abc123"
+      selector:
+        config_entry:
+          integration: zivy_obraz
+    name:
+      name: Instance name
+      description: Optional instance name. Leave empty to push to all configured instances.
+      example: "Cottage"
+      selector:
+        text:
+    values:
+      name: Values
+      description: Map of Živý Obraz variable names and values.
+      required: true
+      example:
+        custom_message: "Hello from Home Assistant"
+        custom_temperature: "23.5"
+      selector:
+        object:

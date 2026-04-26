@@ -80,6 +80,46 @@
           "description": "Volitelný název instance. Pokud zůstane prázdný, odešlou se všechny nakonfigurované instance."
         }
       }
+    },
+    "push_value": {
+      "name": "Odeslat vlastní hodnotu",
+      "description": "Okamžitě odešle jednu vlastní hodnotu do Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfigurační položky",
+          "description": "Volitelné ID konfigurační položky. Pokud zůstane prázdné, odešle se do všech nakonfigurovaných instancí."
+        },
+        "name": {
+          "name": "Název instance",
+          "description": "Volitelný název instance. Pokud zůstane prázdný, odešle se do všech nakonfigurovaných instancí."
+        },
+        "variable": {
+          "name": "Název proměnné",
+          "description": "Název proměnné Živého obrazu, která se má odeslat."
+        },
+        "value": {
+          "name": "Hodnota",
+          "description": "Hodnota, která se má odeslat."
+        }
+      }
+    },
+    "push_values": {
+      "name": "Odeslat vlastní hodnoty",
+      "description": "Okamžitě odešle více vlastních hodnot do Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfigurační položky",
+          "description": "Volitelné ID konfigurační položky. Pokud zůstane prázdné, odešle se do všech nakonfigurovaných instancí."
+        },
+        "name": {
+          "name": "Název instance",
+          "description": "Volitelný název instance. Pokud zůstane prázdný, odešle se do všech nakonfigurovaných instancí."
+        },
+        "values": {
+          "name": "Hodnoty",
+          "description": "Mapa názvů proměnných Živého obrazu a jejich hodnot."
+        }
+      }
     }
   },
   "exceptions": {
@@ -100,6 +140,9 @@
     },
     "push_entry_not_ready": {
       "message": "Konfigurační položka Živého obrazu \"{entry}\" není připravená k odeslání."
+    },
+    "push_values_empty": {
+      "message": "Nejsou zadané žádné vlastní hodnoty k odeslání."
     }
   }
 }

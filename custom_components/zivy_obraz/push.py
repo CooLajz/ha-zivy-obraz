@@ -115,20 +115,57 @@ class ZivyObrazPushManager:
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
         entity_pairs = collection.pairs
+        await self._async_push_pairs(
+            pushed_at=pushed_at,
+            entity_pairs=entity_pairs,
+            skipped_entities=collection.skipped_entities,
+            skipped_pairs=collection.skipped_pairs,
+            empty_status="no_entities",
+            empty_log_message=(
+                "Živý Obraz push skipped: no valid entities found for label_id '%s'",
+                self.label_id,
+            ),
+        )
+
+    async def async_push_values(self, values: dict[str, Any]) -> None:
+        """Push custom values to Živý Obraz."""
+        pushed_at = dt_util.now()
+        entity_pairs = sorted(
+            (str(key).strip(), str(value))
+            for key, value in values.items()
+            if str(key).strip()
+        )
+        await self._async_push_pairs(
+            pushed_at=pushed_at,
+            entity_pairs=entity_pairs,
+            skipped_entities=0,
+            skipped_pairs=[],
+            empty_status="no_entities",
+            empty_log_message=("Živý Obraz custom push skipped: no values provided",),
+        )
+
+    async def _async_push_pairs(
+        self,
+        *,
+        pushed_at: Any,
+        entity_pairs: list[tuple[str, str]],
+        skipped_entities: int,
+        skipped_pairs: list[tuple[str, str]],
+        empty_status: str,
+        empty_log_message: tuple[Any, ...],
+    ) -> None:
+        """Push prepared key/value pairs and update diagnostics."""
         self.diagnostics.last_push = pushed_at
         self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
-        self.diagnostics.skipped_entities = collection.skipped_entities
-        self._set_skipped_variable_preview(dict(collection.skipped_pairs))
+        self.diagnostics.skipped_entities = skipped_entities
+        self._set_skipped_variable_preview(dict(skipped_pairs))
         self.diagnostics.request_batches = 0
         self.diagnostics.last_error = None
 
         if not entity_pairs:
-            self.diagnostics.status = "no_entities"
-            _LOGGER.debug(
-                "Živý Obraz push skipped: no valid entities found for label_id '%s'",
-                self.label_id,
-            )
+            self.diagnostics.status = empty_status
+            _LOGGER.debug(*empty_log_message)
             self._notify_listeners()
             return
 
