@@ -169,17 +169,7 @@ Pokud má více instancí stejný název, použijte `entry_id`.
 
 ## Ruční odeslání vlastních hodnot
 
-Jednu vlastní hodnotu lze odeslat službou:
-
-```yaml
-service: zivy_obraz.push_value
-data:
-  name: "Chata"
-  variable: "custom_message"
-  value: "Ahoj ze Home Assistant"
-```
-
-Více vlastních hodnot lze odeslat najednou službou:
+Vlastní hodnoty lze odeslat službou:
 
 ```yaml
 service: zivy_obraz.push_values
@@ -510,17 +500,7 @@ If multiple instances share the same name, use `entry_id`.
 
 ## Manual custom value push
 
-Send one custom value using:
-
-```yaml
-service: zivy_obraz.push_value
-data:
-  name: "Cottage"
-  variable: "custom_message"
-  value: "Hello from Home Assistant"
-```
-
-Send multiple custom values using:
+Send custom values using:
 
 ```yaml
 service: zivy_obraz.push_values

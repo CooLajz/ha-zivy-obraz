@@ -81,28 +81,6 @@
         }
       }
     },
-    "push_value": {
-      "name": "Push custom value",
-      "description": "Send one custom value to Živý Obraz immediately.",
-      "fields": {
-        "entry_id": {
-          "name": "Config entry ID",
-          "description": "Optional config entry ID. Leave empty to push to all configured instances."
-        },
-        "name": {
-          "name": "Instance name",
-          "description": "Optional instance name. Leave empty to push to all configured instances."
-        },
-        "variable": {
-          "name": "Variable name",
-          "description": "Name of the Živý Obraz variable to send."
-        },
-        "value": {
-          "name": "Value",
-          "description": "Value to send."
-        }
-      }
-    },
     "push_values": {
       "name": "Push custom values",
       "description": "Send multiple custom values to Živý Obraz immediately.",

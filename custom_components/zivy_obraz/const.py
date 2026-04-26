@@ -39,7 +39,6 @@ MAX_PUSH_URL_LENGTH = 1800
 PLATFORMS = ["sensor", "binary_sensor"]
 
 SERVICE_PUSH = "push"
-SERVICE_PUSH_VALUE = "push_value"
 SERVICE_PUSH_VALUES = "push_values"
 
 ATTR_ENTRY_ID = "entry_id"

@@ -43,7 +43,6 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     SERVICE_PUSH,
-    SERVICE_PUSH_VALUE,
     SERVICE_PUSH_VALUES,
     ZIVY_OBRAZ_EXPORT_URL,
 )
@@ -61,15 +60,6 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
-    }
-)
-
-PUSH_VALUE_SERVICE_SCHEMA = vol.Schema(
-    {
-        vol.Optional(ATTR_ENTRY_ID): cv.string,
-        vol.Optional(ATTR_NAME): cv.string,
-        vol.Required(ATTR_VARIABLE): cv.string,
-        vol.Required(ATTR_VALUE): vol.Any(str, int, float, bool),
     }
 )
 
@@ -129,15 +119,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     async def _async_handle_push_service(call: ServiceCall) -> None:
         await _async_handle_manual_push(hass, call)
 
-    async def _async_handle_push_value_service(call: ServiceCall) -> None:
-        await _async_handle_custom_push(
-            hass,
-            call,
-            _normalize_custom_values(
-                {call.data[ATTR_VARIABLE]: call.data[ATTR_VALUE]}
-            ),
-        )
-
     async def _async_handle_push_values_service(call: ServiceCall) -> None:
         await _async_handle_custom_push(
             hass,
@@ -151,14 +132,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             SERVICE_PUSH,
             _async_handle_push_service,
             schema=PUSH_SERVICE_SCHEMA,
-        )
-
-    if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUE):
-        hass.services.async_register(
-            DOMAIN,
-            SERVICE_PUSH_VALUE,
-            _async_handle_push_value_service,
-            schema=PUSH_VALUE_SERVICE_SCHEMA,
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUES):
