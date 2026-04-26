@@ -28,7 +28,11 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled"
+      "group_id_required": "Group ID is required when group filter is enabled",
+      "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
+      "push_interval_range": "Push interval must be between 60 and 86400 seconds",
+      "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
+      "overdue_tolerance_range": "Overdue tolerance must be between 0 and 10080 minutes"
     },
     "abort": {
       "already_configured": "This export key and group filter are already configured"
@@ -63,7 +67,11 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled"
+      "group_id_required": "Group ID is required when group filter is enabled",
+      "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
+      "push_interval_range": "Push interval must be between 60 and 86400 seconds",
+      "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
+      "overdue_tolerance_range": "Overdue tolerance must be between 0 and 10080 minutes"
     }
   },
   "services": {

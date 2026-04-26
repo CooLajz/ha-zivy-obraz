@@ -39,6 +39,28 @@ from .const import (
     ZIVY_OBRAZ_EXPORT_URL,
 )
 
+MIN_SCAN_INTERVAL = 60
+MAX_SCAN_INTERVAL = 86400
+MIN_PUSH_INTERVAL = 60
+MAX_PUSH_INTERVAL = 86400
+MIN_TIMEOUT = 5
+MAX_TIMEOUT = 120
+MIN_OVERDUE_TOLERANCE = 0
+MAX_OVERDUE_TOLERANCE = 10080
+
+
+_VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
+    "invalid_group_id": (CONF_GROUP_ID, "invalid_group_id"),
+    "group_id_required": (CONF_GROUP_ID, "group_id_required"),
+    "scan_interval_range": (CONF_SCAN_INTERVAL, "scan_interval_range"),
+    "push_interval_range": (CONF_PUSH_INTERVAL, "push_interval_range"),
+    "timeout_range": (CONF_TIMEOUT, "timeout_range"),
+    "overdue_tolerance_range": (
+        CONF_OVERDUE_TOLERANCE,
+        "overdue_tolerance_range",
+    ),
+}
+
 
 async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     """Validate the user input."""
@@ -102,11 +124,42 @@ def _normalize_group_id(value: str | None) -> int | None:
     if value == "":
         return None
 
-    group_id = int(value)
+    try:
+        group_id = int(value)
+    except (TypeError, ValueError) as err:
+        raise ValueError("invalid_group_id") from err
+
     if group_id < 0:
         raise ValueError("invalid_group_id")
 
     return group_id
+
+
+def _coerce_int(value: Any, error: str) -> int:
+    """Coerce value to int and raise a translated config-flow error key."""
+    try:
+        return int(value)
+    except (TypeError, ValueError) as err:
+        raise ValueError(error) from err
+
+
+def _validate_range(value: int, minimum: int, maximum: int, error: str) -> None:
+    """Validate numeric range and raise a translated config-flow error key."""
+    if value < minimum or value > maximum:
+        raise ValueError(error)
+
+
+def _set_value_error(errors: dict[str, str], err: ValueError) -> None:
+    """Map internal ValueError keys to field/base config-flow errors."""
+    error_key = str(err)
+    field_error = _VALUE_ERROR_TO_FIELD.get(error_key)
+
+    if field_error is None:
+        errors["base"] = "invalid_json"
+        return
+
+    field, translation_key = field_error
+    errors[field] = translation_key
 
 
 def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
@@ -127,19 +180,47 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
 
-    # Enforce minimum interval of 60 seconds
-    scan_interval = int(user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
-    push_interval = int(user_input.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL))
+    scan_interval = _coerce_int(
+        user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        "scan_interval_range",
+    )
+    push_interval = _coerce_int(
+        user_input.get(CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL),
+        "push_interval_range",
+    )
+    timeout = _coerce_int(
+        user_input.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+        "timeout_range",
+    )
 
-    scan_interval = max(scan_interval, 60)
-    push_interval = max(push_interval, 60)
+    _validate_range(
+        scan_interval,
+        MIN_SCAN_INTERVAL,
+        MAX_SCAN_INTERVAL,
+        "scan_interval_range",
+    )
+    _validate_range(
+        push_interval,
+        MIN_PUSH_INTERVAL,
+        MAX_PUSH_INTERVAL,
+        "push_interval_range",
+    )
+    _validate_range(timeout, MIN_TIMEOUT, MAX_TIMEOUT, "timeout_range")
 
     prepared[CONF_SCAN_INTERVAL] = scan_interval
     prepared[CONF_PUSH_INTERVAL] = push_interval
+    prepared[CONF_TIMEOUT] = timeout
 
     # overdue_tolerance is in minutes and must be at least the scan interval
-    overdue_tolerance = int(
-        user_input.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE)
+    overdue_tolerance = _coerce_int(
+        user_input.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE),
+        "overdue_tolerance_range",
+    )
+    _validate_range(
+        overdue_tolerance,
+        MIN_OVERDUE_TOLERANCE,
+        MAX_OVERDUE_TOLERANCE,
+        "overdue_tolerance_range",
     )
     min_overdue_tolerance = math.ceil(scan_interval / 60)
     prepared[CONF_OVERDUE_TOLERANCE] = max(overdue_tolerance, min_overdue_tolerance)
@@ -202,16 +283,13 @@ def _build_schema(
     schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
     schema[vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval)] = vol.All(
         vol.Coerce(int),
-        vol.Range(min=60, max=86400),
     )
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
-        vol.Range(min=5, max=120),
     )
     schema[vol.Optional(CONF_OVERDUE_NOTIFICATION, default=overdue_notification)] = bool
     schema[vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance)] = vol.All(
         vol.Coerce(int),
-        vol.Range(min=0, max=10080),
     )
     schema[vol.Optional(CONF_PUSH_ENABLED, default=push_enabled)] = bool
 
@@ -222,7 +300,6 @@ def _build_schema(
     schema[vol.Optional(CONF_PREFIX)] = str
     schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
         vol.Coerce(int),
-        vol.Range(min=60, max=86400),
     )
 
     return vol.Schema(schema)
@@ -265,12 +342,8 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ValueError as err:
                 if str(err) == "import_key_required":
                     errors["base"] = "import_key_required"
-                elif str(err) == "invalid_group_id":
-                    errors["base"] = "invalid_group_id"
-                elif str(err) == "group_id_required":
-                    errors["base"] = "group_id_required"
                 else:
-                    errors["base"] = "invalid_json"
+                    _set_value_error(errors, err)
             except Exception:
                 errors["base"] = "unknown"
             else:
@@ -379,12 +452,8 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             except ValueError as err:
                 if str(err) == "import_key_required":
                     errors["base"] = "import_key_required"
-                elif str(err) == "invalid_group_id":
-                    errors["base"] = "invalid_group_id"
-                elif str(err) == "group_id_required":
-                    errors["base"] = "group_id_required"
                 else:
-                    errors["base"] = "invalid_json"
+                    _set_value_error(errors, err)
             except Exception:
                 errors["base"] = "unknown"
             else:
