@@ -274,8 +274,10 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
         await self._async_sync_device_metadata(normalized)
 
+        data_changed = normalized != (self.data or {})
+
         self.known_macs = current_macs
-        self.diagnostics.status = "success"
+        self.diagnostics.status = "success" if data_changed else "no_new_data"
         self.diagnostics.last_successful_sync = sync_started_at
         self.diagnostics.device_count = len(normalized)
         self.diagnostics.last_error = None
