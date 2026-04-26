@@ -32,6 +32,7 @@ class PushDiagnostics:
     pushed_entities: int = 0
     skipped_entities: int = 0
     request_batches: int = 0
+    next_push: Any = None
     last_error: str | None = None
     variables: dict[str, str] = field(default_factory=dict)
     variables_total: int = 0
@@ -89,6 +90,11 @@ class ZivyObrazPushManager:
         """Notify diagnostic entities about updated push state."""
         for listener in list(self._listeners):
             listener()
+
+    def set_next_push(self, next_push: Any) -> None:
+        """Set expected next scheduled push timestamp."""
+        self.diagnostics.next_push = next_push
+        self._notify_listeners()
 
     def _set_variable_preview(self, variables: dict[str, str]) -> None:
         """Store a bounded variable preview for HA state attributes."""

@@ -11,6 +11,7 @@ from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.config_validation as cv
+from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .const import (
@@ -487,9 +488,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                     entry_name,
                     push_interval,
                 )
+
+                async def _async_scheduled_push(_now) -> None:
+                    await push_manager.async_push()
+                    push_manager.set_next_push(
+                        dt_util.now() + timedelta(seconds=push_interval)
+                    )
+
+                push_manager.set_next_push(
+                    dt_util.now() + timedelta(seconds=push_interval)
+                )
                 push_unsub = async_track_time_interval(
                     hass,
-                    push_manager.async_push,
+                    _async_scheduled_push,
                     timedelta(seconds=push_interval),
                 )
 

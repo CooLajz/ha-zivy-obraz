@@ -22,6 +22,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -42,6 +43,13 @@ class ZivyObrazSensorDescription(SensorEntityDescription):
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazPushSensorDescription(SensorEntityDescription):
     """Sensor description for Živý Obraz push diagnostics."""
+
+    value_key: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class ZivyObrazSyncSensorDescription(SensorEntityDescription):
+    """Sensor description for Živý Obraz sync diagnostics."""
 
     value_key: str
 
@@ -204,6 +212,51 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
     ),
 )
 
+PUSH_NEXT_SENSOR_DESCRIPTION = ZivyObrazPushSensorDescription(
+    key="push_next_push",
+    value_key="next_push",
+    name="Next push",
+    device_class=SensorDeviceClass.TIMESTAMP,
+    entity_category=EntityCategory.DIAGNOSTIC,
+)
+
+SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
+    ZivyObrazSyncSensorDescription(
+        key="sync_last_sync",
+        value_key="last_sync",
+        name="Last sync",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSyncSensorDescription(
+        key="sync_last_successful_sync",
+        value_key="last_successful_sync",
+        name="Last successful sync",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSyncSensorDescription(
+        key="sync_status",
+        value_key="status",
+        name="Sync status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSyncSensorDescription(
+        key="sync_next_sync",
+        value_key="next_sync",
+        name="Next sync",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSyncSensorDescription(
+        key="sync_device_count",
+        value_key="device_count",
+        name="Device count",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -215,6 +268,10 @@ async def async_setup_entry(
     known_entity_ids: set[str] = set()
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
+    )
+    push_is_scheduled = (
+        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_unsub")
+        is not None
     )
 
     def _should_create_entity(
@@ -267,6 +324,29 @@ async def async_setup_entry(
             ZivyObrazPushDiagnosticSensor(entry, push_manager, description)
             for description in PUSH_SENSOR_DESCRIPTIONS
         )
+        if push_is_scheduled:
+            initial_entities.append(
+                ZivyObrazPushDiagnosticSensor(
+                    entry,
+                    push_manager,
+                    PUSH_NEXT_SENSOR_DESCRIPTION,
+                )
+            )
+
+    if not push_is_scheduled:
+        entity_registry = er.async_get(hass)
+        entity_id = entity_registry.async_get_entity_id(
+            "sensor",
+            DOMAIN,
+            f"{entry.entry_id}_{PUSH_NEXT_SENSOR_DESCRIPTION.key}",
+        )
+        if entity_id is not None:
+            entity_registry.async_remove(entity_id)
+
+    initial_entities.extend(
+        ZivyObrazSyncDiagnosticSensor(entry, coordinator, description)
+        for description in SYNC_SENSOR_DESCRIPTIONS
+    )
 
     if initial_entities:
         async_add_entities(initial_entities)
@@ -459,5 +539,44 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
                 "skipped_variables_total": diagnostics.skipped_variables_total,
                 "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
             }
+
+        return None
+
+
+class ZivyObrazSyncDiagnosticSensor(
+    CoordinatorEntity[ZivyObrazCoordinator],
+    SensorEntity,
+):
+    """Representation of one Živý Obraz sync diagnostic sensor."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        coordinator: ZivyObrazCoordinator,
+        description: ZivyObrazSyncSensorDescription,
+    ) -> None:
+        """Initialize the sync diagnostic sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            name=f"Živý Obraz - {entry.title}",
+            manufacturer="Živý Obraz",
+        )
+
+    @property
+    def native_value(self):
+        """Return sync diagnostic value."""
+        diagnostics = self.coordinator.diagnostics
+        return getattr(diagnostics, self.entity_description.value_key)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra details for the sync status sensor."""
+        if self.entity_description.key == "sync_status":
+            return {"last_error": self.coordinator.diagnostics.last_error}
 
         return None

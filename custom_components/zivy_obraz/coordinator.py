@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import timedelta
 import json
 import logging
@@ -13,11 +14,24 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class SyncDiagnostics:
+    """Diagnostic state for Export API synchronization."""
+
+    status: str = "idle"
+    last_sync: Any = None
+    last_successful_sync: Any = None
+    next_sync: Any = None
+    device_count: int = 0
+    last_error: str | None = None
 
 
 class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -47,6 +61,11 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.session = async_get_clientsession(hass)
         self.known_macs: set[str] = set()
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
+        self.diagnostics = SyncDiagnostics()
+
+    def _set_next_sync(self) -> None:
+        """Set expected next sync timestamp."""
+        self.diagnostics.next_sync = dt_util.now() + self.update_interval
 
     @callback
     def async_add_new_device_listener(
@@ -207,7 +226,16 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from remote JSON endpoint."""
-        data = await self._async_fetch_json()
+        sync_started_at = dt_util.now()
+        self.diagnostics.last_sync = sync_started_at
+
+        try:
+            data = await self._async_fetch_json()
+        except UpdateFailed as err:
+            self.diagnostics.status = "failed"
+            self.diagnostics.last_error = str(err)
+            self._set_next_sync()
+            raise
 
         normalized: dict[str, dict[str, Any]] = {}
         epapers = data.get("epapers")
@@ -241,4 +269,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         await self._async_sync_device_metadata(normalized)
 
         self.known_macs = current_macs
+        self.diagnostics.status = "success"
+        self.diagnostics.last_successful_sync = sync_started_at
+        self.diagnostics.device_count = len(normalized)
+        self.diagnostics.last_error = None
+        self._set_next_sync()
         return normalized
