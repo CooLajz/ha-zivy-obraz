@@ -441,16 +441,23 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra details for the push status sensor."""
-        if self.entity_description.key != "push_status":
-            return None
-
         diagnostics = self._push_manager.diagnostics
-        return {
-            "last_error": diagnostics.last_error,
-            "variables": diagnostics.variables,
-            "variables_total": diagnostics.variables_total,
-            "variables_truncated": diagnostics.variables_truncated,
-            "skipped_variables": diagnostics.skipped_variables,
-            "skipped_variables_total": diagnostics.skipped_variables_total,
-            "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
-        }
+
+        if self.entity_description.key == "push_status":
+            return {"last_error": diagnostics.last_error}
+
+        if self.entity_description.key == "push_pushed_entities":
+            return {
+                "variables": diagnostics.variables,
+                "variables_total": diagnostics.variables_total,
+                "variables_truncated": diagnostics.variables_truncated,
+            }
+
+        if self.entity_description.key == "push_skipped_entities":
+            return {
+                "skipped_variables": diagnostics.skipped_variables,
+                "skipped_variables_total": diagnostics.skipped_variables_total,
+                "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
+            }
+
+        return None
