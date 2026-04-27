@@ -466,6 +466,8 @@ class ZivyObrazSensor(
     @property
     def device_info(self):
         """Return device info."""
+        if not self._device_data:
+            return DeviceInfo(identifiers={(DOMAIN, self._mac)})
         return build_device_info(self._mac, self._device_data)
 
     @property

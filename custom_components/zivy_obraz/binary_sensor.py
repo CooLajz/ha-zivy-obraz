@@ -227,6 +227,8 @@ class ZivyObrazOverdueBinarySensor(
     @property
     def device_info(self):
         """Return device info."""
+        if not self._device_data or set(self._device_data) == {"next_contact"}:
+            return DeviceInfo(identifiers={(DOMAIN, self._mac)})
         return build_device_info(self._mac, self._device_data)
 
     @property
