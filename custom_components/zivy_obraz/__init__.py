@@ -7,7 +7,7 @@ from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.config_validation as cv
@@ -456,10 +456,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         update_interval_seconds=scan_interval,
     )
 
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.async_refresh()
+
+    if coordinator.data is None:
+        coordinator.data = {}
 
     if not coordinator.last_update_success:
-        raise ConfigEntryNotReady("Initial refresh failed")
+        _LOGGER.warning(
+            "Živý Obraz initial refresh failed; setting up diagnostics with empty data"
+        )
 
     entry.runtime_data = coordinator
 
