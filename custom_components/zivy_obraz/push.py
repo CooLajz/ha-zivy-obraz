@@ -7,7 +7,7 @@ import re
 from typing import Any, Callable
 from urllib.parse import urlencode
 
-from aiohttp import ClientError
+from aiohttp import ClientError, ClientResponseError
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -26,6 +26,7 @@ PUSH_PROBLEM_STATUSES = {
     "no_batches",
     "no_valid_entities",
 }
+_REDACTED = "********"
 
 
 @dataclass
@@ -352,14 +353,34 @@ class ZivyObrazPushManager:
         """Send one GET request batch and return an error message on failure."""
         try:
             async with asyncio.timeout(self.timeout):
-                async with self.session.get(ZIVY_OBRAZ_PUSH_URL, params=params) as response:
+                async with self.session.get(
+                    ZIVY_OBRAZ_PUSH_URL,
+                    params=params,
+                ) as response:
                     response.raise_for_status()
-                    _LOGGER.debug("Živý Obraz push payload sent: %s", params)
+                    _LOGGER.debug(
+                        "Živý Obraz push payload sent: %s",
+                        self._redact_params(params),
+                    )
         except TimeoutError:
             _LOGGER.warning("Živý Obraz push timeout")
             return "Timeout"
+        except ClientResponseError as err:
+            message = f"HTTP error: {err.status} {err.message}"
+            _LOGGER.warning("Živý Obraz push failed: %s", message)
+            return message
         except ClientError as err:
-            _LOGGER.warning("Živý Obraz push failed: %s", err)
-            return str(err)
+            _LOGGER.warning(
+                "Živý Obraz push connection error: %s",
+                err.__class__.__name__,
+            )
+            return "Connection error"
 
         return None
+
+    def _redact_params(self, params: dict[str, str]) -> dict[str, str]:
+        """Return request params safe for logs."""
+        return {
+            key: _REDACTED if key == "import_key" else value
+            for key, value in params.items()
+        }

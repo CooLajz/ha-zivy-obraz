@@ -103,13 +103,13 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     response.raise_for_status()
                     raw_text = await response.text()
         except TimeoutError as err:
-            raise UpdateFailed(f"Timeout fetching data from {self.url}") from err
+            raise UpdateFailed("Timeout fetching data from Export API") from err
         except ClientResponseError as err:
             raise UpdateFailed(
                 f"HTTP error fetching data: {err.status} {err.message}"
             ) from err
         except ClientError as err:
-            raise UpdateFailed(f"Connection error fetching data: {err}") from err
+            raise UpdateFailed("Connection error fetching data from Export API") from err
 
         raw_text = raw_text.strip()
         if not raw_text:
