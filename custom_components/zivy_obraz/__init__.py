@@ -514,7 +514,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 )
 
                 entry.async_on_unload(push_unsub)
-                hass.async_create_task(push_manager.async_push())
         else:
             _LOGGER.warning(
                 "Živý Obraz push is configured, but label '%s' could not be resolved or created",
