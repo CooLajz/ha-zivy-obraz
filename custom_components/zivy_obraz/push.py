@@ -20,7 +20,12 @@ _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
 MAX_DIAGNOSTIC_VARIABLES = 50
-PUSH_PROBLEM_STATUSES = {"failed", "partial_failure", "no_batches"}
+PUSH_PROBLEM_STATUSES = {
+    "failed",
+    "partial_failure",
+    "no_batches",
+    "no_valid_entities",
+}
 
 
 @dataclass
@@ -170,7 +175,12 @@ class ZivyObrazPushManager:
         self.diagnostics.request_batches = 0
 
         if not entity_pairs:
-            if self.diagnostics.status not in PUSH_PROBLEM_STATUSES:
+            if skipped_entities > 0:
+                self.diagnostics.status = "no_valid_entities"
+                self.diagnostics.last_error = (
+                    "Selected entities were unavailable or unknown"
+                )
+            elif self.diagnostics.status not in PUSH_PROBLEM_STATUSES:
                 self.diagnostics.status = empty_status
                 self.diagnostics.last_error = None
             _LOGGER.debug(*empty_log_message)
