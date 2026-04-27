@@ -27,7 +27,7 @@ from .const import (
 )
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
-from .push import ZivyObrazPushManager
+from .push import PUSH_PROBLEM_STATUSES, ZivyObrazPushManager
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -44,7 +44,6 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
     ),
 )
 
-PUSH_PROBLEM_STATUSES = {"failed", "partial_failure", "no_batches"}
 SYNC_PROBLEM_STATUSES = {"failed"}
 
 

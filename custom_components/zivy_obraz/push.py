@@ -20,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
 MAX_DIAGNOSTIC_VARIABLES = 50
+PUSH_PROBLEM_STATUSES = {"failed", "partial_failure", "no_batches"}
 
 
 @dataclass
@@ -167,13 +168,16 @@ class ZivyObrazPushManager:
         self.diagnostics.skipped_entities = skipped_entities
         self._set_skipped_variable_preview(dict(skipped_pairs))
         self.diagnostics.request_batches = 0
-        self.diagnostics.last_error = None
 
         if not entity_pairs:
-            self.diagnostics.status = empty_status
+            if self.diagnostics.status not in PUSH_PROBLEM_STATUSES:
+                self.diagnostics.status = empty_status
+                self.diagnostics.last_error = None
             _LOGGER.debug(*empty_log_message)
             self._notify_listeners()
             return
+
+        self.diagnostics.last_error = None
 
         batches = self._build_param_batches(entity_pairs)
         self.diagnostics.request_batches = len(batches)

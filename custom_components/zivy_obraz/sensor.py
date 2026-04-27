@@ -582,6 +582,11 @@ class ZivyObrazSyncDiagnosticSensor(
         )
 
     @property
+    def available(self) -> bool:
+        """Keep sync diagnostics available even when the last refresh failed."""
+        return True
+
+    @property
     def native_value(self):
         """Return sync diagnostic value."""
         diagnostics = self.coordinator.diagnostics
