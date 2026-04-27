@@ -418,10 +418,7 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
     @property
     def available(self) -> bool:
         """Return availability."""
-        return (
-            self.coordinator.last_update_success
-            and self._mac in self.coordinator.data
-        )
+        return bool(self._device_data)
 
     @property
     def native_value(self):

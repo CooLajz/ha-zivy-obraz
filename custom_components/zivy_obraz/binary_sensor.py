@@ -171,10 +171,7 @@ class ZivyObrazOverdueBinarySensor(
     @property
     def available(self) -> bool:
         """Return availability."""
-        return (
-            self.coordinator.last_update_success
-            and self._mac in self.coordinator.data
-        )
+        return bool(self._device_data)
 
     def _parse_next_contact(self) -> datetime | None:
         """Parse next_contact timestamp."""
