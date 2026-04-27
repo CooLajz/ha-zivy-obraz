@@ -13,8 +13,10 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -91,7 +93,53 @@ async def async_setup_entry(
 
         return entities
 
+    def _registered_macs_for_description(
+        description: ZivyObrazBinarySensorDescription,
+    ) -> set[str]:
+        """Return MACs for previously registered binary sensors of this entry."""
+        entity_registry = er.async_get(hass)
+        suffix = f"_{description.key}"
+        macs: set[str] = set()
+
+        for entity_entry in er.async_entries_for_config_entry(
+            entity_registry,
+            entry.entry_id,
+        ):
+            if entity_entry.domain != "binary_sensor":
+                continue
+            if not entity_entry.unique_id.endswith(suffix):
+                continue
+            mac = entity_entry.unique_id.removesuffix(suffix)
+            if mac:
+                macs.add(mac)
+
+        return macs
+
+    def _build_restored_entities() -> list[ZivyObrazOverdueBinarySensor]:
+        """Recreate previously registered overdue sensors before fresh data arrives."""
+        entities: list[ZivyObrazOverdueBinarySensor] = []
+
+        for description in BINARY_SENSOR_DESCRIPTIONS:
+            for mac in _registered_macs_for_description(description):
+                unique_id = f"{mac}_{description.key}"
+                if unique_id in known_entity_ids:
+                    continue
+
+                known_entity_ids.add(unique_id)
+                entities.append(
+                    ZivyObrazOverdueBinarySensor(
+                        coordinator,
+                        mac,
+                        description,
+                        overdue_tolerance_minutes,
+                        overdue_notification,
+                    )
+                )
+
+        return entities
+
     initial_entities = _build_entities_for_macs(set(coordinator.data.keys()))
+    initial_entities.extend(_build_restored_entities())
     initial_entities.append(ZivyObrazSyncProblemBinarySensor(entry, coordinator))
     if push_manager is not None:
         initial_entities.append(ZivyObrazPushProblemBinarySensor(entry, push_manager))
@@ -111,6 +159,7 @@ async def async_setup_entry(
 class ZivyObrazOverdueBinarySensor(
     CoordinatorEntity[ZivyObrazCoordinator],
     BinarySensorEntity,
+    RestoreEntity,
 ):
     """Binary sensor indicating whether the panel is overdue."""
 
@@ -131,13 +180,17 @@ class ZivyObrazOverdueBinarySensor(
         self._overdue_tolerance_minutes = overdue_tolerance_minutes
         self._overdue_notification = overdue_notification
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
+        self._restored_is_on: bool | None = None
         self._attr_unique_id = f"{mac}_{description.key}"
         self._last_overdue_state: bool | None = None
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
-        self._device_data_cache = self.coordinator.data.get(self._mac, {})
+        if self._mac in self.coordinator.data:
+            self._device_data_cache = self.coordinator.data[self._mac]
+        elif self.coordinator.last_update_success:
+            self._device_data_cache = {}
 
         current_state = self.is_on
         if self._overdue_notification and current_state != self._last_overdue_state:
@@ -152,7 +205,15 @@ class ZivyObrazOverdueBinarySensor(
     async def async_added_to_hass(self) -> None:
         """Handle entity added to hass."""
         await super().async_added_to_hass()
-        self._device_data_cache = self.coordinator.data.get(self._mac, {})
+        last_state = await self.async_get_last_state()
+        if last_state is not None:
+            self._restored_is_on = self._restore_is_on(last_state.state)
+            next_contact = last_state.attributes.get("next_contact")
+            if next_contact:
+                self._device_data_cache = {"next_contact": next_contact}
+        fresh_device_data = self.coordinator.data.get(self._mac, {})
+        if fresh_device_data:
+            self._device_data_cache = fresh_device_data
         self._last_overdue_state = self.is_on
 
         if self._overdue_notification and self._last_overdue_state is True:
@@ -171,7 +232,7 @@ class ZivyObrazOverdueBinarySensor(
     @property
     def available(self) -> bool:
         """Return availability."""
-        return bool(self._device_data)
+        return bool(self._device_data) or self._restored_is_on is not None
 
     def _parse_next_contact(self) -> datetime | None:
         """Parse next_contact timestamp."""
@@ -227,11 +288,22 @@ class ZivyObrazOverdueBinarySensor(
     @property
     def is_on(self) -> bool | None:
         """Return whether the panel is overdue."""
+        if not self._device_data and self._restored_is_on is not None:
+            return self._restored_is_on
+
         overdue_after = self._overdue_after()
         if overdue_after is None:
             return None
 
         return dt_util.now() > overdue_after
+
+    def _restore_is_on(self, state: str) -> bool | None:
+        """Convert restored HA state to a binary sensor value."""
+        if state == "on":
+            return True
+        if state == "off":
+            return False
+        return None
 
     def _notification_id(self) -> str:
         """Return persistent notification ID."""

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
@@ -309,6 +310,43 @@ async def async_setup_entry(
 
         return entities
 
+    def _registered_macs_for_description(
+        description: ZivyObrazSensorDescription,
+    ) -> set[str]:
+        """Return MACs for previously registered sensors of this entry."""
+        entity_registry = er.async_get(hass)
+        suffix = f"_{description.key}"
+        macs: set[str] = set()
+
+        for entity_entry in er.async_entries_for_config_entry(
+            entity_registry,
+            entry.entry_id,
+        ):
+            if entity_entry.domain != "sensor":
+                continue
+            if not entity_entry.unique_id.endswith(suffix):
+                continue
+            mac = entity_entry.unique_id.removesuffix(suffix)
+            if mac:
+                macs.add(mac)
+
+        return macs
+
+    def _build_restored_entities() -> list[ZivyObrazSensor]:
+        """Recreate previously registered ePaper sensors before fresh data arrives."""
+        entities: list[ZivyObrazSensor] = []
+
+        for description in SENSOR_DESCRIPTIONS:
+            for mac in _registered_macs_for_description(description):
+                unique_id = f"{mac}_{description.key}"
+                if unique_id in known_entity_ids:
+                    continue
+
+                known_entity_ids.add(unique_id)
+                entities.append(ZivyObrazSensor(coordinator, mac, description))
+
+        return entities
+
     def _build_entities_for_all_supported_data() -> list[ZivyObrazSensor]:
         entities: list[ZivyObrazSensor] = []
 
@@ -327,6 +365,7 @@ async def async_setup_entry(
         return entities
 
     initial_entities = _build_entities_for_macs(set(coordinator.data.keys()))
+    initial_entities.extend(_build_restored_entities())
     if push_manager is not None:
         initial_entities.extend(
             ZivyObrazPushDiagnosticSensor(entry, push_manager, description)
@@ -378,7 +417,10 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(_handle_coordinator_update))
 
 
-class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
+class ZivyObrazSensor(
+    CoordinatorEntity[ZivyObrazCoordinator],
+    RestoreSensor,
+):
     """Representation of one Živý Obraz sensor."""
 
     _attr_has_entity_name = True
@@ -394,15 +436,26 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
         self.entity_description = description
         self._mac = mac
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
+        self._restored_native_value: Any = None
         self._attr_unique_id = f"{mac}_{description.key}"
         self._attr_entity_registry_enabled_default = (
             description.entity_registry_enabled_default
         )
 
+    async def async_added_to_hass(self) -> None:
+        """Restore the last known state until fresh data is available."""
+        await super().async_added_to_hass()
+        last_sensor_data = await self.async_get_last_sensor_data()
+        if last_sensor_data is not None:
+            self._restored_native_value = last_sensor_data.native_value
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from coordinator."""
-        self._device_data_cache = self.coordinator.data.get(self._mac, {})
+        if self._mac in self.coordinator.data:
+            self._device_data_cache = self.coordinator.data[self._mac]
+        elif self.coordinator.last_update_success:
+            self._device_data_cache = {}
         super()._handle_coordinator_update()
 
     @property
@@ -418,12 +471,14 @@ class ZivyObrazSensor(CoordinatorEntity[ZivyObrazCoordinator], SensorEntity):
     @property
     def available(self) -> bool:
         """Return availability."""
-        return bool(self._device_data)
+        return bool(self._device_data) or self._restored_native_value is not None
 
     @property
     def native_value(self):
         """Return sensor value."""
         value = self._device_data.get(self.entity_description.value_key)
+        if value is None and not self._device_data:
+            return self._restored_native_value
 
         if self.entity_description.key in ("last_contact", "next_contact"):
             if not value:
