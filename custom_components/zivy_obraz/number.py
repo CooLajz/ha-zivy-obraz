@@ -107,6 +107,14 @@ class ZivyObrazConfigNumber(NumberEntity):
         self._entry = entry
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._native_value = self._read_option_value(description)
+        self._scan_interval = int(
+            get_config_value(
+                entry,
+                CONF_SCAN_INTERVAL,
+                DEFAULT_SCAN_INTERVAL,
+            )
+        )
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_push")},
             name=f"Živý Obraz - {entry.title}",
@@ -129,25 +137,12 @@ class ZivyObrazConfigNumber(NumberEntity):
         if self.entity_description.option_key != CONF_OVERDUE_TOLERANCE:
             return self.entity_description.native_min_value
 
-        scan_interval = int(
-            get_config_value(
-                self._entry,
-                CONF_SCAN_INTERVAL,
-                DEFAULT_SCAN_INTERVAL,
-            )
-        )
-        return max(MIN_OVERDUE_TOLERANCE, math.ceil(scan_interval / 60))
+        return max(MIN_OVERDUE_TOLERANCE, math.ceil(self._scan_interval / 60))
 
     @property
     def native_value(self) -> int:
         """Return current option value."""
-        return int(
-            get_config_value(
-                self._entry,
-                self.entity_description.option_key,
-                self.entity_description.default_value,
-            )
-        )
+        return self._native_value
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the stored option value."""
@@ -184,9 +179,26 @@ class ZivyObrazConfigNumber(NumberEntity):
             int_value,
         )
 
+    def _read_option_value(
+        self,
+        description: ZivyObrazNumberDescription,
+    ) -> int:
+        """Return stored value for a number description."""
+        return int(
+            get_config_value(
+                self._entry,
+                description.option_key,
+                description.default_value,
+            )
+        )
+
     def _handle_options_update(self, changed_options: dict[str, object]) -> None:
         """Update HA state after runtime options changed."""
+        if CONF_SCAN_INTERVAL in changed_options:
+            self._scan_interval = int(changed_options[CONF_SCAN_INTERVAL])
+
         if self.entity_description.option_key in changed_options:
+            self._native_value = int(changed_options[self.entity_description.option_key])
             self.async_write_ha_state()
             return
 
