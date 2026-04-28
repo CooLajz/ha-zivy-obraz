@@ -5,7 +5,6 @@ from typing import Awaitable, Callable
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -27,13 +26,11 @@ BUTTON_DESCRIPTIONS: tuple[ZivyObrazButtonDescription, ...] = (
         key="refresh_import",
         translation_key="refresh_import",
         press_action="refresh_import",
-        entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazButtonDescription(
         key="push_now",
         translation_key="push_now",
         press_action="push_now",
-        entity_category=EntityCategory.CONFIG,
     ),
 )
 
@@ -59,7 +56,7 @@ async def async_setup_entry(
             entry,
             BUTTON_DESCRIPTIONS[0],
             available=lambda: True,
-            press_action=coordinator.async_request_refresh,
+            press_action=coordinator.async_request_manual_refresh,
         ),
         ZivyObrazButton(
             entry,

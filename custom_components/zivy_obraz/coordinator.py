@@ -68,6 +68,15 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Set expected next sync timestamp."""
         self.diagnostics.next_sync = dt_util.now() + self.update_interval
 
+    async def async_request_manual_refresh(self) -> None:
+        """Refresh data on demand without changing the scheduled refresh time."""
+        next_sync = self.diagnostics.next_sync
+        try:
+            await self.async_request_refresh()
+        finally:
+            self.diagnostics.next_sync = next_sync
+            self._notify_diagnostic_listeners()
+
     @callback
     def async_set_update_interval(self, update_interval_seconds: int) -> None:
         """Update polling interval and reschedule the next refresh from now."""
