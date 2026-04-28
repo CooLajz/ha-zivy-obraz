@@ -88,6 +88,10 @@
         "name": {
           "name": "Název instance",
           "description": "Volitelný název instance. Pokud zůstane prázdný, odešlou se všechny nakonfigurované instance."
+        },
+        "send_all": {
+          "name": "Odeslat vše",
+          "description": "Volitelné přepsání nastavení. Při true se odešlou všechny vybrané entity. Při false se odešlou jen změněné entity. Pokud zůstane prázdné, použije se nastavení integrace."
         }
       }
     },

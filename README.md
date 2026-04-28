@@ -147,6 +147,19 @@ service: zivy_obraz.push
 Bez parametrů služba odešle všechny načtené instance integrace, které mají
 nastavený Import key.
 
+Volitelný parametr `send_all` může přepsat nastavení odesílání jen změněných
+stavů pro jedno ruční volání:
+
+```yaml
+service: zivy_obraz.push
+data:
+  send_all: true
+```
+
+- `send_all: true` odešle všechny vybrané entity
+- `send_all: false` odešle jen změněné entity
+- bez `send_all` se použije nastavení integrace
+
 Konkrétní instanci lze vybrat podle jejího názvu:
 
 ```yaml
@@ -496,6 +509,19 @@ service: zivy_obraz.push
 
 Without parameters, the service pushes all loaded integration instances that
 have an Import key configured.
+
+The optional `send_all` parameter can override the send-only-changed setting for
+one manual call:
+
+```yaml
+service: zivy_obraz.push
+data:
+  send_all: true
+```
+
+- `send_all: true` sends all selected entities
+- `send_all: false` sends only changed entities
+- without `send_all`, the integration setting is used
 
 Select one instance by its configured name:
 

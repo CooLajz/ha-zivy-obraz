@@ -17,6 +17,7 @@ import voluptuous as vol
 from .const import (
     ATTR_ENTRY_ID,
     ATTR_NAME,
+    ATTR_SEND_ALL,
     ATTR_VALUE,
     ATTR_VALUES,
     ATTR_VARIABLE,
@@ -63,6 +64,7 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_SEND_ALL): cv.boolean,
     }
 )
 
@@ -196,6 +198,7 @@ async def _async_handle_manual_push(
     """Handle manual push service call."""
     entry_id = call.data.get(ATTR_ENTRY_ID)
     name = call.data.get(ATTR_NAME)
+    send_all = call.data.get(ATTR_SEND_ALL)
 
     if entry_id and name:
         raise ServiceValidationError(
@@ -212,7 +215,7 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(entry_id)},
             )
 
-        await _async_push_entry(entry_id, entry_data)
+        await _async_push_entry(entry_id, entry_data, send_all=send_all)
         return
 
     if name:
@@ -245,11 +248,15 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(name)},
             )
 
-        await _async_push_entry(selected_entry.entry_id, entry_data)
+        await _async_push_entry(
+            selected_entry.entry_id,
+            entry_data,
+            send_all=send_all,
+        )
         return
 
     push_tasks = [
-        _async_push_entry(entry_id, entry_data)
+        _async_push_entry(entry_id, entry_data, send_all=send_all)
         for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
         if entry_data.get("push_manager") is not None
     ]
@@ -370,7 +377,12 @@ def _normalize_custom_values(
     }
 
 
-async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
+async def _async_push_entry(
+    entry_id: str,
+    entry_data: dict,
+    *,
+    send_all: bool | None = None,
+) -> None:
     """Push one loaded config entry."""
     push_manager = entry_data.get("push_manager")
 
@@ -381,7 +393,7 @@ async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
             translation_placeholders={"entry": str(entry_id)},
         )
 
-    await push_manager.async_push()
+    await push_manager.async_push(send_all=send_all)
 
 
 async def _async_push_entry_values(

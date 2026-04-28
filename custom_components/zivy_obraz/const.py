@@ -45,6 +45,7 @@ SERVICE_PUSH_VALUES = "push_values"
 
 ATTR_ENTRY_ID = "entry_id"
 ATTR_NAME = "name"
+ATTR_SEND_ALL = "send_all"
 ATTR_VARIABLE = "variable"
 ATTR_VALUE = "value"
 ATTR_VALUES = "values"

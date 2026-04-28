@@ -140,15 +140,21 @@ class ZivyObrazPushManager:
             len(variables) > MAX_DIAGNOSTIC_VARIABLES
         )
 
-    async def async_push(self, _now: Any = None) -> None:
+    async def async_push(
+        self,
+        _now: Any = None,
+        *,
+        send_all: bool | None = None,
+    ) -> None:
         """Push current labeled entity states to Živý Obraz."""
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
         entity_pairs = collection.pairs
         skipped_pairs = list(collection.skipped_pairs)
         unchanged_pairs: list[tuple[str, str]] = []
+        send_only_changed = self.send_only_changed if send_all is None else not send_all
 
-        if self.send_only_changed:
+        if send_only_changed:
             changed_pairs: list[tuple[str, str]] = []
             for key, value in entity_pairs:
                 if self._last_sent_states.get(key) == value:
