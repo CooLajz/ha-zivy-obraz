@@ -6,7 +6,7 @@ import logging
 from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
@@ -515,28 +515,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             )
 
             if push_enabled:
-                _LOGGER.debug(
-                    "Živý Obraz scheduled push enabled for '%s', interval=%s",
-                    entry_name,
-                    push_interval,
-                )
-
-                async def _async_scheduled_push(_now) -> None:
-                    await push_manager.async_push()
-                    push_manager.set_next_push(
-                        dt_util.now() + timedelta(seconds=push_interval)
-                    )
-
-                push_manager.set_next_push(
-                    dt_util.now() + timedelta(seconds=push_interval)
-                )
-                push_unsub = async_track_time_interval(
+                push_unsub = _async_start_push_schedule(
                     hass,
-                    _async_scheduled_push,
-                    timedelta(seconds=push_interval),
+                    entry,
+                    push_manager,
+                    push_interval,
+                    entry_name,
                 )
-
-                entry.async_on_unload(push_unsub)
         else:
             _LOGGER.warning(
                 "Živý Obraz push is configured, but label '%s' could not be resolved or created",
@@ -562,11 +547,117 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
 async def _async_update_listener(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> None:
     """Handle options update by fully reloading the config entry."""
+    entry_data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    if entry_data.pop("runtime_options_update", False):
+        changed_keys = set(entry_data.pop("runtime_options_update_keys", set()))
+        _LOGGER.debug(
+            "Živý Obraz runtime options updated; applying without reload for %s",
+            entry.entry_id,
+        )
+        _async_apply_runtime_options(hass, entry, changed_keys)
+        return
+
     _LOGGER.debug("Živý Obraz options updated; reloading config entry %s", entry.entry_id)
     entry_name = _entry_name(entry)
     if entry.title != entry_name:
         hass.config_entries.async_update_entry(entry, title=entry_name)
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+@callback
+def _async_start_push_schedule(
+    hass: HomeAssistant,
+    entry: ZivyObrazConfigEntry,
+    push_manager: ZivyObrazPushManager,
+    push_interval: int,
+    entry_name: str,
+) -> CALLBACK_TYPE:
+    """Start scheduled push and return its unsubscribe callback."""
+    _LOGGER.debug(
+        "Živý Obraz scheduled push enabled for '%s', interval=%s",
+        entry_name,
+        push_interval,
+    )
+
+    async def _async_scheduled_push(_now) -> None:
+        current_interval = int(
+            _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
+        )
+        await push_manager.async_push()
+        push_manager.set_next_push(dt_util.now() + timedelta(seconds=current_interval))
+
+    push_manager.set_next_push(dt_util.now() + timedelta(seconds=push_interval))
+    push_unsub = async_track_time_interval(
+        hass,
+        _async_scheduled_push,
+        timedelta(seconds=push_interval),
+    )
+    entry.async_on_unload(push_unsub)
+    return push_unsub
+
+
+@callback
+def _async_apply_runtime_options(
+    hass: HomeAssistant,
+    entry: ZivyObrazConfigEntry,
+    changed_keys: set[str],
+) -> None:
+    """Apply config-entity option changes without reloading the integration."""
+    entry_data = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if not entry_data:
+        return
+
+    coordinator: ZivyObrazCoordinator | None = entry_data.get("coordinator")
+    if coordinator is not None and CONF_SCAN_INTERVAL in changed_keys:
+        scan_interval = int(
+            _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
+        coordinator.async_set_update_interval(scan_interval)
+    elif coordinator is not None and changed_keys:
+        coordinator._notify_diagnostic_listeners()
+
+    push_manager: ZivyObrazPushManager | None = entry_data.get("push_manager")
+    if push_manager is None:
+        return
+
+    if CONF_SEND_ONLY_CHANGED in changed_keys:
+        push_manager.send_only_changed = bool(
+            _get_config_value(
+                entry,
+                CONF_SEND_ONLY_CHANGED,
+                DEFAULT_SEND_ONLY_CHANGED,
+            )
+        )
+
+    if not {CONF_PUSH_ENABLED, CONF_PUSH_INTERVAL} & changed_keys:
+        return
+
+    push_unsub = entry_data.get("push_unsub")
+    if push_unsub is not None:
+        push_unsub()
+        entry_data["push_unsub"] = None
+        push_manager.set_next_push(None)
+
+    push_enabled = bool(
+        _get_config_value(
+            entry,
+            CONF_PUSH_ENABLED,
+            DEFAULT_PUSH_ENABLED,
+        )
+    )
+    if not push_enabled:
+        return
+
+    push_interval = int(
+        _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
+    )
+    entry_data["push_unsub"] = _async_start_push_schedule(
+        hass,
+        entry,
+        push_manager,
+        push_interval,
+        _entry_name(entry),
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) -> bool:

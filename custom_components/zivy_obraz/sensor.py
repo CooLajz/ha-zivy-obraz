@@ -286,10 +286,6 @@ async def async_setup_entry(
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
     )
-    push_is_scheduled = (
-        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_unsub")
-        is not None
-    )
 
     def _should_create_entity(
         mac: str, description: ZivyObrazSensorDescription
@@ -379,24 +375,13 @@ async def async_setup_entry(
             ZivyObrazPushDiagnosticSensor(entry, push_manager, description)
             for description in PUSH_SENSOR_DESCRIPTIONS
         )
-        if push_is_scheduled:
-            initial_entities.append(
-                ZivyObrazPushDiagnosticSensor(
-                    entry,
-                    push_manager,
-                    PUSH_NEXT_SENSOR_DESCRIPTION,
-                )
+        initial_entities.append(
+            ZivyObrazPushDiagnosticSensor(
+                entry,
+                push_manager,
+                PUSH_NEXT_SENSOR_DESCRIPTION,
             )
-
-    if not push_is_scheduled:
-        entity_registry = er.async_get(hass)
-        entity_id = entity_registry.async_get_entity_id(
-            "sensor",
-            DOMAIN,
-            f"{entry.entry_id}_{PUSH_NEXT_SENSOR_DESCRIPTION.key}",
         )
-        if entity_id is not None:
-            entity_registry.async_remove(entity_id)
 
     initial_entities.extend(
         ZivyObrazSyncDiagnosticSensor(entry, coordinator, description)

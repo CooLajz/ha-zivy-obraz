@@ -69,6 +69,23 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.diagnostics.next_sync = dt_util.now() + self.update_interval
 
     @callback
+    def async_set_update_interval(self, update_interval_seconds: int) -> None:
+        """Update polling interval and reschedule the next refresh from now."""
+        self.update_interval = timedelta(seconds=update_interval_seconds)
+        self._set_next_sync()
+
+        unsub_refresh = getattr(self, "_unsub_refresh", None)
+        if unsub_refresh is not None:
+            unsub_refresh()
+            self._unsub_refresh = None
+
+        schedule_refresh = getattr(self, "_schedule_refresh", None)
+        if schedule_refresh is not None:
+            schedule_refresh()
+
+        self._notify_diagnostic_listeners()
+
+    @callback
     def _notify_diagnostic_listeners(self) -> None:
         """Notify coordinator listeners about diagnostic-only changes."""
         self.async_update_listeners()

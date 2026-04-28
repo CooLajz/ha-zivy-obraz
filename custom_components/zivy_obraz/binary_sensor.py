@@ -20,6 +20,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .config_helpers import get_config_value
 from .const import (
     CONF_OVERDUE_NOTIFICATION,
     CONF_OVERDUE_TOLERANCE,
@@ -56,14 +57,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up Zivy Obraz binary sensors from a config entry."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
-    overdue_tolerance_minutes = entry.options.get(
-        CONF_OVERDUE_TOLERANCE,
-        entry.data.get(CONF_OVERDUE_TOLERANCE, DEFAULT_OVERDUE_TOLERANCE),
-    )
-    overdue_notification = entry.options.get(
-        CONF_OVERDUE_NOTIFICATION,
-        entry.data.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION),
-    )
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
     )
@@ -83,11 +76,10 @@ async def async_setup_entry(
                 known_entity_ids.add(unique_id)
                 entities.append(
                     ZivyObrazOverdueBinarySensor(
+                        entry,
                         coordinator,
                         mac,
                         description,
-                        overdue_tolerance_minutes,
-                        overdue_notification,
                     )
                 )
 
@@ -128,11 +120,10 @@ async def async_setup_entry(
                 known_entity_ids.add(unique_id)
                 entities.append(
                     ZivyObrazOverdueBinarySensor(
+                        entry,
                         coordinator,
                         mac,
                         description,
-                        overdue_tolerance_minutes,
-                        overdue_notification,
                     )
                 )
 
@@ -167,22 +158,42 @@ class ZivyObrazOverdueBinarySensor(
 
     def __init__(
         self,
+        entry: ConfigEntry,
         coordinator: ZivyObrazCoordinator,
         mac: str,
         description: ZivyObrazBinarySensorDescription,
-        overdue_tolerance_minutes: int,
-        overdue_notification: bool,
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
+        self._entry = entry
         self.entity_description = description
         self._mac = mac
-        self._overdue_tolerance_minutes = overdue_tolerance_minutes
-        self._overdue_notification = overdue_notification
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
         self._restored_is_on: bool | None = None
         self._attr_unique_id = f"{mac}_{description.key}"
         self._last_overdue_state: bool | None = None
+
+    @property
+    def _overdue_tolerance_minutes(self) -> int:
+        """Return current overdue tolerance in minutes."""
+        return int(
+            get_config_value(
+                self._entry,
+                CONF_OVERDUE_TOLERANCE,
+                DEFAULT_OVERDUE_TOLERANCE,
+            )
+        )
+
+    @property
+    def _overdue_notification(self) -> bool:
+        """Return whether overdue notifications are enabled."""
+        return bool(
+            get_config_value(
+                self._entry,
+                CONF_OVERDUE_NOTIFICATION,
+                DEFAULT_OVERDUE_NOTIFICATION,
+            )
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -198,6 +209,8 @@ class ZivyObrazOverdueBinarySensor(
                 self.hass.async_create_task(self._async_create_notification())
             elif self._last_overdue_state is True and current_state is False:
                 self.hass.async_create_task(self._async_dismiss_notification())
+        elif not self._overdue_notification and self._last_overdue_state is True:
+            self.hass.async_create_task(self._async_dismiss_notification())
 
         self._last_overdue_state = current_state
         super()._handle_coordinator_update()

@@ -5,6 +5,8 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .const import DOMAIN
+
 
 def get_config_value(config_entry: ConfigEntry, key: str, default: Any) -> Any:
     """Return options value when present, otherwise fallback to entry data/default."""
@@ -38,4 +40,9 @@ async def async_update_options(
 
     options = dict(config_entry.options)
     options.update(values)
+    entry_data = hass.data.setdefault(DOMAIN, {}).setdefault(config_entry.entry_id, {})
+    entry_data["runtime_options_update"] = True
+    entry_data["runtime_options_update_keys"] = (
+        set(entry_data.get("runtime_options_update_keys", set())) | set(values)
+    )
     hass.config_entries.async_update_entry(config_entry, options=options)
