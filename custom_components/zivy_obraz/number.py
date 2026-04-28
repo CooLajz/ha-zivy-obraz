@@ -199,11 +199,11 @@ class ZivyObrazConfigNumber(NumberEntity):
 
         if self.entity_description.option_key in changed_options:
             self._native_value = int(changed_options[self.entity_description.option_key])
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()
             return
 
         if (
             self.entity_description.option_key == CONF_OVERDUE_TOLERANCE
             and CONF_SCAN_INTERVAL in changed_options
         ):
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()

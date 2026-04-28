@@ -131,4 +131,4 @@ class ZivyObrazConfigSwitch(SwitchEntity):
     def _handle_options_update(self, changed_options: dict[str, object]) -> None:
         """Update HA state after runtime options changed."""
         if self.entity_description.option_key in changed_options:
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()
