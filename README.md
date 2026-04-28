@@ -227,7 +227,7 @@ Senzor `Push status` obsahuje v atributech poslední chybu. Senzor
 nepodařilo odeslat. Pokud je zapnuté odesílání jen změněných stavů, po restartu
 se odešlou všechny vybrané entity a následně už pouze entity se změněným stavem.
 Když není co odeslat, `Push status` bude `no_new_data` a `Last successful push`
-se nezmění. Náhledy jsou
+se aktualizuje na čas úspěšně dokončeného běhu. Náhledy jsou
 omezené na prvních 50 položek, aby zbytečně nezvětšovaly stavové atributy Home
 Assistantu.
 
@@ -591,7 +591,7 @@ The `Push status` sensor exposes the last error as an attribute. The
 that failed to send. When sending only changed states is enabled, all selected
 entities are sent after restart and then only entities with changed states are
 sent. When there is nothing new to send, `Push status` is `no_new_data` and
-`Last successful push` is not changed.
+`Last successful push` is updated to the successful run time.
 Previews are limited to the first 50 items to avoid oversized Home Assistant
 state attributes.
 

@@ -219,6 +219,7 @@ class ZivyObrazPushManager:
         if not entity_pairs:
             if empty_status == "no_new_data":
                 self.diagnostics.status = "no_new_data"
+                self.diagnostics.last_successful_push = pushed_at
                 self.diagnostics.last_error = None
             elif skipped_entities > 0:
                 self.diagnostics.status = "no_valid_entities"
