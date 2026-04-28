@@ -17,6 +17,7 @@ CONF_LABEL = "label"
 CONF_PREFIX = "prefix"
 CONF_PREFIX_OVERRIDE = "prefix_override"
 CONF_PUSH_INTERVAL = "push_interval"
+CONF_SEND_ONLY_CHANGED = "send_only_changed"
 
 DEFAULT_SCAN_INTERVAL = 300
 DEFAULT_NAME = "Živý Obraz"
@@ -29,6 +30,7 @@ DEFAULT_IMPORT_KEY = ""
 DEFAULT_LABEL = "ZivyObraz"
 DEFAULT_PREFIX = ""
 DEFAULT_PUSH_INTERVAL = 300
+DEFAULT_SEND_ONLY_CHANGED = True
 DEFAULT_USE_GROUP_FILTER = False
 
 ZIVY_OBRAZ_EXPORT_URL = "https://out.zivyobraz.eu/"

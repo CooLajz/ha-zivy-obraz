@@ -30,6 +30,7 @@ from .const import (
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
@@ -39,6 +40,7 @@ from .const import (
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
@@ -447,6 +449,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     label = _get_config_value(entry, CONF_LABEL, DEFAULT_LABEL)
     prefix = _get_prefix_value(entry)
     push_interval = _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
+    send_only_changed = bool(
+        _get_config_value(
+            entry,
+            CONF_SEND_ONLY_CHANGED,
+            DEFAULT_SEND_ONLY_CHANGED,
+        )
+    )
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
@@ -482,13 +491,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 label_id=push_label_id,
                 prefix=prefix,
                 timeout=timeout,
+                send_only_changed=send_only_changed,
             )
 
             _LOGGER.debug(
-                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s'",
+                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s', send_only_changed=%s",
                 label,
                 push_label_id,
                 prefix,
+                send_only_changed,
             )
 
             if push_enabled:

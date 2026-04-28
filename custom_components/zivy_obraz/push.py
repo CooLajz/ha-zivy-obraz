@@ -38,6 +38,7 @@ class PushDiagnostics:
     last_successful_push: Any = None
     pushed_entities: int = 0
     skipped_entities: int = 0
+    failed_entities: int = 0
     request_batches: int = 0
     next_push: Any = None
     last_error: str | None = None
@@ -47,6 +48,9 @@ class PushDiagnostics:
     skipped_variables: dict[str, str] = field(default_factory=dict)
     skipped_variables_total: int = 0
     skipped_variables_truncated: bool = False
+    failed_variables: dict[str, str] = field(default_factory=dict)
+    failed_variables_total: int = 0
+    failed_variables_truncated: bool = False
 
 
 @dataclass
@@ -69,6 +73,7 @@ class ZivyObrazPushManager:
         label_id: str,
         prefix: str,
         timeout: int,
+        send_only_changed: bool,
     ) -> None:
         """Initialize the push manager."""
         self.hass = hass
@@ -76,9 +81,11 @@ class ZivyObrazPushManager:
         self.label_id = label_id
         self.prefix = prefix.strip()
         self.timeout = timeout
+        self.send_only_changed = send_only_changed
         self.session = async_get_clientsession(hass)
         self.diagnostics = PushDiagnostics()
         self._listeners: list[Callable[[], None]] = []
+        self._last_sent_states: dict[str, str] = {}
 
     @callback
     def async_add_listener(self, listener: Callable[[], None]) -> CALLBACK_TYPE:
@@ -123,21 +130,45 @@ class ZivyObrazPushManager:
             len(variables) > MAX_DIAGNOSTIC_VARIABLES
         )
 
+    def _set_failed_variable_preview(self, variables: dict[str, str]) -> None:
+        """Store a bounded failed variable preview for HA state attributes."""
+        self.diagnostics.failed_variables_total = len(variables)
+        self.diagnostics.failed_variables = dict(
+            list(variables.items())[:MAX_DIAGNOSTIC_VARIABLES]
+        )
+        self.diagnostics.failed_variables_truncated = (
+            len(variables) > MAX_DIAGNOSTIC_VARIABLES
+        )
+
     async def async_push(self, _now: Any = None) -> None:
         """Push current labeled entity states to Živý Obraz."""
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
         entity_pairs = collection.pairs
+        skipped_pairs = list(collection.skipped_pairs)
+        unchanged_pairs: list[tuple[str, str]] = []
+
+        if self.send_only_changed:
+            changed_pairs: list[tuple[str, str]] = []
+            for key, value in entity_pairs:
+                if self._last_sent_states.get(key) == value:
+                    unchanged_pairs.append((key, value))
+                    continue
+                changed_pairs.append((key, value))
+            entity_pairs = changed_pairs
+            skipped_pairs.extend(unchanged_pairs)
+
         await self._async_push_pairs(
             pushed_at=pushed_at,
             entity_pairs=entity_pairs,
-            skipped_entities=collection.skipped_entities,
-            skipped_pairs=collection.skipped_pairs,
-            empty_status="no_entities",
+            skipped_entities=collection.skipped_entities + len(unchanged_pairs),
+            skipped_pairs=skipped_pairs,
+            empty_status="no_new_data" if unchanged_pairs else "no_entities",
             empty_log_message=(
                 "Živý Obraz push skipped: no valid entities found for label_id '%s'",
                 self.label_id,
             ),
+            update_cache=True,
         )
 
     async def async_push_values(self, values: dict[str, Any]) -> None:
@@ -155,6 +186,7 @@ class ZivyObrazPushManager:
             skipped_pairs=[],
             empty_status="no_entities",
             empty_log_message=("Živý Obraz custom push skipped: no values provided",),
+            update_cache=False,
         )
 
     async def _async_push_pairs(
@@ -166,17 +198,23 @@ class ZivyObrazPushManager:
         skipped_pairs: list[tuple[str, str]],
         empty_status: str,
         empty_log_message: tuple[Any, ...],
+        update_cache: bool,
     ) -> None:
         """Push prepared key/value pairs and update diagnostics."""
         self.diagnostics.last_push = pushed_at
         self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
         self.diagnostics.skipped_entities = skipped_entities
+        self.diagnostics.failed_entities = 0
         self._set_skipped_variable_preview(dict(skipped_pairs))
+        self._set_failed_variable_preview({})
         self.diagnostics.request_batches = 0
 
         if not entity_pairs:
-            if skipped_entities > 0:
+            if empty_status == "no_new_data":
+                self.diagnostics.status = "no_new_data"
+                self.diagnostics.last_error = None
+            elif skipped_entities > 0:
                 self.diagnostics.status = "no_valid_entities"
                 self.diagnostics.last_error = (
                     "Selected entities were unavailable or unknown"
@@ -211,13 +249,24 @@ class ZivyObrazPushManager:
             return
 
         failed_batches = 0
+        successful_variables: dict[str, str] = {}
+        failed_variables: dict[str, str] = {}
         last_error: str | None = None
 
         for batch in batches:
             error = await self._async_send_batch(batch)
+            batch_variables = {
+                key: value for key, value in batch.items() if key != "import_key"
+            }
             if error is not None:
                 failed_batches += 1
+                failed_variables.update(batch_variables)
                 last_error = error
+                continue
+
+            successful_variables.update(batch_variables)
+            if update_cache:
+                self._last_sent_states.update(batch_variables)
 
         if failed_batches == 0:
             self.diagnostics.status = "success"
@@ -227,6 +276,10 @@ class ZivyObrazPushManager:
         else:
             self.diagnostics.status = "partial_failure"
 
+        self.diagnostics.pushed_entities = len(successful_variables)
+        self.diagnostics.failed_entities = len(failed_variables)
+        self._set_variable_preview(successful_variables)
+        self._set_failed_variable_preview(failed_variables)
         self.diagnostics.last_error = last_error
         self._notify_listeners()
 

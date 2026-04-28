@@ -23,6 +23,7 @@ from .const import (
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
@@ -34,6 +35,7 @@ from .const import (
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
@@ -179,6 +181,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_PUSH_ENABLED] = bool(
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
+    prepared[CONF_SEND_ONLY_CHANGED] = bool(
+        user_input.get(CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED)
+    )
 
     scan_interval = _coerce_int(
         user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -270,6 +275,7 @@ def _build_schema(
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
     push_interval: int = DEFAULT_PUSH_INTERVAL,
+    send_only_changed: bool = DEFAULT_SEND_ONLY_CHANGED,
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
@@ -301,6 +307,7 @@ def _build_schema(
     schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
         vol.Coerce(int),
     )
+    schema[vol.Optional(CONF_SEND_ONLY_CHANGED, default=send_only_changed)] = bool
 
     return vol.Schema(schema)
 
@@ -429,6 +436,9 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         current_push_interval = _get_config_value(
             self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
         )
+        current_send_only_changed = _get_config_value(
+            self._config_entry, CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED
+        )
 
         has_export_key = bool(_normalize_api_key(current_export_key))
         has_import_key = bool(_normalize_api_key(current_import_key))
@@ -476,6 +486,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             label=current_label,
             prefix=current_prefix,
             push_interval=current_push_interval,
+            send_only_changed=current_send_only_changed,
         )
         schema = self.add_suggested_values_to_schema(
             schema,
