@@ -39,18 +39,16 @@ from .const import (
     DEFAULT_TIMEOUT,
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
+    MAX_OVERDUE_TOLERANCE,
+    MAX_PUSH_INTERVAL,
+    MAX_SCAN_INTERVAL,
+    MAX_TIMEOUT,
+    MIN_OVERDUE_TOLERANCE,
+    MIN_PUSH_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    MIN_TIMEOUT,
     ZIVY_OBRAZ_EXPORT_URL,
 )
-
-MIN_SCAN_INTERVAL = 60
-MAX_SCAN_INTERVAL = 86400
-MIN_PUSH_INTERVAL = 60
-MAX_PUSH_INTERVAL = 86400
-MIN_TIMEOUT = 5
-MAX_TIMEOUT = 120
-MIN_OVERDUE_TOLERANCE = 0
-MAX_OVERDUE_TOLERANCE = 10080
-
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
     "invalid_group_id": (CONF_GROUP_ID, "invalid_group_id"),
@@ -266,16 +264,10 @@ def _build_schema(
     export_key: str | None = None,
     use_group_filter: bool = DEFAULT_USE_GROUP_FILTER,
     group_id: str = "",
-    scan_interval: int = DEFAULT_SCAN_INTERVAL,
     timeout: int = DEFAULT_TIMEOUT,
-    overdue_tolerance: int = DEFAULT_OVERDUE_TOLERANCE,
-    overdue_notification: bool = DEFAULT_OVERDUE_NOTIFICATION,
-    push_enabled: bool = DEFAULT_PUSH_ENABLED,
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
-    push_interval: int = DEFAULT_PUSH_INTERVAL,
-    send_only_changed: bool = DEFAULT_SEND_ONLY_CHANGED,
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
@@ -287,27 +279,15 @@ def _build_schema(
 
     schema[vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter)] = bool
     schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
-    schema[vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval)] = vol.All(
-        vol.Coerce(int),
-    )
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
     )
-    schema[vol.Optional(CONF_OVERDUE_NOTIFICATION, default=overdue_notification)] = bool
-    schema[vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance)] = vol.All(
-        vol.Coerce(int),
-    )
-    schema[vol.Optional(CONF_PUSH_ENABLED, default=push_enabled)] = bool
-    schema[vol.Optional(CONF_SEND_ONLY_CHANGED, default=send_only_changed)] = bool
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
-    schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
-        vol.Coerce(int),
-    )
 
     return vol.Schema(schema)
 
@@ -448,6 +428,12 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 merged_input = {
                     CONF_EXPORT_KEY: _normalize_api_key(current_export_key),
                     CONF_IMPORT_KEY: _normalize_api_key(current_import_key),
+                    CONF_SCAN_INTERVAL: current_scan_interval,
+                    CONF_OVERDUE_TOLERANCE: current_overdue_tolerance,
+                    CONF_OVERDUE_NOTIFICATION: current_overdue_notification,
+                    CONF_PUSH_ENABLED: current_push_enabled,
+                    CONF_PUSH_INTERVAL: current_push_interval,
+                    CONF_SEND_ONLY_CHANGED: current_send_only_changed,
                     **user_input,
                 }
                 prepared_input = _prepare_user_input(merged_input)
@@ -477,16 +463,10 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             export_key=current_export_key,
             use_group_filter=current_use_group_filter,
             group_id=current_group_id,
-            scan_interval=current_scan_interval,
             timeout=current_timeout,
-            overdue_tolerance=current_overdue_tolerance,
-            overdue_notification=current_overdue_notification,
-            push_enabled=current_push_enabled,
             import_key=current_import_key,
             label=current_label,
             prefix=current_prefix,
-            push_interval=current_push_interval,
-            send_only_changed=current_send_only_changed,
         )
         schema = self.add_suggested_values_to_schema(
             schema,
