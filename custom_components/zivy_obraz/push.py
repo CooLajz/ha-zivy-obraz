@@ -8,6 +8,11 @@ from typing import Any, Callable
 from urllib.parse import urlencode
 
 from aiohttp import ClientError, ClientResponseError
+
+try:
+    from homeassistant.components.sensor import async_rounded_state
+except ImportError:
+    async_rounded_state = None
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -312,7 +317,7 @@ class ZivyObrazPushManager:
                 continue
 
             param_name = self._make_param_name(entry.entity_id)
-            pairs.append((param_name, state_obj.state))
+            pairs.append((param_name, self._format_state_for_push(entry, state_obj)))
 
         pairs.sort(key=lambda item: item[0])
 
@@ -348,6 +353,20 @@ class ZivyObrazPushManager:
             return False
 
         return self.label_id in getattr(device_entry, "labels", set())
+
+    def _format_state_for_push(
+        self,
+        entry: er.RegistryEntry,
+        state_obj: Any,
+    ) -> str:
+        """Return entity state formatted for push."""
+        if async_rounded_state is None or entry.domain != "sensor":
+            return state_obj.state
+
+        try:
+            return async_rounded_state(self.hass, entry.entity_id, state_obj)
+        except (TypeError, ValueError):
+            return state_obj.state
 
     def _make_param_name(self, entity_id: str) -> str:
         """Convert entity_id into a safe query parameter name."""
