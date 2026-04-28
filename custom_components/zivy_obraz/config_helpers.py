@@ -51,5 +51,5 @@ async def async_update_options(
     entry_data["runtime_options_update_keys"] = (
         set(entry_data.get("runtime_options_update_keys", set())) | set(values)
     )
-    hass.config_entries.async_update_entry(config_entry, options=options)
     async_dispatcher_send(hass, options_update_signal(config_entry.entry_id), values)
+    hass.config_entries.async_update_entry(config_entry, options=options)
