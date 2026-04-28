@@ -298,6 +298,7 @@ def _build_schema(
         vol.Coerce(int),
     )
     schema[vol.Optional(CONF_PUSH_ENABLED, default=push_enabled)] = bool
+    schema[vol.Optional(CONF_SEND_ONLY_CHANGED, default=send_only_changed)] = bool
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
@@ -307,7 +308,6 @@ def _build_schema(
     schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
         vol.Coerce(int),
     )
-    schema[vol.Optional(CONF_SEND_ONLY_CHANGED, default=send_only_changed)] = bool
 
     return vol.Schema(schema)
 
