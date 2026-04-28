@@ -7,6 +7,7 @@ from homeassistant.components.number import NumberEntity, NumberEntityDescriptio
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -14,6 +15,7 @@ from .config_helpers import (
     async_update_option,
     async_update_options,
     get_config_value,
+    options_update_signal,
 )
 from .const import (
     CONF_OVERDUE_TOLERANCE,
@@ -111,6 +113,31 @@ class ZivyObrazConfigNumber(NumberEntity):
             manufacturer="Živý Obraz",
         )
 
+    async def async_added_to_hass(self) -> None:
+        """Handle entity added to hass."""
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                options_update_signal(self._entry.entry_id),
+                self._handle_options_update,
+            )
+        )
+
+    @property
+    def native_min_value(self) -> float:
+        """Return current minimum value."""
+        if self.entity_description.option_key != CONF_OVERDUE_TOLERANCE:
+            return self.entity_description.native_min_value
+
+        scan_interval = int(
+            get_config_value(
+                self._entry,
+                CONF_SCAN_INTERVAL,
+                DEFAULT_SCAN_INTERVAL,
+            )
+        )
+        return max(MIN_OVERDUE_TOLERANCE, math.ceil(scan_interval / 60))
+
     @property
     def native_value(self) -> int:
         """Return current option value."""
@@ -156,3 +183,15 @@ class ZivyObrazConfigNumber(NumberEntity):
             self.entity_description.option_key,
             int_value,
         )
+
+    def _handle_options_update(self, changed_options: dict[str, object]) -> None:
+        """Update HA state after runtime options changed."""
+        if self.entity_description.option_key in changed_options:
+            self.async_write_ha_state()
+            return
+
+        if (
+            self.entity_description.option_key == CONF_OVERDUE_TOLERANCE
+            and CONF_SCAN_INTERVAL in changed_options
+        ):
+            self.async_write_ha_state()

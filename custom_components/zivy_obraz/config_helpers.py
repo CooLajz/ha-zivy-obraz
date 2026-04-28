@@ -4,8 +4,14 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN
+
+
+def options_update_signal(entry_id: str) -> str:
+    """Return dispatcher signal for runtime option updates."""
+    return f"{DOMAIN}_{entry_id}_runtime_options_updated"
 
 
 def get_config_value(config_entry: ConfigEntry, key: str, default: Any) -> Any:
@@ -46,3 +52,4 @@ async def async_update_options(
         set(entry_data.get("runtime_options_update_keys", set())) | set(values)
     )
     hass.config_entries.async_update_entry(config_entry, options=options)
+    async_dispatcher_send(hass, options_update_signal(config_entry.entry_id), values)
