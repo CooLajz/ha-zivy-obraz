@@ -9,6 +9,7 @@ from aiohttp import ClientError, ContentTypeError
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .api import normalize_export_payload
 from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
@@ -80,8 +81,7 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
             response.raise_for_status()
             payload = await response.json(content_type=None)
 
-    if not isinstance(payload, dict):
-        raise ValueError("Top-level JSON must be an object/dict")
+    normalize_export_payload(payload)
 
     return {"title": "Živý Obraz"}
 
