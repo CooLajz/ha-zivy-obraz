@@ -226,6 +226,9 @@ Senzor `Push status` obsahuje v atributech poslední chybu. Senzor
 `Failed entities` obsahuje omezený náhled proměnných z dávek, které se
 nepodařilo odeslat. Pokud je zapnuté odesílání jen změněných stavů, po restartu
 se odešlou všechny vybrané entity a následně už pouze entity se změněným stavem.
+U senzorů se při odesílání použije stejná prezentační přesnost hodnoty, jakou
+Home Assistant používá pro `Přesnost zobrazení`, pokud ji daná verze Home
+Assistantu poskytuje.
 Když není co odeslat, `Push status` bude `no_new_data` a `Last successful push`
 se aktualizuje na čas úspěšně dokončeného běhu. Náhledy jsou
 omezené na prvních 50 položek, aby zbytečně nezvětšovaly stavové atributy Home
@@ -590,7 +593,10 @@ The `Push status` sensor exposes the last error as an attribute. The
 `Failed entities` sensor exposes a bounded preview of variables from batches
 that failed to send. When sending only changed states is enabled, all selected
 entities are sent after restart and then only entities with changed states are
-sent. When there is nothing new to send, `Push status` is `no_new_data` and
+sent. For sensors, pushed values use the same presentation precision Home
+Assistant uses for `Display precision`, when the installed Home Assistant
+version provides it. When there is nothing new to send, `Push status` is
+`no_new_data` and
 `Last successful push` is updated to the successful run time.
 Previews are limited to the first 50 items to avoid oversized Home Assistant
 state attributes.
