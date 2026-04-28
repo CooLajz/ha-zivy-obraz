@@ -245,10 +245,11 @@ odeslání:
 
 Senzor `Push status` obsahuje v atributech poslední chybu. Senzor
 `Pushed entities` obsahuje omezený náhled odesílaných proměnných a senzor
-`Skipped entities` obsahuje omezený náhled přeskočených proměnných. Senzor
-`Failed entities` obsahuje omezený náhled proměnných z dávek, které se
-nepodařilo odeslat. Pokud je zapnuté odesílání jen změněných stavů, po restartu
-se odešlou všechny vybrané entity a následně už pouze entity se změněným stavem.
+`Skipped entities` obsahuje omezený náhled proměnných přeskočených kvůli
+nezměněné hodnotě. Senzor `Failed entities` obsahuje omezený náhled proměnných,
+které se nepodařilo odeslat, včetně důvodů jako `invalid_state` nebo
+`url_too_long`. Pokud je zapnuté odesílání jen změněných stavů, po restartu se
+odešlou všechny vybrané entity a následně už pouze entity se změněným stavem.
 U senzorů se při odesílání použije stejná prezentační přesnost hodnoty, jakou
 Home Assistant používá pro `Přesnost zobrazení`, pokud ji daná verze Home
 Assistantu poskytuje.
@@ -626,11 +627,12 @@ The device also exposes diagnostic entities for the last push attempt:
 
 The `Push status` sensor exposes the last error as an attribute. The
 `Pushed entities` sensor exposes a bounded preview of pushed variables and the
-`Skipped entities` sensor exposes a bounded preview of skipped variables. The
-`Failed entities` sensor exposes a bounded preview of variables from batches
-that failed to send. When sending only changed states is enabled, all selected
-entities are sent after restart and then only entities with changed states are
-sent. For sensors, pushed values use the same presentation precision Home
+`Skipped entities` sensor exposes a bounded preview of variables skipped because
+their value did not change. The `Failed entities` sensor exposes a bounded
+preview of variables that could not be sent, including reasons such as
+`invalid_state` or `url_too_long`. When sending only changed states is enabled,
+all selected entities are sent after restart and then only entities with changed
+states are sent. For sensors, pushed values use the same presentation precision Home
 Assistant uses for `Display precision`, when the installed Home Assistant
 version provides it. When there is nothing new to send, `Push status` is
 `no_new_data` and
