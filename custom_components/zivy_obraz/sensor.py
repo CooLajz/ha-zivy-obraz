@@ -209,6 +209,14 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
+        key="push_failed_entities",
+        value_key="failed_entities",
+        name="Failed entities",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazPushSensorDescription(
         key="push_request_batches",
         value_key="request_batches",
         name="Request batches",
@@ -589,7 +597,12 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
         diagnostics = self._push_manager.diagnostics
 
         if self.entity_description.key == "push_status":
-            return {"last_error": diagnostics.last_error}
+            return {
+                "last_error": diagnostics.last_error,
+                "pushed_entities": diagnostics.pushed_entities,
+                "skipped_entities": diagnostics.skipped_entities,
+                "failed_entities": diagnostics.failed_entities,
+            }
 
         if self.entity_description.key == "push_pushed_entities":
             return {
@@ -603,6 +616,13 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
                 "skipped_variables": diagnostics.skipped_variables,
                 "skipped_variables_total": diagnostics.skipped_variables_total,
                 "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
+            }
+
+        if self.entity_description.key == "push_failed_entities":
+            return {
+                "failed_variables": diagnostics.failed_variables,
+                "failed_variables_total": diagnostics.failed_variables_total,
+                "failed_variables_truncated": diagnostics.failed_variables_truncated,
             }
 
         return None

@@ -13,11 +13,12 @@
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Overdue tolerance (min)",
           "overdue_notification": "Create notifications for Overdue issues",
-          "push_enabled": "Enable push to Živý Obraz",
+          "push_enabled": "Enable automatic push to Živý Obraz",
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix",
-          "push_interval": "Push interval (s)"
+          "push_interval": "Push interval (s)",
+          "send_only_changed": "Send only changed entity states"
         }
       }
     },
@@ -52,11 +53,12 @@
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Overdue tolerance (min)",
           "overdue_notification": "Create notifications for Overdue issues",
-          "push_enabled": "Enable push to Živý Obraz",
+          "push_enabled": "Enable automatic push to Živý Obraz",
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix",
-          "push_interval": "Push interval (s)"
+          "push_interval": "Push interval (s)",
+          "send_only_changed": "Send only changed entity states"
         }
       }
     },
@@ -86,6 +88,10 @@
         "name": {
           "name": "Instance name",
           "description": "Optional instance name. Leave empty to push all configured instances."
+        },
+        "send_all": {
+          "name": "Send all",
+          "description": "Optional override. When true, send all selected entities. When false, send only changed entities. Leave empty to use integration settings."
         }
       }
     },

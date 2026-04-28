@@ -16,6 +16,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from .api import normalize_export_payload
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
@@ -123,10 +124,10 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 f"Endpoint did not return valid JSON. First 200 chars: {preview}"
             ) from err
 
-        if not isinstance(data, dict):
-            raise UpdateFailed("Top-level JSON must be an object/dict")
-
-        return data
+        try:
+            return normalize_export_payload(data)
+        except ValueError as err:
+            raise UpdateFailed(str(err)) from err
 
     @callback
     def _async_registry_macs_for_entry(self) -> set[str]:

@@ -13,11 +13,12 @@
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Tolerance zpoždění (min)",
           "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "push_enabled": "Zapnout automatické odesílání do Živého Obrazu",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)"
+          "push_interval": "Interval odesílání (s)",
+          "send_only_changed": "Odesílat jen změněné stavy entit"
         }
       }
     },
@@ -52,11 +53,12 @@
           "timeout": "HTTP timeout (s)",
           "overdue_tolerance": "Tolerance zpoždění (min)",
           "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout odesílání do Živého obrazu",
+          "push_enabled": "Zapnout automatické odesílání do Živého Obrazu",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)"
+          "push_interval": "Interval odesílání (s)",
+          "send_only_changed": "Odesílat jen změněné stavy entit"
         }
       }
     },
@@ -86,6 +88,10 @@
         "name": {
           "name": "Název instance",
           "description": "Volitelný název instance. Pokud zůstane prázdný, odešlou se všechny nakonfigurované instance."
+        },
+        "send_all": {
+          "name": "Odeslat vše",
+          "description": "Volitelné přepsání nastavení. Při true se odešlou všechny vybrané entity. Při false se odešlou jen změněné entity. Pokud zůstane prázdné, použije se nastavení integrace."
         }
       }
     },

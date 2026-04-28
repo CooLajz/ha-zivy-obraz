@@ -17,6 +17,7 @@ import voluptuous as vol
 from .const import (
     ATTR_ENTRY_ID,
     ATTR_NAME,
+    ATTR_SEND_ALL,
     ATTR_VALUE,
     ATTR_VALUES,
     ATTR_VARIABLE,
@@ -30,6 +31,7 @@ from .const import (
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
@@ -39,6 +41,7 @@ from .const import (
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
@@ -61,6 +64,7 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_SEND_ALL): cv.boolean,
     }
 )
 
@@ -194,6 +198,7 @@ async def _async_handle_manual_push(
     """Handle manual push service call."""
     entry_id = call.data.get(ATTR_ENTRY_ID)
     name = call.data.get(ATTR_NAME)
+    send_all = call.data.get(ATTR_SEND_ALL)
 
     if entry_id and name:
         raise ServiceValidationError(
@@ -210,7 +215,7 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(entry_id)},
             )
 
-        await _async_push_entry(entry_id, entry_data)
+        await _async_push_entry(entry_id, entry_data, send_all=send_all)
         return
 
     if name:
@@ -243,11 +248,15 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(name)},
             )
 
-        await _async_push_entry(selected_entry.entry_id, entry_data)
+        await _async_push_entry(
+            selected_entry.entry_id,
+            entry_data,
+            send_all=send_all,
+        )
         return
 
     push_tasks = [
-        _async_push_entry(entry_id, entry_data)
+        _async_push_entry(entry_id, entry_data, send_all=send_all)
         for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
         if entry_data.get("push_manager") is not None
     ]
@@ -368,7 +377,12 @@ def _normalize_custom_values(
     }
 
 
-async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
+async def _async_push_entry(
+    entry_id: str,
+    entry_data: dict,
+    *,
+    send_all: bool | None = None,
+) -> None:
     """Push one loaded config entry."""
     push_manager = entry_data.get("push_manager")
 
@@ -379,7 +393,7 @@ async def _async_push_entry(entry_id: str, entry_data: dict) -> None:
             translation_placeholders={"entry": str(entry_id)},
         )
 
-    await push_manager.async_push()
+    await push_manager.async_push(send_all=send_all)
 
 
 async def _async_push_entry_values(
@@ -447,6 +461,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     label = _get_config_value(entry, CONF_LABEL, DEFAULT_LABEL)
     prefix = _get_prefix_value(entry)
     push_interval = _get_config_value(entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL)
+    send_only_changed = bool(
+        _get_config_value(
+            entry,
+            CONF_SEND_ONLY_CHANGED,
+            DEFAULT_SEND_ONLY_CHANGED,
+        )
+    )
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
@@ -482,13 +503,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 label_id=push_label_id,
                 prefix=prefix,
                 timeout=timeout,
+                send_only_changed=send_only_changed,
             )
 
             _LOGGER.debug(
-                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s'",
+                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s', send_only_changed=%s",
                 label,
                 push_label_id,
                 prefix,
+                send_only_changed,
             )
 
             if push_enabled:
