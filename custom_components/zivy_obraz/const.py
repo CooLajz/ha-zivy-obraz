@@ -47,7 +47,7 @@ ZIVY_OBRAZ_PUSH_URL = "https://in.zivyobraz.eu/"
 
 MAX_PUSH_URL_LENGTH = 1800
 
-PLATFORMS = ["sensor", "binary_sensor", "number", "switch"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "button"]
 
 SERVICE_PUSH = "push"
 SERVICE_PUSH_VALUES = "push_values"

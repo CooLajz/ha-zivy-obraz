@@ -86,6 +86,14 @@
       "send_only_changed": {
         "name": "Odesílat jen změněné hodnoty entit"
       }
+    },
+    "button": {
+      "refresh_import": {
+        "name": "Stáhnout data nyní"
+      },
+      "push_now": {
+        "name": "Odeslat hodnoty nyní"
+      }
     }
   },
   "services": {

@@ -86,6 +86,14 @@
       "send_only_changed": {
         "name": "Send only changed entity states"
       }
+    },
+    "button": {
+      "refresh_import": {
+        "name": "Refresh import now"
+      },
+      "push_now": {
+        "name": "Push values now"
+      }
     }
   },
   "services": {
