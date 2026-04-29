@@ -50,9 +50,10 @@ from .const import (
     PLATFORMS,
     SERVICE_PUSH,
     SERVICE_PUSH_VALUES,
-    ZIVY_OBRAZ_EXPORT_URL,
 )
 from .coordinator import ZivyObrazCoordinator
+from .api import build_export_url
+from .device import diagnostic_device_identifier
 from .label_helper import async_ensure_label_exists
 from .push import ZivyObrazPushManager
 
@@ -113,10 +114,7 @@ def _get_prefix_value(entry: ConfigEntry) -> str:
 
 def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
     """Build export URL from config."""
-    url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={export_key}&epapers=json"
-    if use_group_filter and group_id is not None:
-        url += f"&group_id={group_id}"
-    return url
+    return build_export_url(export_key, use_group_filter, group_id)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -166,7 +164,7 @@ def _entry_name(entry: ConfigEntry) -> str:
 
 def _diagnostic_device_identifier(entry: ConfigEntry) -> tuple[str, str]:
     """Return the diagnostic device identifier for a config entry."""
-    return (DOMAIN, f"{entry.entry_id}_push")
+    return diagnostic_device_identifier(entry)
 
 
 def _diagnostic_device_name(entry_name: str) -> str:

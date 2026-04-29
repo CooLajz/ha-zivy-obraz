@@ -9,7 +9,7 @@ from aiohttp import ClientError, ContentTypeError
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import normalize_export_payload
+from .api import build_export_url, normalize_export_payload
 from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
@@ -49,7 +49,6 @@ from .const import (
     MIN_PUSH_INTERVAL,
     MIN_SCAN_INTERVAL,
     MIN_TIMEOUT,
-    ZIVY_OBRAZ_EXPORT_URL,
 )
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
@@ -70,13 +69,16 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     session = async_get_clientsession(hass)
     timeout = data[CONF_TIMEOUT]
 
-    url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={data[CONF_EXPORT_KEY]}&epapers=json"
-
     if data.get(CONF_USE_GROUP_FILTER):
         group_id = data.get(CONF_GROUP_ID)
         if group_id is None:
             raise ValueError("group_id_required")
-        url += f"&group_id={group_id}"
+
+    url = build_export_url(
+        data[CONF_EXPORT_KEY],
+        data.get(CONF_USE_GROUP_FILTER, False),
+        data.get(CONF_GROUP_ID),
+    )
 
     async with asyncio.timeout(timeout):
         async with session.get(url, headers={"Accept": "application/json"}) as response:

@@ -29,7 +29,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import ZivyObrazCoordinator
-from .device import build_device_info
+from .device import build_device_info, diagnostic_device_identifier
 from .push import PUSH_PROBLEM_STATUSES, ZivyObrazPushManager
 
 
@@ -423,7 +423,7 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
         self._push_manager = push_manager
         self._attr_unique_id = f"{entry.entry_id}_push_problem"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )
@@ -469,7 +469,7 @@ class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
         self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_sync_problem"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )

@@ -32,6 +32,7 @@ from .const import (
     MIN_PUSH_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
+from .device import diagnostic_device_identifier
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -116,7 +117,7 @@ class ZivyObrazConfigNumber(NumberEntity):
             )
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )

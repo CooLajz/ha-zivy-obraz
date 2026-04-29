@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 import json
 import logging
+import re
 from typing import Any, Callable
 
 from aiohttp import ClientError, ClientResponseError
@@ -21,6 +22,19 @@ from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
+
+_PANEL_MAC_RE = re.compile(
+    r"^(?:"
+    r"[0-9a-f]{12}|"
+    r"[0-9a-f]{2}(?::[0-9a-f]{2}){5}|"
+    r"[0-9a-f]{2}(?:-[0-9a-f]{2}){5}"
+    r")$"
+)
+
+
+def _is_panel_mac(value: str) -> bool:
+    """Return True when an identifier looks like a panel MAC address."""
+    return _PANEL_MAC_RE.fullmatch(value.lower()) is not None
 
 
 @dataclass
@@ -166,8 +180,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             self.config_entry.entry_id,
         ):
             for domain, identifier in device.identifiers:
-                if domain == DOMAIN:
-                    macs.add(str(identifier).lower())
+                identifier = str(identifier).lower()
+                if domain == DOMAIN and _is_panel_mac(identifier):
+                    macs.add(identifier)
 
         return macs
 
@@ -191,6 +206,8 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             )
 
             for entity_entry in entity_entries:
+                if entity_entry.config_entry_id != self.config_entry.entry_id:
+                    continue
                 entity_registry.async_remove(entity_entry.entity_id)
                 _LOGGER.info(
                     "Removed stale Živý Obraz entity %s for device %s",

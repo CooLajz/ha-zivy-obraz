@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
+from .device import diagnostic_device_identifier
 from .push import ZivyObrazPushManager
 
 
@@ -87,7 +88,7 @@ class ZivyObrazButton(ButtonEntity):
         self._press_action = press_action
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )

@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_SEND_ONLY_CHANGED,
     DOMAIN,
 )
+from .device import diagnostic_device_identifier
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -84,7 +85,7 @@ class ZivyObrazConfigSwitch(SwitchEntity):
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )

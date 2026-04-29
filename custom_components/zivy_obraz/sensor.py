@@ -29,7 +29,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
-from .device import build_device_info
+from .device import build_device_info, diagnostic_device_identifier
 from .push import ZivyObrazPushManager
 
 
@@ -559,7 +559,7 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
             description.entity_registry_enabled_default
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )
@@ -635,7 +635,7 @@ class ZivyObrazSyncDiagnosticSensor(
             description.entity_registry_enabled_default
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )

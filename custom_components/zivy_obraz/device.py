@@ -78,3 +78,8 @@ def build_device_info(mac: str, data: dict[str, Any]) -> DeviceInfo:
         hw_version=metadata["hw_version"],
         sw_version=metadata["sw_version"],
     )
+
+
+def diagnostic_device_identifier(entry) -> tuple[str, str]:
+    """Return the diagnostic/config device identifier for a config entry."""
+    return (DOMAIN, f"config_entry:{entry.entry_id}")
