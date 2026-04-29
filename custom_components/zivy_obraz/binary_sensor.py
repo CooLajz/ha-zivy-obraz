@@ -43,6 +43,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
         key="overdue",
         name="Overdue",
         device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:timer-alert-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
 )
@@ -412,6 +413,7 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_name = "Push problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_icon = "mdi:cloud-alert-outline"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
@@ -458,6 +460,7 @@ class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_name = "Sync problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_icon = "mdi:sync-alert"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(

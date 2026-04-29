@@ -53,6 +53,7 @@ NUMBER_DESCRIPTIONS: tuple[ZivyObrazNumberDescription, ...] = (
         native_max_value=MAX_SCAN_INTERVAL,
         native_step=1,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        icon="mdi:update",
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazNumberDescription(
@@ -64,6 +65,7 @@ NUMBER_DESCRIPTIONS: tuple[ZivyObrazNumberDescription, ...] = (
         native_max_value=MAX_PUSH_INTERVAL,
         native_step=1,
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        icon="mdi:cloud-upload-outline",
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazNumberDescription(
@@ -75,6 +77,7 @@ NUMBER_DESCRIPTIONS: tuple[ZivyObrazNumberDescription, ...] = (
         native_max_value=MAX_OVERDUE_TOLERANCE,
         native_step=1,
         native_unit_of_measurement=UnitOfTime.MINUTES,
+        icon="mdi:timer-alert-outline",
         entity_category=EntityCategory.CONFIG,
     ),
 )

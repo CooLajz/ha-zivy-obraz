@@ -37,6 +37,7 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
         translation_key="overdue_notification",
         option_key=CONF_OVERDUE_NOTIFICATION,
         default_value=DEFAULT_OVERDUE_NOTIFICATION,
+        icon="mdi:bell-alert",
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazSwitchDescription(
@@ -44,6 +45,7 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
         translation_key="push_enabled",
         option_key=CONF_PUSH_ENABLED,
         default_value=DEFAULT_PUSH_ENABLED,
+        icon="mdi:cloud-upload-outline",
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazSwitchDescription(
@@ -51,6 +53,7 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
         translation_key="send_only_changed",
         option_key=CONF_SEND_ONLY_CHANGED,
         default_value=DEFAULT_SEND_ONLY_CHANGED,
+        icon="mdi:delta",
         entity_category=EntityCategory.CONFIG,
     ),
 )
