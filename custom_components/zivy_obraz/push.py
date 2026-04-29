@@ -23,7 +23,7 @@ from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
 
 _LOGGER = logging.getLogger(__name__)
 
-_INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
+_INVALID_STATE_VALUES = {"unknown", "unavailable", None}
 INVALID_STATE_FALLBACK = "N/A"
 MAX_DIAGNOSTIC_VARIABLES = 50
 PUSH_PROBLEM_STATUSES = {

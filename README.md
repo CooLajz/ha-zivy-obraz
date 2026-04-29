@@ -136,6 +136,19 @@ Příklad requestu:
 https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
 ```
 
+## Neplatné stavy entit
+
+Ve výchozím nastavení se entity se stavem `unknown`, `unavailable` nebo
+chybějícím stavem neodesílají a zobrazí se v diagnostice `Failed entities`
+s důvodem `invalid_state`. Prázdný textový stav `""` je validní hodnota a
+odesílá se beze změny.
+
+V nastavení integrace lze zapnout volbu
+`Send N/A for invalid entity states`. Pokud je zapnutá, integrace místo
+neplatné hodnoty odešle do Živého obrazu hodnotu `N/A`. Entita se pak počítá
+jako úspěšně odeslaná, takže nezvyšuje `Failed entities`. Na eINK displeji je
+díky tomu vidět například `N/A` nebo `N/A °C` místo staré hodnoty.
+
 ## Ruční odeslání hodnot
 
 Hodnoty lze odeslat okamžitě pomocí služby:
@@ -248,8 +261,10 @@ Senzor `Push status` obsahuje v atributech poslední chybu. Senzor
 `Skipped entities` obsahuje omezený náhled proměnných přeskočených kvůli
 nezměněné hodnotě. Senzor `Failed entities` obsahuje omezený náhled proměnných,
 které se nepodařilo odeslat, včetně důvodů jako `invalid_state` nebo
-`url_too_long`. Pokud je zapnuté odesílání jen změněných stavů, po restartu se
-odešlou všechny vybrané entity a následně už pouze entity se změněným stavem.
+`url_too_long`. Pokud je zapnutá volba `Send N/A for invalid entity states`,
+neplatné stavy se odešlou jako `N/A` a do `Failed entities` se nedostanou.
+Pokud je zapnuté odesílání jen změněných stavů, po restartu se odešlou všechny
+vybrané entity a následně už pouze entity se změněným stavem.
 U senzorů se při odesílání použije stejná prezentační přesnost hodnoty, jakou
 Home Assistant používá pro `Přesnost zobrazení`, pokud ji daná verze Home
 Assistantu poskytuje.
@@ -359,6 +374,15 @@ https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 ```
 
 Klíč najdete po přihlášení do služby v sekci **Účet**.
+
+---
+
+## Send N/A for invalid entity states
+
+Volitelné nastavení pro odesílání do Import API. Pokud je zapnuté, hodnoty entit
+ve stavu `unknown`, `unavailable` nebo bez dostupného stavu se odešlou jako
+`N/A` místo toho, aby se zařadily mezi failed entity. Prázdný textový stav `""`
+se odesílá beze změny.
 
 ---
 
@@ -519,6 +543,18 @@ Example:
 https://in.zivyobraz.eu/?import_key=XXXX&dum.sensor_teplota_kuchyne=23.5
 ```
 
+## Invalid entity states
+
+By default, entities with state `unknown`, `unavailable`, or a missing state are
+not sent and appear in `Failed entities` with the `invalid_state` reason. An
+empty text state `""` is a valid value and is sent unchanged.
+
+The integration options include `Send N/A for invalid entity states`. When it is
+enabled, the integration sends `N/A` to Živý Obraz instead of the invalid value.
+The entity is counted as successfully pushed, so it does not increase
+`Failed entities`. This makes the eINK display show values such as `N/A` or
+`N/A °C` instead of keeping an old value.
+
 ## Manual push
 
 Values can be sent immediately using the service:
@@ -630,13 +666,14 @@ The `Push status` sensor exposes the last error as an attribute. The
 `Skipped entities` sensor exposes a bounded preview of variables skipped because
 their value did not change. The `Failed entities` sensor exposes a bounded
 preview of variables that could not be sent, including reasons such as
-`invalid_state` or `url_too_long`. When sending only changed states is enabled,
-all selected entities are sent after restart and then only entities with changed
-states are sent. For sensors, pushed values use the same presentation precision Home
+`invalid_state` or `url_too_long`. When `Send N/A for invalid entity states` is
+enabled, invalid states are sent as `N/A` and do not appear in
+`Failed entities`. When sending only changed states is enabled, all selected
+entities are sent after restart and then only entities with changed states are
+sent. For sensors, pushed values use the same presentation precision Home
 Assistant uses for `Display precision`, when the installed Home Assistant
 version provides it. When there is nothing new to send, `Push status` is
-`no_new_data` and
-`Last successful push` is updated to the successful run time.
+`no_new_data` and `Last successful push` is updated to the successful run time.
 Previews are limited to the first 50 items to avoid oversized Home Assistant
 state attributes. When scheduled push is disabled, `Next push` is `Unknown`.
 
@@ -726,6 +763,14 @@ Used for sending data.
 ```
 https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 ```
+
+---
+
+## Send N/A for invalid entity states
+
+Optional Import API setting. When enabled, entity values with state `unknown`,
+`unavailable`, or no available state are sent as `N/A` instead of being reported
+as failed entities. Empty text state `""` is sent unchanged.
 
 ---
 
