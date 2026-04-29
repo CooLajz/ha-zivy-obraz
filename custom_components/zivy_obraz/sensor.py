@@ -608,21 +608,18 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
         if self.entity_description.key == "push_pushed_entities":
             return {
                 "variables": diagnostics.variables,
-                "variables_total": diagnostics.variables_total,
                 "variables_truncated": diagnostics.variables_truncated,
             }
 
         if self.entity_description.key == "push_skipped_entities":
             return {
                 "skipped_variables": diagnostics.skipped_variables,
-                "skipped_variables_total": diagnostics.skipped_variables_total,
                 "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
             }
 
         if self.entity_description.key == "push_failed_entities":
             return {
                 "failed_variables": diagnostics.failed_variables,
-                "failed_variables_total": diagnostics.failed_variables_total,
                 "failed_variables_truncated": diagnostics.failed_variables_truncated,
             }
 
