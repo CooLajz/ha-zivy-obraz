@@ -14,13 +14,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .config_helpers import get_config_value
+from .config_helpers import get_config_value, options_update_signal
 from .const import (
     CONF_OVERDUE_NOTIFICATION,
     CONF_OVERDUE_TOLERANCE,
@@ -49,6 +50,87 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
 )
 
 SYNC_PROBLEM_STATUSES = {"failed"}
+
+
+class ZivyObrazProblemNotificationMixin:
+    """Notification handling shared by integration problem sensors."""
+
+    _entry: ConfigEntry
+    _last_problem_state: bool | None = None
+    _problem_notification_active: bool = False
+
+    @property
+    def _problem_notification_enabled(self) -> bool:
+        """Return whether problem notifications are enabled."""
+        return bool(
+            get_config_value(
+                self._entry,
+                CONF_OVERDUE_NOTIFICATION,
+                DEFAULT_OVERDUE_NOTIFICATION,
+            )
+        )
+
+    @callback
+    def _handle_problem_update(self) -> None:
+        """Handle updated diagnostic state."""
+        self._sync_problem_notification()
+        self.async_write_ha_state()
+
+    @callback
+    def _handle_problem_options_update(self, changed_options: dict[str, object]) -> None:
+        """Handle runtime option changes affecting problem notifications."""
+        if CONF_OVERDUE_NOTIFICATION not in changed_options:
+            return
+
+        self._sync_problem_notification()
+
+    def _sync_problem_notification(self) -> None:
+        """Create or dismiss the problem notification for current state."""
+        current_state = self.is_on
+        notification_enabled = self._problem_notification_enabled
+
+        if notification_enabled and current_state is True:
+            self.hass.async_create_task(self._async_create_problem_notification())
+            self._problem_notification_active = True
+        elif (
+            self._problem_notification_active
+            or (current_state is False and self._last_problem_state is not False)
+            or (
+                not notification_enabled
+                and current_state is True
+                and self._last_problem_state is not True
+            )
+        ):
+            self.hass.async_create_task(self._async_dismiss_problem_notification())
+            self._problem_notification_active = False
+
+        self._last_problem_state = current_state
+
+    def _format_problem_datetime(self, value: Any) -> str | None:
+        """Format a diagnostic datetime in local HA timezone."""
+        if value is None:
+            return None
+
+        if isinstance(value, datetime):
+            parsed = value
+        else:
+            try:
+                parsed = datetime.fromisoformat(str(value))
+            except (TypeError, ValueError):
+                return str(value)
+
+        return dt_util.as_local(parsed).strftime("%d.%m.%Y %H:%M:%S")
+
+    async def _async_create_problem_notification(self) -> None:
+        """Create/update the problem notification."""
+        raise NotImplementedError
+
+    async def _async_dismiss_problem_notification(self) -> None:
+        """Dismiss the problem notification."""
+        persistent_notification.async_dismiss(
+            self.hass,
+            notification_id=self._problem_notification_id,
+        )
 
 
 async def async_setup_entry(
@@ -407,7 +489,10 @@ class ZivyObrazOverdueBinarySensor(
         }
 
 
-class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
+class ZivyObrazPushProblemBinarySensor(
+    ZivyObrazProblemNotificationMixin,
+    BinarySensorEntity,
+):
     """Binary sensor indicating whether the last push attempt had a problem."""
 
     _attr_has_entity_name = True
@@ -422,6 +507,7 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
         push_manager: ZivyObrazPushManager,
     ) -> None:
         """Initialize the push problem binary sensor."""
+        self._entry = entry
         self._push_manager = push_manager
         self._attr_unique_id = f"{entry.entry_id}_push_problem"
         self._attr_device_info = DeviceInfo(
@@ -432,9 +518,18 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Handle entity added to hass."""
+        await super().async_added_to_hass()
         self.async_on_remove(
-            self._push_manager.async_add_listener(self.async_write_ha_state)
+            self._push_manager.async_add_listener(self._handle_problem_update)
         )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                options_update_signal(self._entry.entry_id),
+                self._handle_problem_options_update,
+            )
+        )
+        self._sync_problem_notification()
 
     @property
     def is_on(self) -> bool:
@@ -453,8 +548,42 @@ class ZivyObrazPushProblemBinarySensor(BinarySensorEntity):
             else None,
         }
 
+    @property
+    def _problem_notification_id(self) -> str:
+        """Return persistent notification ID."""
+        return f"zivy_obraz_push_problem_{self._entry.entry_id}"
 
-class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
+    async def _async_create_problem_notification(self) -> None:
+        """Create/update push problem notification."""
+        diagnostics = self._push_manager.diagnostics
+        lines = [
+            "Odesílání hodnot do Živého Obrazu hlásí problém.",
+            "",
+            f"Stav: {diagnostics.status}",
+        ]
+
+        if diagnostics.last_error:
+            lines.append(f"Důvod: {diagnostics.last_error}")
+
+        formatted_last_push = self._format_problem_datetime(diagnostics.last_push)
+        if formatted_last_push:
+            lines.append(f"Poslední pokus o odeslání: {formatted_last_push}")
+
+        if diagnostics.failed_entities:
+            lines.append(f"Neodeslané entity: {diagnostics.failed_entities}")
+
+        persistent_notification.async_create(
+            self.hass,
+            message="\n".join(lines),
+            title="Živý Obraz - Problém odesílání",
+            notification_id=self._problem_notification_id,
+        )
+
+
+class ZivyObrazSyncProblemBinarySensor(
+    ZivyObrazProblemNotificationMixin,
+    BinarySensorEntity,
+):
     """Binary sensor indicating whether the last sync attempt had a problem."""
 
     _attr_has_entity_name = True
@@ -469,6 +598,7 @@ class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
         coordinator: ZivyObrazCoordinator,
     ) -> None:
         """Initialize the sync problem binary sensor."""
+        self._entry = entry
         self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_sync_problem"
         self._attr_device_info = DeviceInfo(
@@ -479,9 +609,18 @@ class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Handle entity added to hass."""
+        await super().async_added_to_hass()
         self.async_on_remove(
-            self._coordinator.async_add_listener(self.async_write_ha_state)
+            self._coordinator.async_add_listener(self._handle_problem_update)
         )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                options_update_signal(self._entry.entry_id),
+                self._handle_problem_options_update,
+            )
+        )
+        self._sync_problem_notification()
 
     @property
     def is_on(self) -> bool:
@@ -499,3 +638,31 @@ class ZivyObrazSyncProblemBinarySensor(BinarySensorEntity):
             if diagnostics.last_sync
             else None,
         }
+
+    @property
+    def _problem_notification_id(self) -> str:
+        """Return persistent notification ID."""
+        return f"zivy_obraz_sync_problem_{self._entry.entry_id}"
+
+    async def _async_create_problem_notification(self) -> None:
+        """Create/update sync problem notification."""
+        diagnostics = self._coordinator.diagnostics
+        lines = [
+            "Synchronizace dat ze Živého Obrazu hlásí problém.",
+            "",
+            f"Stav: {diagnostics.status}",
+        ]
+
+        if diagnostics.last_error:
+            lines.append(f"Důvod: {diagnostics.last_error}")
+
+        formatted_last_sync = self._format_problem_datetime(diagnostics.last_sync)
+        if formatted_last_sync:
+            lines.append(f"Poslední pokus o synchronizaci: {formatted_last_sync}")
+
+        persistent_notification.async_create(
+            self.hass,
+            message="\n".join(lines),
+            title="Živý Obraz - Problém synchronizace",
+            notification_id=self._problem_notification_id,
+        )
