@@ -90,18 +90,23 @@ class ZivyObrazProblemNotificationMixin:
         notification_enabled = self._problem_notification_enabled
 
         if notification_enabled and current_state is True:
-            self.hass.async_create_task(self._async_create_problem_notification())
-            self._problem_notification_active = True
-        elif (
-            self._problem_notification_active
-            or (current_state is False and self._last_problem_state is not False)
-            or (
-                not notification_enabled
-                and current_state is True
-                and self._last_problem_state is not True
-            )
-        ):
-            self.hass.async_create_task(self._async_dismiss_problem_notification())
+            if (
+                self._last_problem_state is not True
+                or not self._problem_notification_active
+            ):
+                self.hass.async_create_task(self._async_create_problem_notification())
+                self._problem_notification_active = True
+        else:
+            if (
+                self._problem_notification_active
+                or (current_state is False and self._last_problem_state is True)
+                or (
+                    not notification_enabled
+                    and current_state is True
+                    and self._last_problem_state is not True
+                )
+            ):
+                self.hass.async_create_task(self._async_dismiss_problem_notification())
             self._problem_notification_active = False
 
         self._last_problem_state = current_state
@@ -559,6 +564,7 @@ class ZivyObrazPushProblemBinarySensor(
         lines = [
             "Odesílání hodnot do Živého Obrazu hlásí problém.",
             "",
+            f"Instance: {self._entry.title}",
             f"Stav: {diagnostics.status}",
         ]
 
@@ -575,7 +581,7 @@ class ZivyObrazPushProblemBinarySensor(
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title="Živý Obraz - Problém odesílání",
+            title=f"Živý Obraz - Problém odesílání ({self._entry.title})",
             notification_id=self._problem_notification_id,
         )
 
@@ -650,6 +656,7 @@ class ZivyObrazSyncProblemBinarySensor(
         lines = [
             "Synchronizace dat ze Živého Obrazu hlásí problém.",
             "",
+            f"Instance: {self._entry.title}",
             f"Stav: {diagnostics.status}",
         ]
 
@@ -663,6 +670,6 @@ class ZivyObrazSyncProblemBinarySensor(
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title="Živý Obraz - Problém synchronizace",
+            title=f"Živý Obraz - Problém synchronizace ({self._entry.title})",
             notification_id=self._problem_notification_id,
         )
