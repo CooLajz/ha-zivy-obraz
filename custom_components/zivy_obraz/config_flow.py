@@ -22,6 +22,7 @@ from .const import (
     CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
+    CONF_REPLACE_INVALID_STATES_WITH_NA,
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
@@ -34,6 +35,7 @@ from .const import (
     DEFAULT_PREFIX,
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
+    DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
@@ -182,6 +184,12 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_SEND_ONLY_CHANGED] = bool(
         user_input.get(CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED)
     )
+    prepared[CONF_REPLACE_INVALID_STATES_WITH_NA] = bool(
+        user_input.get(
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        )
+    )
 
     scan_interval = _coerce_int(
         user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -268,6 +276,7 @@ def _build_schema(
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
+    replace_invalid_states_with_na: bool = DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
@@ -288,6 +297,12 @@ def _build_schema(
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
+    schema[
+        vol.Optional(
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            default=replace_invalid_states_with_na,
+        )
+    ] = bool
 
     return vol.Schema(schema)
 
@@ -419,6 +434,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         current_send_only_changed = _get_config_value(
             self._config_entry, CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED
         )
+        current_replace_invalid_states_with_na = _get_config_value(
+            self._config_entry,
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        )
 
         has_export_key = bool(_normalize_api_key(current_export_key))
         has_import_key = bool(_normalize_api_key(current_import_key))
@@ -434,6 +454,9 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                     CONF_PUSH_ENABLED: current_push_enabled,
                     CONF_PUSH_INTERVAL: current_push_interval,
                     CONF_SEND_ONLY_CHANGED: current_send_only_changed,
+                    CONF_REPLACE_INVALID_STATES_WITH_NA: (
+                        current_replace_invalid_states_with_na
+                    ),
                     **user_input,
                 }
                 prepared_input = _prepare_user_input(merged_input)
@@ -467,6 +490,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             import_key=current_import_key,
             label=current_label,
             prefix=current_prefix,
+            replace_invalid_states_with_na=current_replace_invalid_states_with_na,
         )
         schema = self.add_suggested_values_to_schema(
             schema,

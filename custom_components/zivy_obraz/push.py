@@ -24,6 +24,7 @@ from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
+INVALID_STATE_FALLBACK = "N/A"
 MAX_DIAGNOSTIC_VARIABLES = 50
 PUSH_PROBLEM_STATUSES = {
     "failed",
@@ -78,6 +79,7 @@ class ZivyObrazPushManager:
         prefix: str,
         timeout: int,
         send_only_changed: bool,
+        replace_invalid_states_with_na: bool,
     ) -> None:
         """Initialize the push manager."""
         self.hass = hass
@@ -86,6 +88,7 @@ class ZivyObrazPushManager:
         self.prefix = prefix.strip()
         self.timeout = timeout
         self.send_only_changed = send_only_changed
+        self.replace_invalid_states_with_na = replace_invalid_states_with_na
         self.session = async_get_clientsession(hass)
         self.diagnostics = PushDiagnostics()
         self._listeners: list[Callable[[], None]] = []
@@ -312,9 +315,11 @@ class ZivyObrazPushManager:
 
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
-                failed_pairs.append(
-                    (self._make_param_name(entry.entity_id), "invalid_state")
-                )
+                param_name = self._make_param_name(entry.entity_id)
+                if self.replace_invalid_states_with_na:
+                    pairs.append((param_name, INVALID_STATE_FALLBACK))
+                else:
+                    failed_pairs.append((param_name, "invalid_state"))
                 continue
 
             param_name = self._make_param_name(entry.entity_id)

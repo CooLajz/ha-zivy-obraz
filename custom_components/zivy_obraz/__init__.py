@@ -30,6 +30,7 @@ from .const import (
     CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
+    CONF_REPLACE_INVALID_STATES_WITH_NA,
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
@@ -40,6 +41,7 @@ from .const import (
     DEFAULT_PREFIX,
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
+    DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
@@ -468,6 +470,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             DEFAULT_SEND_ONLY_CHANGED,
         )
     )
+    replace_invalid_states_with_na = bool(
+        _get_config_value(
+            entry,
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        )
+    )
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
@@ -504,14 +513,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 prefix=prefix,
                 timeout=timeout,
                 send_only_changed=send_only_changed,
+                replace_invalid_states_with_na=replace_invalid_states_with_na,
             )
 
             _LOGGER.debug(
-                "Živý Obraz push ready with label '%s' (label_id=%s), prefix='%s', send_only_changed=%s",
+                (
+                    "Živý Obraz push ready with label '%s' (label_id=%s), "
+                    "prefix='%s', send_only_changed=%s, "
+                    "replace_invalid_states_with_na=%s"
+                ),
                 label,
                 push_label_id,
                 prefix,
                 send_only_changed,
+                replace_invalid_states_with_na,
             )
 
             if push_enabled:
