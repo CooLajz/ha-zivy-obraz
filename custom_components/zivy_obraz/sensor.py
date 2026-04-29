@@ -269,6 +269,7 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         value_key="next_sync",
         name="Next sync",
         device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:cloud-clock-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSyncSensorDescription(
