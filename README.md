@@ -743,20 +743,3 @@ Home Assistant → out.zivyobraz.eu → panel data → sensors
 ```
 Home Assistant entities → in.zivyobraz.eu → displays
 ```
-
----
-
-# Contribution
-
-Contributions are welcome.
-
-If you find a bug or have an idea for improvement:
-
-- open an **Issue**
-- or create a **Pull Request**
-
-Please include:
-
-- description of the problem
-- Home Assistant version
-- logs if relevant
