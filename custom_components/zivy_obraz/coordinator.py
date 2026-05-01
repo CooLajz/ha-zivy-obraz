@@ -18,6 +18,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import normalize_export_payload
+from .battery import BatteryChargeTracker
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
@@ -77,6 +78,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.known_macs: set[str] = set()
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
         self.diagnostics = SyncDiagnostics()
+        self.battery_tracker = BatteryChargeTracker()
 
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
@@ -317,6 +319,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             await self._async_remove_devices(removed_macs)
 
         await self._async_sync_device_metadata(normalized)
+
+        for mac, device_data in normalized.items():
+            self.battery_tracker.process_device(mac, device_data)
 
         data_changed = normalized != (self.data or {})
 

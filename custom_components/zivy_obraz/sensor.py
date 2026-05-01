@@ -19,6 +19,7 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfPressure,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
@@ -27,6 +28,12 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .battery import (
+    BATTERY_CHARGE_COOLDOWN_DAYS,
+    BATTERY_CHARGE_MAX_STAT_VOLTAGE,
+    BATTERY_CHARGE_MIN_DAILY_SAMPLES,
+    BATTERY_CHARGE_THRESHOLD_VOLTS,
+)
 from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
@@ -72,6 +79,53 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_last_charged",
+        value_key="battery_volts",
+        name="Battery last charged",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:battery-clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_days_since_last_charge",
+        value_key="battery_volts",
+        name="Battery days since last charge",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        icon="mdi:battery-clock-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_daily_high",
+        value_key="battery_volts",
+        name="Battery daily high",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        icon="mdi:battery-high",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_daily_low",
+        value_key="battery_volts",
+        name="Battery daily low",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        icon="mdi:battery-low",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_charge_detection_status",
+        value_key="battery_volts",
+        name="Battery charge detection status",
+        icon="mdi:battery-search",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -457,6 +511,11 @@ class ZivyObrazSensor(
         last_sensor_data = await self.async_get_last_sensor_data()
         if last_sensor_data is not None:
             self._restored_native_value = last_sensor_data.native_value
+            if self.entity_description.key == "battery_last_charged":
+                self.coordinator.battery_tracker.restore_last_charged(
+                    self._mac,
+                    last_sensor_data.native_value,
+                )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -519,6 +578,40 @@ class ZivyObrazSensor(
             except (TypeError, ValueError):
                 return None
 
+        if self.entity_description.key == "battery_last_charged":
+            last_charged = self.coordinator.battery_tracker.state_for(
+                self._mac
+            ).last_charged
+            if last_charged is not None:
+                return last_charged
+            return self._restored_native_value
+
+        if self.entity_description.key == "battery_days_since_last_charge":
+            last_charged = self.coordinator.battery_tracker.state_for(
+                self._mac
+            ).last_charged
+            if last_charged is None:
+                return None
+            try:
+                days_since_charge = (
+                    dt_util.now().date() - dt_util.as_local(last_charged).date()
+                ).days
+                return max(days_since_charge, 0)
+            except (TypeError, ValueError):
+                return None
+
+        if self.entity_description.key in ("battery_daily_high", "battery_daily_low"):
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            tracked_value = (
+                tracker_state.daily_high
+                if self.entity_description.key == "battery_daily_high"
+                else tracker_state.daily_low
+            )
+            return tracked_value
+
+        if self.entity_description.key == "battery_charge_detection_status":
+            return self.coordinator.battery_tracker.state_for(self._mac).status
+
         if self.entity_description.key in (
             "temperature",
             "humidity",
@@ -553,6 +646,17 @@ class ZivyObrazSensor(
             group_id = self._device_data.get("group_id")
             if group_id is not None:
                 return {"group_id": group_id}
+        if self.entity_description.key == "battery_charge_detection_status":
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            return {
+                "daily_samples": tracker_state.daily_samples,
+                "excluded_daily_samples": tracker_state.excluded_daily_samples,
+                "previous_daily_high": tracker_state.previous_daily_high,
+                "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
+                "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
+                "minimum_daily_samples": BATTERY_CHARGE_MIN_DAILY_SAMPLES,
+                "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
+            }
         return None
 
 
