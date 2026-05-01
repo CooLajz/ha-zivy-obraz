@@ -304,6 +304,17 @@ Integrace automaticky odešle všechny entity s tímto labelem.
 
 Stejný label lze přidat i na celý device. V takovém případě integrace odešle všechny jeho viditelné a aktivní entity, takže není nutné tagovat každou entitu zvlášť.
 
+Pokud je zapnuté odesílání jen změněných hodnot, lze vybraným entitám přidat
+ještě odvozený label `<label> Always`, například:
+
+```
+ZivyObraz Always
+```
+
+Entita musí mít hlavní label i tento odvozený label. Taková entita se odešle
+při každém intervalu, i když se její hodnota nezměnila. Odvozený label se
+nezakládá automaticky; pokud neexistuje, integrace ho tiše ignoruje.
+
 Výhody:
 
 - žádný YAML
@@ -703,6 +714,18 @@ ZivyObraz
 ```
 
 All entities with this label will be automatically sent.
+
+When sending only changed states is enabled, selected entities can also use the
+derived `<label> Always` label, for example:
+
+```
+ZivyObraz Always
+```
+
+The entity must have both the main label and this derived label. Such an entity
+is sent on every interval, even when its value did not change. The derived label
+is not created automatically; if it does not exist, the integration silently
+ignores it.
 
 ---
 

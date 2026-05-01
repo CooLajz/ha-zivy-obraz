@@ -54,7 +54,7 @@ from .const import (
 from .coordinator import ZivyObrazCoordinator
 from .api import build_export_url
 from .device import diagnostic_device_identifier
-from .label_helper import async_ensure_label_exists
+from .label_helper import async_ensure_label_exists, async_get_label_id
 from .push import ZivyObrazPushManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -498,16 +498,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     push_unsub = None
     push_label_id = None
+    push_always_label_id = None
     push_manager = None
+    push_always_label_name = f"{label} Always"
 
     if import_key:
         push_label_id = await async_ensure_label_exists(hass, label)
+        push_always_label_id = await async_get_label_id(hass, push_always_label_name)
 
         if push_label_id:
             push_manager = ZivyObrazPushManager(
                 hass=hass,
                 import_key=import_key,
                 label_id=push_label_id,
+                always_label_name=push_always_label_name,
                 prefix=prefix,
                 timeout=timeout,
                 send_only_changed=send_only_changed,
@@ -517,11 +521,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             _LOGGER.debug(
                 (
                     "Živý Obraz push ready with label '%s' (label_id=%s), "
-                    "prefix='%s', send_only_changed=%s, "
+                    "always_label_id=%s, prefix='%s', send_only_changed=%s, "
                     "replace_invalid_states_with_na=%s"
                 ),
                 label,
                 push_label_id,
+                push_always_label_id,
                 prefix,
                 send_only_changed,
                 replace_invalid_states_with_na,
@@ -550,6 +555,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         "push_manager": push_manager,
         "push_unsub": push_unsub,
         "push_label_id": push_label_id,
+        "push_always_label_id": push_always_label_id,
         "push_label_name": label,
     }
 
