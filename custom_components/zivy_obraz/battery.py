@@ -21,6 +21,8 @@ class BatteryChargeState:
     """Derived battery charge diagnostics for one panel."""
 
     last_charged: datetime | None = None
+    voltage_max: float | None = None
+    voltage_min: float | None = None
     daily_high: float | None = None
     daily_low: float | None = None
     daily_samples: int = 0
@@ -63,15 +65,26 @@ class BatteryChargeTracker:
 
         self.state_for(mac).last_charged = parsed
 
+    def restore_voltage_max(self, mac: str, value: Any) -> None:
+        """Restore the maximum observed battery voltage."""
+        voltage = self._parse_voltage(value)
+        if voltage is not None:
+            self.state_for(mac).voltage_max = voltage
+
+    def restore_voltage_min(self, mac: str, value: Any) -> None:
+        """Restore the minimum observed battery voltage."""
+        voltage = self._parse_voltage(value)
+        if voltage is not None:
+            self.state_for(mac).voltage_min = voltage
+
     def process_device(self, mac: str, device_data: dict[str, Any]) -> None:
         """Process one panel payload."""
         value = device_data.get("battery_volts")
         if value is None:
             return
 
-        try:
-            voltage = float(value)
-        except (TypeError, ValueError):
+        voltage = self._parse_voltage(value)
+        if voltage is None:
             return
 
         sample_time = self._parse_sample_time(device_data.get("last_contact"))
@@ -103,6 +116,8 @@ class BatteryChargeTracker:
             state._excluded_samples_by_day[current_day] += 1
         else:
             state._samples_by_day[current_day].append(voltage)
+            state.voltage_max = self._max_voltage(state.voltage_max, voltage)
+            state.voltage_min = self._min_voltage(state.voltage_min, voltage)
         self._prune_history(state, current_day)
         self._update_state(state, current_day, now)
 
@@ -205,3 +220,22 @@ class BatteryChargeTracker:
             return datetime.fromisoformat(str(value))
         except (TypeError, ValueError):
             return None
+
+    def _parse_voltage(self, value: Any) -> float | None:
+        """Parse and round a battery voltage value."""
+        try:
+            return round(float(value), 2)
+        except (TypeError, ValueError):
+            return None
+
+    def _max_voltage(self, current: float | None, voltage: float) -> float:
+        """Return updated maximum voltage."""
+        if current is None:
+            return voltage
+        return max(current, voltage)
+
+    def _min_voltage(self, current: float | None, voltage: float) -> float:
+        """Return updated minimum voltage."""
+        if current is None:
+            return voltage
+        return min(current, voltage)

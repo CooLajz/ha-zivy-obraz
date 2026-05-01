@@ -118,9 +118,9 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSensorDescription(
-        key="battery_daily_high",
+        key="battery_voltage_max",
         value_key="battery_volts",
-        name="Battery daily high",
+        name="Battery voltage maximum",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         icon="mdi:battery-high",
@@ -129,9 +129,9 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
-        key="battery_daily_low",
+        key="battery_voltage_min",
         value_key="battery_volts",
-        name="Battery daily low",
+        name="Battery voltage minimum",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         icon="mdi:battery-low",
@@ -535,6 +535,16 @@ class ZivyObrazSensor(
                     self._mac,
                     last_sensor_data.native_value,
                 )
+            if self.entity_description.key == "battery_voltage_max":
+                self.coordinator.battery_tracker.restore_voltage_max(
+                    self._mac,
+                    last_sensor_data.native_value,
+                )
+            if self.entity_description.key == "battery_voltage_min":
+                self.coordinator.battery_tracker.restore_voltage_min(
+                    self._mac,
+                    last_sensor_data.native_value,
+                )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -619,12 +629,15 @@ class ZivyObrazSensor(
             except (TypeError, ValueError):
                 return None
 
-        if self.entity_description.key in ("battery_daily_high", "battery_daily_low"):
+        if self.entity_description.key in (
+            "battery_voltage_max",
+            "battery_voltage_min",
+        ):
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
             tracked_value = (
-                tracker_state.daily_high
-                if self.entity_description.key == "battery_daily_high"
-                else tracker_state.daily_low
+                tracker_state.voltage_max
+                if self.entity_description.key == "battery_voltage_max"
+                else tracker_state.voltage_min
             )
             return tracked_value
 

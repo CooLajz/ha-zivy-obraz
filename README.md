@@ -287,17 +287,18 @@ diagnostiku:
 
 - `Battery last charged`
 - `Battery days since last charge`
-- `Battery daily high`
-- `Battery daily low`
+- `Battery voltage maximum`
+- `Battery voltage minimum`
 - `Battery charge detection status`
 
 Detekce posledního nabití je konzervativní odhad z denních hodnot napětí. První
 validní den slouží jen jako baseline. Další den se nabití zapíše až při nárůstu
 robustního denního maxima alespoň o `0.15 V` proti poslednímu validnímu dni.
-Denní maximum a minimum se počítá až z více vzorků a hodnoty nad `4.20 V` se do
-denních statistik nezahrnují, aby případné nabíjecí špičky nezkreslovaly
-baseline. Integrace záměrně nevytváří senzor aktuálního nabíjení, protože napětí
-baterie se u různých desek, baterek a intervalů refresh chová příliš rozdílně.
+Interní denní maximum se počítá až z více vzorků a hodnoty nad `4.20 V` se do
+detekce ani do celkového minima/maxima nezahrnují, aby případné nabíjecí špičky
+nezkreslovaly baseline. Integrace záměrně nevytváří senzor aktuálního nabíjení,
+protože napětí baterie se u různých desek, baterek a intervalů refresh chová
+příliš rozdílně.
 
 Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
 entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
@@ -718,18 +719,19 @@ Panels that report `battery_volts` also get battery diagnostics:
 
 - `Battery last charged`
 - `Battery days since last charge`
-- `Battery daily high`
-- `Battery daily low`
+- `Battery voltage maximum`
+- `Battery voltage minimum`
 - `Battery charge detection status`
 
 Last charge detection is a conservative estimate based on daily voltage
 statistics. The first valid day is used only as a baseline. A later day is
 marked as charged only when the robust daily high increases by at least
-`0.15 V` compared with the previous valid day. Daily high and low values are
+`0.15 V` compared with the previous valid day. The internal daily high is
 calculated from multiple samples, and values above `4.20 V` are excluded from
-daily statistics so charging spikes do not distort the baseline. The integration
-intentionally does not expose a current charging binary sensor because voltage
-behavior differs too much between boards, batteries, and refresh intervals.
+charge detection and from the overall minimum/maximum sensors so charging spikes
+do not distort the baseline. The integration intentionally does not expose a
+current charging binary sensor because voltage behavior differs too much between
+boards, batteries, and refresh intervals.
 
 Main operational entities are enabled by default. Detailed diagnostic entities
 such as `Push status`, `Sync status`, counters, and variable previews are hidden

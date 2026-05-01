@@ -110,11 +110,11 @@
       "battery_days_since_last_charge": {
         "name": "Battery days since last charge"
       },
-      "battery_daily_high": {
-        "name": "Battery daily high"
+      "battery_voltage_max": {
+        "name": "Battery voltage maximum"
       },
-      "battery_daily_low": {
-        "name": "Battery daily low"
+      "battery_voltage_min": {
+        "name": "Battery voltage minimum"
       },
       "battery_charge_detection_status": {
         "name": "Battery charge detection status",
