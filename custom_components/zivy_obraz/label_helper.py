@@ -40,3 +40,27 @@ async def async_ensure_label_exists(hass: HomeAssistant, label_name: str) -> str
 
     created = label_registry.async_create(name=label_name)
     return created.label_id
+
+
+def get_label_id(hass: HomeAssistant, label_name: str) -> str | None:
+    """Return label_id for an existing Home Assistant label without creating it."""
+    label_name = label_name.strip()
+    if not label_name:
+        return None
+
+    wanted = _normalize_label_name(label_name)
+    label_registry = lr.async_get(hass)
+
+    for label_id, entry in label_registry.labels.items():
+        if _normalize_label_name(label_id) == wanted:
+            return label_id
+
+        if _normalize_label_name(entry.name) == wanted:
+            return label_id
+
+    return None
+
+
+async def async_get_label_id(hass: HomeAssistant, label_name: str) -> str | None:
+    """Return label_id for an existing Home Assistant label without creating it."""
+    return get_label_id(hass, label_name)

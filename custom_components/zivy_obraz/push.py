@@ -20,10 +20,12 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
+from .label_helper import get_label_id
 
 _LOGGER = logging.getLogger(__name__)
 
-_INVALID_STATE_VALUES = {"unknown", "unavailable", "", None}
+_INVALID_STATE_VALUES = {"unknown", "unavailable", None}
+INVALID_STATE_FALLBACK = "N/A"
 MAX_DIAGNOSTIC_VARIABLES = 50
 PUSH_PROBLEM_STATUSES = {
     "failed",
@@ -63,8 +65,8 @@ class _PushEntityCollection:
     """Collected push payload and diagnostics."""
 
     pairs: list[tuple[str, str]]
-    skipped_entities: int
-    skipped_pairs: list[tuple[str, str]]
+    failed_pairs: list[tuple[str, str]]
+    always_send_keys: set[str] = field(default_factory=set)
 
 
 class ZivyObrazPushManager:
@@ -76,17 +78,21 @@ class ZivyObrazPushManager:
         *,
         import_key: str,
         label_id: str,
+        always_label_name: str,
         prefix: str,
         timeout: int,
         send_only_changed: bool,
+        replace_invalid_states_with_na: bool,
     ) -> None:
         """Initialize the push manager."""
         self.hass = hass
         self.import_key = import_key
         self.label_id = label_id
+        self.always_label_name = always_label_name.strip()
         self.prefix = prefix.strip()
         self.timeout = timeout
         self.send_only_changed = send_only_changed
+        self.replace_invalid_states_with_na = replace_invalid_states_with_na
         self.session = async_get_clientsession(hass)
         self.diagnostics = PushDiagnostics()
         self._listeners: list[Callable[[], None]] = []
@@ -155,25 +161,28 @@ class ZivyObrazPushManager:
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
         entity_pairs = collection.pairs
-        skipped_pairs = list(collection.skipped_pairs)
+        failed_pairs = list(collection.failed_pairs)
+        always_send_keys = collection.always_send_keys
         unchanged_pairs: list[tuple[str, str]] = []
         send_only_changed = self.send_only_changed if send_all is None else not send_all
 
         if send_only_changed:
             changed_pairs: list[tuple[str, str]] = []
             for key, value in entity_pairs:
-                if self._last_sent_states.get(key) == value:
+                if (
+                    key not in always_send_keys
+                    and self._last_sent_states.get(key) == value
+                ):
                     unchanged_pairs.append((key, value))
                     continue
                 changed_pairs.append((key, value))
             entity_pairs = changed_pairs
-            skipped_pairs.extend(unchanged_pairs)
 
         await self._async_push_pairs(
             pushed_at=pushed_at,
             entity_pairs=entity_pairs,
-            skipped_entities=collection.skipped_entities + len(unchanged_pairs),
-            skipped_pairs=skipped_pairs,
+            skipped_pairs=unchanged_pairs,
+            failed_pairs=failed_pairs,
             empty_status="no_new_data" if unchanged_pairs else "no_entities",
             empty_log_message=(
                 "Živý Obraz push skipped: no valid entities found for label_id '%s'",
@@ -193,8 +202,8 @@ class ZivyObrazPushManager:
         await self._async_push_pairs(
             pushed_at=pushed_at,
             entity_pairs=entity_pairs,
-            skipped_entities=0,
             skipped_pairs=[],
+            failed_pairs=[],
             empty_status="no_entities",
             empty_log_message=("Živý Obraz custom push skipped: no values provided",),
             update_cache=False,
@@ -205,8 +214,8 @@ class ZivyObrazPushManager:
         *,
         pushed_at: Any,
         entity_pairs: list[tuple[str, str]],
-        skipped_entities: int,
         skipped_pairs: list[tuple[str, str]],
+        failed_pairs: list[tuple[str, str]],
         empty_status: str,
         empty_log_message: tuple[Any, ...],
         update_cache: bool,
@@ -215,22 +224,25 @@ class ZivyObrazPushManager:
         self.diagnostics.last_push = pushed_at
         self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
-        self.diagnostics.skipped_entities = skipped_entities
+        self.diagnostics.skipped_entities = len(skipped_pairs)
         self.diagnostics.failed_entities = 0
         self._set_skipped_variable_preview(dict(skipped_pairs))
-        self._set_failed_variable_preview({})
+        self._set_failed_variable_preview(dict(failed_pairs))
         self.diagnostics.request_batches = 0
 
         if not entity_pairs:
-            if empty_status == "no_new_data":
-                self.diagnostics.status = "no_new_data"
-                self.diagnostics.last_successful_push = pushed_at
-                self.diagnostics.last_error = None
-            elif skipped_entities > 0:
-                self.diagnostics.status = "no_valid_entities"
+            if failed_pairs:
+                self.diagnostics.failed_entities = len(failed_pairs)
+                self.diagnostics.status = (
+                    "partial_failure" if skipped_pairs else "no_valid_entities"
+                )
                 self.diagnostics.last_error = (
                     "Selected entities were unavailable or unknown"
                 )
+            elif empty_status == "no_new_data":
+                self.diagnostics.status = "no_new_data"
+                self.diagnostics.last_successful_push = pushed_at
+                self.diagnostics.last_error = None
             elif self.diagnostics.status not in PUSH_PROBLEM_STATUSES:
                 self.diagnostics.status = empty_status
                 self.diagnostics.last_error = None
@@ -240,7 +252,8 @@ class ZivyObrazPushManager:
 
         self.diagnostics.last_error = None
 
-        batches = self._build_param_batches(entity_pairs)
+        failed_variables: dict[str, str] = dict(failed_pairs)
+        batches = self._build_param_batches(entity_pairs, failed_variables)
         self.diagnostics.request_batches = len(batches)
         self.diagnostics.pushed_entities = sum(len(batch) - 1 for batch in batches)
         sent_variables = {
@@ -252,6 +265,8 @@ class ZivyObrazPushManager:
         self._set_variable_preview(sent_variables)
 
         if not batches:
+            self.diagnostics.failed_entities = len(failed_variables)
+            self._set_failed_variable_preview(failed_variables)
             self.diagnostics.status = "no_batches"
             _LOGGER.debug(
                 "Živý Obraz push skipped: no request batches were generated for label_id '%s'",
@@ -262,7 +277,6 @@ class ZivyObrazPushManager:
 
         failed_batches = 0
         successful_variables: dict[str, str] = {}
-        failed_variables: dict[str, str] = {}
         last_error: str | None = None
 
         for batch in batches:
@@ -280,7 +294,7 @@ class ZivyObrazPushManager:
             if update_cache:
                 self._last_sent_states.update(batch_variables)
 
-        if failed_batches == 0:
+        if failed_batches == 0 and not failed_variables:
             self.diagnostics.status = "success"
             self.diagnostics.last_successful_push = pushed_at
         elif failed_batches == len(batches):
@@ -301,22 +315,26 @@ class ZivyObrazPushManager:
         device_registry = dr.async_get(self.hass)
 
         pairs: list[tuple[str, str]] = []
-        skipped_pairs: list[tuple[str, str]] = []
-        skipped_entities = 0
+        failed_pairs: list[tuple[str, str]] = []
+        always_send_keys: set[str] = set()
+        always_label_id = self._get_always_label_id()
 
         for entry in entity_registry.entities.values():
             if not self._is_selected_for_push(entry, device_registry):
                 continue
 
+            param_name = self._make_param_name(entry.entity_id)
+            if self._is_always_send_entity(entry, always_label_id):
+                always_send_keys.add(param_name)
+
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
-                skipped_entities += 1
-                skipped_pairs.append(
-                    (self._make_param_name(entry.entity_id), "invalid_state")
-                )
+                if self.replace_invalid_states_with_na:
+                    pairs.append((param_name, INVALID_STATE_FALLBACK))
+                else:
+                    failed_pairs.append((param_name, "invalid_state"))
                 continue
 
-            param_name = self._make_param_name(entry.entity_id)
             pairs.append((param_name, self._format_state_for_push(entry, state_obj)))
 
         pairs.sort(key=lambda item: item[0])
@@ -329,8 +347,8 @@ class ZivyObrazPushManager:
 
         return _PushEntityCollection(
             pairs=pairs,
-            skipped_entities=skipped_entities,
-            skipped_pairs=skipped_pairs,
+            failed_pairs=failed_pairs,
+            always_send_keys=always_send_keys,
         )
 
     def _is_selected_for_push(
@@ -353,6 +371,22 @@ class ZivyObrazPushManager:
             return False
 
         return self.label_id in getattr(device_entry, "labels", set())
+
+    def _is_always_send_entity(
+        self,
+        entry: er.RegistryEntry,
+        always_label_id: str | None,
+    ) -> bool:
+        """Return True if the entity should bypass unchanged-value filtering."""
+        return (
+            always_label_id is not None
+            and self.label_id in entry.labels
+            and always_label_id in entry.labels
+        )
+
+    def _get_always_label_id(self) -> str | None:
+        """Return the existing always-send label id without creating it."""
+        return get_label_id(self.hass, self.always_label_name)
 
     def _format_state_for_push(
         self,
@@ -387,6 +421,7 @@ class ZivyObrazPushManager:
     def _build_param_batches(
         self,
         entity_pairs: list[tuple[str, str]],
+        failed_variables: dict[str, str],
     ) -> list[dict[str, str]]:
         """Split payload into multiple requests if URL would become too long."""
         batches: list[dict[str, str]] = []
@@ -408,12 +443,9 @@ class ZivyObrazPushManager:
             single_encoded = urlencode(single_candidate)
 
             if len(f"{ZIVY_OBRAZ_PUSH_URL}?{single_encoded}") > MAX_PUSH_URL_LENGTH:
-                self.diagnostics.skipped_entities += 1
-                skipped_variables = dict(self.diagnostics.skipped_variables)
-                skipped_variables[key] = "url_too_long"
-                self._set_skipped_variable_preview(skipped_variables)
+                failed_variables[key] = "url_too_long"
                 _LOGGER.warning(
-                    "Živý Obraz push skipped entity '%s' because a single parameter exceeds URL length limit",
+                    "Živý Obraz push failed entity '%s' because a single parameter exceeds URL length limit",
                     key,
                 )
                 continue

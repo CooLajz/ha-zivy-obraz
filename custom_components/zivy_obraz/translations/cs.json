@@ -9,16 +9,11 @@
           "export_key": "Export key",
           "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)",
-          "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout automatické odesílání do Živého Obrazu",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)",
-          "send_only_changed": "Odesílat jen změněné stavy entit"
+          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
         }
       }
     },
@@ -49,16 +44,11 @@
           "export_key": "Export key",
           "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "scan_interval": "Interval obnovy (s)",
           "timeout": "HTTP timeout (s)",
-          "overdue_tolerance": "Tolerance zpoždění (min)",
-          "overdue_notification": "Vytvářet oznámení při problému Overdue",
-          "push_enabled": "Zapnout automatické odesílání do Živého Obrazu",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "push_interval": "Interval odesílání (s)",
-          "send_only_changed": "Odesílat jen změněné stavy entit"
+          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
         }
       }
     },
@@ -74,6 +64,38 @@
       "push_interval_range": "Interval odesílání musí být mezi 60 a 86400 sekundami",
       "timeout_range": "HTTP timeout musí být mezi 5 a 120 sekundami",
       "overdue_tolerance_range": "Tolerance zpoždění musí být mezi 0 a 10080 minutami"
+    }
+  },
+  "entity": {
+    "number": {
+      "import_refresh_interval": {
+        "name": "Interval obnovy importu"
+      },
+      "push_interval": {
+        "name": "Interval odesílání"
+      },
+      "overdue_tolerance": {
+        "name": "Tolerance zpoždění"
+      }
+    },
+    "switch": {
+      "overdue_notification": {
+        "name": "Vytvářet oznámení"
+      },
+      "push_enabled": {
+        "name": "Automatické odesílání"
+      },
+      "send_only_changed": {
+        "name": "Odesílat jen změněné hodnoty entit"
+      }
+    },
+    "button": {
+      "refresh_import": {
+        "name": "Stáhnout data nyní"
+      },
+      "push_now": {
+        "name": "Odeslat hodnoty nyní"
+      }
     }
   },
   "services": {

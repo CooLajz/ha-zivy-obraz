@@ -9,7 +9,7 @@ from aiohttp import ClientError, ContentTypeError
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import normalize_export_payload
+from .api import build_export_url, normalize_export_payload
 from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
@@ -22,6 +22,7 @@ from .const import (
     CONF_PREFIX_OVERRIDE,
     CONF_PUSH_ENABLED,
     CONF_PUSH_INTERVAL,
+    CONF_REPLACE_INVALID_STATES_WITH_NA,
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
@@ -34,23 +35,21 @@ from .const import (
     DEFAULT_PREFIX,
     DEFAULT_PUSH_ENABLED,
     DEFAULT_PUSH_INTERVAL,
+    DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
     DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
-    ZIVY_OBRAZ_EXPORT_URL,
+    MAX_OVERDUE_TOLERANCE,
+    MAX_PUSH_INTERVAL,
+    MAX_SCAN_INTERVAL,
+    MAX_TIMEOUT,
+    MIN_OVERDUE_TOLERANCE,
+    MIN_PUSH_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    MIN_TIMEOUT,
 )
-
-MIN_SCAN_INTERVAL = 60
-MAX_SCAN_INTERVAL = 86400
-MIN_PUSH_INTERVAL = 60
-MAX_PUSH_INTERVAL = 86400
-MIN_TIMEOUT = 5
-MAX_TIMEOUT = 120
-MIN_OVERDUE_TOLERANCE = 0
-MAX_OVERDUE_TOLERANCE = 10080
-
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
     "invalid_group_id": (CONF_GROUP_ID, "invalid_group_id"),
@@ -70,13 +69,16 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     session = async_get_clientsession(hass)
     timeout = data[CONF_TIMEOUT]
 
-    url = f"{ZIVY_OBRAZ_EXPORT_URL}?export_key={data[CONF_EXPORT_KEY]}&epapers=json"
-
     if data.get(CONF_USE_GROUP_FILTER):
         group_id = data.get(CONF_GROUP_ID)
         if group_id is None:
             raise ValueError("group_id_required")
-        url += f"&group_id={group_id}"
+
+    url = build_export_url(
+        data[CONF_EXPORT_KEY],
+        data.get(CONF_USE_GROUP_FILTER, False),
+        data.get(CONF_GROUP_ID),
+    )
 
     async with asyncio.timeout(timeout):
         async with session.get(url, headers={"Accept": "application/json"}) as response:
@@ -184,6 +186,12 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared[CONF_SEND_ONLY_CHANGED] = bool(
         user_input.get(CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED)
     )
+    prepared[CONF_REPLACE_INVALID_STATES_WITH_NA] = bool(
+        user_input.get(
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        )
+    )
 
     scan_interval = _coerce_int(
         user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -266,16 +274,11 @@ def _build_schema(
     export_key: str | None = None,
     use_group_filter: bool = DEFAULT_USE_GROUP_FILTER,
     group_id: str = "",
-    scan_interval: int = DEFAULT_SCAN_INTERVAL,
     timeout: int = DEFAULT_TIMEOUT,
-    overdue_tolerance: int = DEFAULT_OVERDUE_TOLERANCE,
-    overdue_notification: bool = DEFAULT_OVERDUE_NOTIFICATION,
-    push_enabled: bool = DEFAULT_PUSH_ENABLED,
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
-    push_interval: int = DEFAULT_PUSH_INTERVAL,
-    send_only_changed: bool = DEFAULT_SEND_ONLY_CHANGED,
+    replace_invalid_states_with_na: bool = DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
@@ -287,27 +290,21 @@ def _build_schema(
 
     schema[vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter)] = bool
     schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
-    schema[vol.Optional(CONF_SCAN_INTERVAL, default=scan_interval)] = vol.All(
-        vol.Coerce(int),
-    )
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
     )
-    schema[vol.Optional(CONF_OVERDUE_NOTIFICATION, default=overdue_notification)] = bool
-    schema[vol.Optional(CONF_OVERDUE_TOLERANCE, default=overdue_tolerance)] = vol.All(
-        vol.Coerce(int),
-    )
-    schema[vol.Optional(CONF_PUSH_ENABLED, default=push_enabled)] = bool
-    schema[vol.Optional(CONF_SEND_ONLY_CHANGED, default=send_only_changed)] = bool
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
-    schema[vol.Optional(CONF_PUSH_INTERVAL, default=push_interval)] = vol.All(
-        vol.Coerce(int),
-    )
+    schema[
+        vol.Optional(
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            default=replace_invalid_states_with_na,
+        )
+    ] = bool
 
     return vol.Schema(schema)
 
@@ -439,6 +436,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         current_send_only_changed = _get_config_value(
             self._config_entry, CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED
         )
+        current_replace_invalid_states_with_na = _get_config_value(
+            self._config_entry,
+            CONF_REPLACE_INVALID_STATES_WITH_NA,
+            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        )
 
         has_export_key = bool(_normalize_api_key(current_export_key))
         has_import_key = bool(_normalize_api_key(current_import_key))
@@ -448,6 +450,15 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 merged_input = {
                     CONF_EXPORT_KEY: _normalize_api_key(current_export_key),
                     CONF_IMPORT_KEY: _normalize_api_key(current_import_key),
+                    CONF_SCAN_INTERVAL: current_scan_interval,
+                    CONF_OVERDUE_TOLERANCE: current_overdue_tolerance,
+                    CONF_OVERDUE_NOTIFICATION: current_overdue_notification,
+                    CONF_PUSH_ENABLED: current_push_enabled,
+                    CONF_PUSH_INTERVAL: current_push_interval,
+                    CONF_SEND_ONLY_CHANGED: current_send_only_changed,
+                    CONF_REPLACE_INVALID_STATES_WITH_NA: (
+                        current_replace_invalid_states_with_na
+                    ),
                     **user_input,
                 }
                 prepared_input = _prepare_user_input(merged_input)
@@ -477,16 +488,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             export_key=current_export_key,
             use_group_filter=current_use_group_filter,
             group_id=current_group_id,
-            scan_interval=current_scan_interval,
             timeout=current_timeout,
-            overdue_tolerance=current_overdue_tolerance,
-            overdue_notification=current_overdue_notification,
-            push_enabled=current_push_enabled,
             import_key=current_import_key,
             label=current_label,
             prefix=current_prefix,
-            push_interval=current_push_interval,
-            send_only_changed=current_send_only_changed,
+            replace_invalid_states_with_na=current_replace_invalid_states_with_na,
         )
         schema = self.add_suggested_values_to_schema(
             schema,

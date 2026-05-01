@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 import json
 import logging
+import re
 from typing import Any, Callable
 
 from aiohttp import ClientError, ClientResponseError
@@ -21,6 +22,19 @@ from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
+
+_PANEL_MAC_RE = re.compile(
+    r"^(?:"
+    r"[0-9a-f]{12}|"
+    r"[0-9a-f]{2}(?::[0-9a-f]{2}){5}|"
+    r"[0-9a-f]{2}(?:-[0-9a-f]{2}){5}"
+    r")$"
+)
+
+
+def _is_panel_mac(value: str) -> bool:
+    """Return True when an identifier looks like a panel MAC address."""
+    return _PANEL_MAC_RE.fullmatch(value.lower()) is not None
 
 
 @dataclass
@@ -67,6 +81,32 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
         self.diagnostics.next_sync = dt_util.now() + self.update_interval
+
+    async def async_request_manual_refresh(self) -> None:
+        """Refresh data on demand without changing the scheduled refresh time."""
+        next_sync = self.diagnostics.next_sync
+        try:
+            await self.async_request_refresh()
+        finally:
+            self.diagnostics.next_sync = next_sync
+            self._notify_diagnostic_listeners()
+
+    @callback
+    def async_set_update_interval(self, update_interval_seconds: int) -> None:
+        """Update polling interval and reschedule the next refresh from now."""
+        self.update_interval = timedelta(seconds=update_interval_seconds)
+        self._set_next_sync()
+
+        unsub_refresh = getattr(self, "_unsub_refresh", None)
+        if unsub_refresh is not None:
+            unsub_refresh()
+            self._unsub_refresh = None
+
+        schedule_refresh = getattr(self, "_schedule_refresh", None)
+        if schedule_refresh is not None:
+            schedule_refresh()
+
+        self._notify_diagnostic_listeners()
 
     @callback
     def _notify_diagnostic_listeners(self) -> None:
@@ -140,8 +180,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             self.config_entry.entry_id,
         ):
             for domain, identifier in device.identifiers:
-                if domain == DOMAIN:
-                    macs.add(str(identifier).lower())
+                identifier = str(identifier).lower()
+                if domain == DOMAIN and _is_panel_mac(identifier):
+                    macs.add(identifier)
 
         return macs
 
@@ -165,6 +206,8 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             )
 
             for entity_entry in entity_entries:
+                if entity_entry.config_entry_id != self.config_entry.entry_id:
+                    continue
                 entity_registry.async_remove(entity_entry.entity_id)
                 _LOGGER.info(
                     "Removed stale Živý Obraz entity %s for device %s",

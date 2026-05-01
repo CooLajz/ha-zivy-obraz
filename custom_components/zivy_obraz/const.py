@@ -18,6 +18,7 @@ CONF_PREFIX = "prefix"
 CONF_PREFIX_OVERRIDE = "prefix_override"
 CONF_PUSH_INTERVAL = "push_interval"
 CONF_SEND_ONLY_CHANGED = "send_only_changed"
+CONF_REPLACE_INVALID_STATES_WITH_NA = "replace_invalid_states_with_na"
 
 DEFAULT_SCAN_INTERVAL = 300
 DEFAULT_NAME = "Živý Obraz"
@@ -31,14 +32,24 @@ DEFAULT_LABEL = "ZivyObraz"
 DEFAULT_PREFIX = ""
 DEFAULT_PUSH_INTERVAL = 300
 DEFAULT_SEND_ONLY_CHANGED = True
+DEFAULT_REPLACE_INVALID_STATES_WITH_NA = False
 DEFAULT_USE_GROUP_FILTER = False
+
+MIN_SCAN_INTERVAL = 60
+MAX_SCAN_INTERVAL = 86400
+MIN_PUSH_INTERVAL = 60
+MAX_PUSH_INTERVAL = 86400
+MIN_TIMEOUT = 5
+MAX_TIMEOUT = 120
+MIN_OVERDUE_TOLERANCE = 0
+MAX_OVERDUE_TOLERANCE = 10080
 
 ZIVY_OBRAZ_EXPORT_URL = "https://out.zivyobraz.eu/"
 ZIVY_OBRAZ_PUSH_URL = "https://in.zivyobraz.eu/"
 
 MAX_PUSH_URL_LENGTH = 1800
 
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "button"]
 
 SERVICE_PUSH = "push"
 SERVICE_PUSH_VALUES = "push_values"

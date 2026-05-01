@@ -29,7 +29,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
-from .device import build_device_info
+from .device import build_device_info, diagnostic_device_identifier
 from .push import ZivyObrazPushManager
 
 
@@ -104,6 +104,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         value_key="rssi",
         name="RSSI",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        icon="mdi:wifi-strength-2",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -112,6 +113,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         key="ssid",
         value_key="ssid",
         name="WiFi SSID",
+        icon="mdi:access-point-network",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -133,12 +135,14 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         key="group_name",
         value_key="group_name",
         name="Group name",
+        icon="mdi:account-group",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSensorDescription(
         key="fw_build",
         value_key="fw_build",
         name="FW build",
+        icon="mdi:chip",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -146,6 +150,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         key="reset_reason",
         value_key="reset_reason",
         name="Reset reason",
+        icon="mdi:restart-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -154,6 +159,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         value_key="last_picture_download_ms",
         name="Last picture download",
         native_unit_of_measurement="ms",
+        icon="mdi:image-sync",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -163,6 +169,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         value_key="last_display_refresh_ms",
         name="Last display refresh",
         native_unit_of_measurement="ms",
+        icon="mdi:monitor-dashboard",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -189,6 +196,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         key="push_status",
         value_key="status",
         name="Push status",
+        icon="mdi:cloud-check-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -196,6 +204,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         key="push_pushed_entities",
         value_key="pushed_entities",
         name="Pushed entities",
+        icon="mdi:cloud-upload-outline",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -204,6 +213,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         key="push_skipped_entities",
         value_key="skipped_entities",
         name="Skipped entities",
+        icon="mdi:debug-step-over",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -212,6 +222,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         key="push_failed_entities",
         value_key="failed_entities",
         name="Failed entities",
+        icon="mdi:cloud-alert-outline",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -220,6 +231,7 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         key="push_request_batches",
         value_key="request_batches",
         name="Request batches",
+        icon="mdi:package-variant-closed",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -231,6 +243,7 @@ PUSH_NEXT_SENSOR_DESCRIPTION = ZivyObrazPushSensorDescription(
     value_key="next_push",
     name="Next push",
     device_class=SensorDeviceClass.TIMESTAMP,
+    icon="mdi:cloud-clock-outline",
     entity_category=EntityCategory.DIAGNOSTIC,
 )
 
@@ -254,6 +267,7 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         key="sync_status",
         value_key="status",
         name="Sync status",
+        icon="mdi:sync-circle",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -262,12 +276,14 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
         value_key="next_sync",
         name="Next sync",
         device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:cloud-clock-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSyncSensorDescription(
         key="sync_device_count",
         value_key="device_count",
         name="Device count",
+        icon="mdi:devices",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -285,10 +301,6 @@ async def async_setup_entry(
     known_entity_ids: set[str] = set()
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
-    )
-    push_is_scheduled = (
-        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_unsub")
-        is not None
     )
 
     def _should_create_entity(
@@ -379,24 +391,13 @@ async def async_setup_entry(
             ZivyObrazPushDiagnosticSensor(entry, push_manager, description)
             for description in PUSH_SENSOR_DESCRIPTIONS
         )
-        if push_is_scheduled:
-            initial_entities.append(
-                ZivyObrazPushDiagnosticSensor(
-                    entry,
-                    push_manager,
-                    PUSH_NEXT_SENSOR_DESCRIPTION,
-                )
+        initial_entities.append(
+            ZivyObrazPushDiagnosticSensor(
+                entry,
+                push_manager,
+                PUSH_NEXT_SENSOR_DESCRIPTION,
             )
-
-    if not push_is_scheduled:
-        entity_registry = er.async_get(hass)
-        entity_id = entity_registry.async_get_entity_id(
-            "sensor",
-            DOMAIN,
-            f"{entry.entry_id}_{PUSH_NEXT_SENSOR_DESCRIPTION.key}",
         )
-        if entity_id is not None:
-            entity_registry.async_remove(entity_id)
 
     initial_entities.extend(
         ZivyObrazSyncDiagnosticSensor(entry, coordinator, description)
@@ -574,7 +575,7 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
             description.entity_registry_enabled_default
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )
@@ -607,21 +608,18 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
         if self.entity_description.key == "push_pushed_entities":
             return {
                 "variables": diagnostics.variables,
-                "variables_total": diagnostics.variables_total,
                 "variables_truncated": diagnostics.variables_truncated,
             }
 
         if self.entity_description.key == "push_skipped_entities":
             return {
                 "skipped_variables": diagnostics.skipped_variables,
-                "skipped_variables_total": diagnostics.skipped_variables_total,
                 "skipped_variables_truncated": diagnostics.skipped_variables_truncated,
             }
 
         if self.entity_description.key == "push_failed_entities":
             return {
                 "failed_variables": diagnostics.failed_variables,
-                "failed_variables_total": diagnostics.failed_variables_total,
                 "failed_variables_truncated": diagnostics.failed_variables_truncated,
             }
 
@@ -650,7 +648,7 @@ class ZivyObrazSyncDiagnosticSensor(
             description.entity_registry_enabled_default
         )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_push")},
+            identifiers={diagnostic_device_identifier(entry)},
             name=f"Živý Obraz - {entry.title}",
             manufacturer="Živý Obraz",
         )
