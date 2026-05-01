@@ -25,6 +25,8 @@ class BatteryChargeState:
     daily_samples: int = 0
     excluded_daily_samples: int = 0
     previous_average: float | None = None
+    stored_days: int = 0
+    valid_baseline_days: int = 0
     status: str = "warming_up"
     _samples_by_day: dict[date, list[float]] = field(
         default_factory=lambda: defaultdict(list)
@@ -46,6 +48,10 @@ class BatteryChargeTracker:
     def state_for(self, mac: str) -> BatteryChargeState:
         """Return charge state for a panel."""
         return self._states.setdefault(mac, BatteryChargeState())
+
+    def last_detected_day_for(self, mac: str) -> date | None:
+        """Return the last day when charging was detected for a panel."""
+        return self.state_for(mac)._last_detected_day
 
     def restore_last_charged(self, mac: str, value: Any) -> None:
         """Restore the last charged timestamp from Home Assistant state restore."""
@@ -200,7 +206,17 @@ class BatteryChargeTracker:
         state.daily_samples = len(current_samples)
         state.excluded_daily_samples = state._excluded_samples_by_day[current_day]
         state.daily_average = self._daily_average(current_samples)
-        state.previous_average = self._previous_average(state, current_day)
+        previous_averages = self._previous_averages(state, current_day)
+        state.previous_average = (
+            round(sum(previous_averages) / len(previous_averages), 2)
+            if len(previous_averages) == BATTERY_CHARGE_BASELINE_DAYS
+            else None
+        )
+        state.stored_days = self._stored_days(state)
+        state.valid_baseline_days = min(
+            len(previous_averages),
+            BATTERY_CHARGE_BASELINE_DAYS,
+        )
 
         if state.daily_average is None:
             state.status = "insufficient_samples"
@@ -223,12 +239,12 @@ class BatteryChargeTracker:
 
         state.status = "idle"
 
-    def _previous_average(
+    def _previous_averages(
         self,
         state: BatteryChargeState,
         current_day: date,
-    ) -> float | None:
-        """Return average of the previous valid baseline days."""
+    ) -> list[float]:
+        """Return daily averages from previous valid baseline days."""
         daily_averages: list[float] = []
         previous_days = [
             sample_day
@@ -243,9 +259,9 @@ class BatteryChargeTracker:
 
             daily_averages.append(daily_average)
             if len(daily_averages) == BATTERY_CHARGE_BASELINE_DAYS:
-                return round(sum(daily_averages) / len(daily_averages), 2)
+                return daily_averages
 
-        return None
+        return daily_averages
 
     def _daily_average(self, samples: list[float]) -> float | None:
         """Return the average battery voltage for a day."""
@@ -354,3 +370,11 @@ class BatteryChargeTracker:
             return None
 
         return max(sample_days)
+
+    def _stored_days(self, state: BatteryChargeState) -> int:
+        """Return number of stored days with valid voltage samples."""
+        return sum(
+            1
+            for samples in state._samples_by_day.values()
+            if self._daily_average(samples) is not None
+        )
