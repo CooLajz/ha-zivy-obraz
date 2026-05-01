@@ -484,6 +484,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         update_interval_seconds=scan_interval,
     )
 
+    await coordinator.async_load_battery_state()
     await coordinator.async_refresh()
 
     if coordinator.data is None:

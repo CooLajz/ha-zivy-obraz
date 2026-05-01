@@ -29,9 +29,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .battery import (
+    BATTERY_CHARGE_BASELINE_DAYS,
     BATTERY_CHARGE_COOLDOWN_DAYS,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
-    BATTERY_CHARGE_MIN_DAILY_SAMPLES,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
 )
 from .const import DOMAIN
@@ -688,11 +688,12 @@ class ZivyObrazSensor(
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
             return {
                 "daily_samples": tracker_state.daily_samples,
+                "daily_average": tracker_state.daily_average,
                 "excluded_daily_samples": tracker_state.excluded_daily_samples,
-                "previous_daily_high": tracker_state.previous_daily_high,
+                "previous_3_day_average": tracker_state.previous_average,
                 "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
                 "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
-                "minimum_daily_samples": BATTERY_CHARGE_MIN_DAILY_SAMPLES,
+                "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
                 "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
             }
         return None
