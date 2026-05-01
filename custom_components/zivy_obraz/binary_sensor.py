@@ -38,6 +38,12 @@ from .push import PUSH_PROBLEM_STATUSES, ZivyObrazPushManager
 class ZivyObrazBinarySensorDescription(BinarySensorEntityDescription):
     """Description for Zivy Obraz binary sensor."""
 
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
 
 BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
     ZivyObrazBinarySensorDescription(
@@ -501,7 +507,7 @@ class ZivyObrazPushProblemBinarySensor(
     """Binary sensor indicating whether the last push attempt had a problem."""
 
     _attr_has_entity_name = True
-    _attr_name = "Push problem"
+    _attr_translation_key = "push_problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_icon = "mdi:cloud-alert-outline"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -593,7 +599,7 @@ class ZivyObrazSyncProblemBinarySensor(
     """Binary sensor indicating whether the last sync attempt had a problem."""
 
     _attr_has_entity_name = True
-    _attr_name = "Sync problem"
+    _attr_translation_key = "sync_problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_icon = "mdi:sync-alert"
     _attr_entity_category = EntityCategory.DIAGNOSTIC

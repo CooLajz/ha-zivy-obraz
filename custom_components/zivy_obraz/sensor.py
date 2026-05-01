@@ -47,6 +47,12 @@ class ZivyObrazSensorDescription(SensorEntityDescription):
     value_key: str
     create_if_missing: bool = False
 
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
 
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazPushSensorDescription(SensorEntityDescription):
@@ -54,12 +60,24 @@ class ZivyObrazPushSensorDescription(SensorEntityDescription):
 
     value_key: str
 
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
 
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazSyncSensorDescription(SensorEntityDescription):
     """Sensor description for Živý Obraz sync diagnostics."""
 
     value_key: str
+
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
 
 
 SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (

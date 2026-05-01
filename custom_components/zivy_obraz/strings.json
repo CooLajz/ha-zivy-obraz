@@ -98,6 +98,24 @@
       }
     },
     "sensor": {
+      "battery_percent": {
+        "name": "Battery"
+      },
+      "battery_volts": {
+        "name": "Battery voltage"
+      },
+      "battery_last_charged": {
+        "name": "Battery last charged"
+      },
+      "battery_days_since_last_charge": {
+        "name": "Battery days since last charge"
+      },
+      "battery_daily_high": {
+        "name": "Battery daily high"
+      },
+      "battery_daily_low": {
+        "name": "Battery daily low"
+      },
       "battery_charge_detection_status": {
         "name": "Battery charge detection status",
         "state": {
@@ -108,6 +126,108 @@
           "charge_detected": "Charge detected",
           "cooldown": "Cooldown"
         }
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pressure": {
+        "name": "Pressure"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "ssid": {
+        "name": "WiFi SSID"
+      },
+      "last_contact": {
+        "name": "Last contact"
+      },
+      "next_contact": {
+        "name": "Next contact"
+      },
+      "group_name": {
+        "name": "Group name"
+      },
+      "fw_build": {
+        "name": "FW build"
+      },
+      "reset_reason": {
+        "name": "Reset reason"
+      },
+      "last_picture_download_ms": {
+        "name": "Last picture download"
+      },
+      "last_display_refresh_ms": {
+        "name": "Last display refresh"
+      },
+      "push_last_push": {
+        "name": "Last push"
+      },
+      "push_last_successful_push": {
+        "name": "Last successful push"
+      },
+      "push_status": {
+        "name": "Push status",
+        "state": {
+          "idle": "Idle",
+          "success": "Success",
+          "failed": "Failed",
+          "partial_failure": "Partial failure",
+          "no_batches": "No request batches",
+          "no_valid_entities": "No valid entities",
+          "no_new_data": "No new data",
+          "no_entities": "No entities"
+        }
+      },
+      "push_pushed_entities": {
+        "name": "Pushed entities"
+      },
+      "push_skipped_entities": {
+        "name": "Skipped entities"
+      },
+      "push_failed_entities": {
+        "name": "Failed entities"
+      },
+      "push_request_batches": {
+        "name": "Request batches"
+      },
+      "push_next_push": {
+        "name": "Next push"
+      },
+      "sync_last_sync": {
+        "name": "Last sync"
+      },
+      "sync_last_successful_sync": {
+        "name": "Last successful sync"
+      },
+      "sync_status": {
+        "name": "Sync status",
+        "state": {
+          "idle": "Idle",
+          "success": "Success",
+          "failed": "Failed",
+          "no_new_data": "No new data"
+        }
+      },
+      "sync_next_sync": {
+        "name": "Next sync"
+      },
+      "sync_device_count": {
+        "name": "Device count"
+      }
+    },
+    "binary_sensor": {
+      "overdue": {
+        "name": "Overdue"
+      },
+      "push_problem": {
+        "name": "Push problem"
+      },
+      "sync_problem": {
+        "name": "Sync problem"
       }
     }
   },

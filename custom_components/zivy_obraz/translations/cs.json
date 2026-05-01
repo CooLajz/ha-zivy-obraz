@@ -98,6 +98,24 @@
       }
     },
     "sensor": {
+      "battery_percent": {
+        "name": "Baterie"
+      },
+      "battery_volts": {
+        "name": "Napětí baterie"
+      },
+      "battery_last_charged": {
+        "name": "Baterie naposledy nabita"
+      },
+      "battery_days_since_last_charge": {
+        "name": "Dní od posledního nabití baterie"
+      },
+      "battery_daily_high": {
+        "name": "Denní maximum baterie"
+      },
+      "battery_daily_low": {
+        "name": "Denní minimum baterie"
+      },
       "battery_charge_detection_status": {
         "name": "Stav detekce nabití baterie",
         "state": {
@@ -108,6 +126,108 @@
           "charge_detected": "Nabití detekováno",
           "cooldown": "Čekací doba"
         }
+      },
+      "temperature": {
+        "name": "Teplota"
+      },
+      "humidity": {
+        "name": "Vlhkost"
+      },
+      "pressure": {
+        "name": "Tlak"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "ssid": {
+        "name": "WiFi SSID"
+      },
+      "last_contact": {
+        "name": "Poslední kontakt"
+      },
+      "next_contact": {
+        "name": "Další kontakt"
+      },
+      "group_name": {
+        "name": "Název skupiny"
+      },
+      "fw_build": {
+        "name": "Sestavení FW"
+      },
+      "reset_reason": {
+        "name": "Důvod restartu"
+      },
+      "last_picture_download_ms": {
+        "name": "Poslední stažení obrázku"
+      },
+      "last_display_refresh_ms": {
+        "name": "Poslední obnovení displeje"
+      },
+      "push_last_push": {
+        "name": "Poslední odeslání"
+      },
+      "push_last_successful_push": {
+        "name": "Poslední úspěšné odeslání"
+      },
+      "push_status": {
+        "name": "Stav odesílání",
+        "state": {
+          "idle": "Nečinné",
+          "success": "Úspěšné",
+          "failed": "Selhalo",
+          "partial_failure": "Částečné selhání",
+          "no_batches": "Žádné dávky požadavků",
+          "no_valid_entities": "Žádné validní entity",
+          "no_new_data": "Žádná nová data",
+          "no_entities": "Žádné entity"
+        }
+      },
+      "push_pushed_entities": {
+        "name": "Odeslané entity"
+      },
+      "push_skipped_entities": {
+        "name": "Přeskočené entity"
+      },
+      "push_failed_entities": {
+        "name": "Neodeslané entity"
+      },
+      "push_request_batches": {
+        "name": "Dávky požadavků"
+      },
+      "push_next_push": {
+        "name": "Další odeslání"
+      },
+      "sync_last_sync": {
+        "name": "Poslední synchronizace"
+      },
+      "sync_last_successful_sync": {
+        "name": "Poslední úspěšná synchronizace"
+      },
+      "sync_status": {
+        "name": "Stav synchronizace",
+        "state": {
+          "idle": "Nečinné",
+          "success": "Úspěšná",
+          "failed": "Selhala",
+          "no_new_data": "Žádná nová data"
+        }
+      },
+      "sync_next_sync": {
+        "name": "Další synchronizace"
+      },
+      "sync_device_count": {
+        "name": "Počet zařízení"
+      }
+    },
+    "binary_sensor": {
+      "overdue": {
+        "name": "Po termínu"
+      },
+      "push_problem": {
+        "name": "Problém odesílání"
+      },
+      "sync_problem": {
+        "name": "Problém synchronizace"
       }
     }
   },
