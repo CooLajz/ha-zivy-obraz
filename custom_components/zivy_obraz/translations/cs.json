@@ -121,7 +121,7 @@
         "state": {
           "warming_up": "Zahřívání detekce",
           "insufficient_samples": "Nedostatek vzorků",
-          "baseline": "Výchozí hodnota",
+          "baseline": "Sbírání výchozích dat",
           "idle": "Nabití nedetekováno",
           "charge_detected": "Nabití detekováno",
           "cooldown": "Čekací doba"

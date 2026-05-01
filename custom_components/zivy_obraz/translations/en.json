@@ -121,7 +121,7 @@
         "state": {
           "warming_up": "Warming up",
           "insufficient_samples": "Insufficient samples",
-          "baseline": "Baseline",
+          "baseline": "Collecting baseline",
           "idle": "No charge detected",
           "charge_detected": "Charge detected",
           "cooldown": "Cooldown"
