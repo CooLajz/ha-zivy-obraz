@@ -96,6 +96,19 @@
       "push_now": {
         "name": "Odeslat hodnoty nyní"
       }
+    },
+    "sensor": {
+      "battery_charge_detection_status": {
+        "name": "Stav detekce nabití baterie",
+        "state": {
+          "warming_up": "Zahřívání detekce",
+          "insufficient_samples": "Nedostatek vzorků",
+          "baseline": "Výchozí hodnota",
+          "idle": "Nabití nedetekováno",
+          "charge_detected": "Nabití detekováno",
+          "cooldown": "Čekací doba"
+        }
+      }
     }
   },
   "services": {

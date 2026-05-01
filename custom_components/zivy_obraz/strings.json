@@ -96,6 +96,19 @@
       "push_now": {
         "name": "Push values now"
       }
+    },
+    "sensor": {
+      "battery_charge_detection_status": {
+        "name": "Battery charge detection status",
+        "state": {
+          "warming_up": "Warming up",
+          "insufficient_samples": "Insufficient samples",
+          "baseline": "Baseline",
+          "idle": "No charge detected",
+          "charge_detected": "Charge detected",
+          "cooldown": "Cooldown"
+        }
+      }
     }
   },
   "services": {

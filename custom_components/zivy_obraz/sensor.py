@@ -125,6 +125,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         key="battery_charge_detection_status",
         value_key="battery_volts",
         name="Battery charge detection status",
+        translation_key="battery_charge_detection_status",
         icon="mdi:battery-sync-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
