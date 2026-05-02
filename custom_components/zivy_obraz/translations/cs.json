@@ -110,12 +110,6 @@
       "battery_days_since_last_charge": {
         "name": "Dní od posledního nabití baterie"
       },
-      "battery_voltage_max": {
-        "name": "Maximální napětí baterie"
-      },
-      "battery_voltage_min": {
-        "name": "Minimální napětí baterie"
-      },
       "battery_charge_detection_status": {
         "name": "Stav detekce nabití baterie",
         "state": {

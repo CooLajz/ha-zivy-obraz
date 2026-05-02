@@ -287,8 +287,6 @@ diagnostiku:
 
 - `Battery last charged`
 - `Battery days since last charge`
-- `Battery voltage maximum`
-- `Battery voltage minimum`
 - `Battery charge detection status`
 
 Detekce posledního nabití je konzervativní odhad z denních průměrů napětí.
@@ -301,6 +299,8 @@ do detekce ani do celkového minima/maxima nezahrnují, aby případné nabíjec
 špičky nezkreslovaly baseline. Integrace záměrně nevytváří senzor aktuálního
 nabíjení, protože napětí baterie se u různých desek, baterek a intervalů refresh
 chová příliš rozdílně.
+Celkové minimum a maximum validního napětí baterie jsou dostupné jako atributy
+senzoru `Battery voltage`.
 
 Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
 entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
@@ -721,8 +721,6 @@ Panels that report `battery_volts` also get battery diagnostics:
 
 - `Battery last charged`
 - `Battery days since last charge`
-- `Battery voltage maximum`
-- `Battery voltage minimum`
 - `Battery charge detection status`
 
 Last charge detection is a conservative estimate based on daily voltage
@@ -736,6 +734,8 @@ overall minimum/maximum sensors so charging spikes do not distort the baseline.
 The integration intentionally does not expose a current charging binary sensor
 because voltage behavior differs too much between boards, batteries, and refresh
 intervals.
+The overall minimum and maximum valid battery voltage are available as
+attributes on the `Battery voltage` sensor.
 
 Main operational entities are enabled by default. Detailed diagnostic entities
 such as `Push status`, `Sync status`, counters, and variable previews are hidden

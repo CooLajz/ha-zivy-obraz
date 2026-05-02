@@ -68,18 +68,6 @@ class BatteryChargeTracker:
 
         self.state_for(mac).last_charged = parsed
 
-    def restore_voltage_max(self, mac: str, value: Any) -> None:
-        """Restore the maximum observed battery voltage."""
-        voltage = self._parse_voltage(value)
-        if voltage is not None:
-            self.state_for(mac).voltage_max = voltage
-
-    def restore_voltage_min(self, mac: str, value: Any) -> None:
-        """Restore the minimum observed battery voltage."""
-        voltage = self._parse_voltage(value)
-        if voltage is not None:
-            self.state_for(mac).voltage_min = voltage
-
     def process_device(self, mac: str, device_data: dict[str, Any]) -> bool:
         """Process one panel payload."""
         value = device_data.get("battery_volts")

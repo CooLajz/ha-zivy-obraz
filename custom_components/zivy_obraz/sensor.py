@@ -119,30 +119,6 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSensorDescription(
-        key="battery_voltage_max",
-        value_key="battery_volts",
-        name="Battery voltage maximum",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        icon="mdi:battery-high",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    ZivyObrazSensorDescription(
-        key="battery_voltage_min",
-        value_key="battery_volts",
-        name="Battery voltage minimum",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        icon="mdi:battery-low",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    ZivyObrazSensorDescription(
         key="battery_charge_detection_status",
         value_key="battery_volts",
         name="Battery charge detection status",
@@ -541,16 +517,6 @@ class ZivyObrazSensor(
                     self._mac,
                     last_sensor_data.native_value,
                 )
-            if self.entity_description.key == "battery_voltage_max":
-                self.coordinator.battery_tracker.restore_voltage_max(
-                    self._mac,
-                    last_sensor_data.native_value,
-                )
-            if self.entity_description.key == "battery_voltage_min":
-                self.coordinator.battery_tracker.restore_voltage_min(
-                    self._mac,
-                    last_sensor_data.native_value,
-                )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -635,18 +601,6 @@ class ZivyObrazSensor(
             except (TypeError, ValueError):
                 return None
 
-        if self.entity_description.key in (
-            "battery_voltage_max",
-            "battery_voltage_min",
-        ):
-            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
-            tracked_value = (
-                tracker_state.voltage_max
-                if self.entity_description.key == "battery_voltage_max"
-                else tracker_state.voltage_min
-            )
-            return tracked_value
-
         if self.entity_description.key == "battery_charge_detection_status":
             return self.coordinator.battery_tracker.state_for(self._mac).status
 
@@ -684,6 +638,12 @@ class ZivyObrazSensor(
             group_id = self._device_data.get("group_id")
             if group_id is not None:
                 return {"group_id": group_id}
+        if self.entity_description.key == "battery_volts":
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            return {
+                "voltage_min": tracker_state.voltage_min,
+                "voltage_max": tracker_state.voltage_max,
+            }
         if self.entity_description.key == "battery_charge_detection_status":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
             last_detected_day = self.coordinator.battery_tracker.last_detected_day_for(
