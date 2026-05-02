@@ -619,24 +619,15 @@ class ZivyObrazSensor(
                 return {"group_id": group_id}
         if self.entity_description.key == "battery_volts":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
-            last_detected_day = self.coordinator.battery_tracker.last_detected_day_for(
-                self._mac
-            )
             return {
                 "voltage_min": tracker_state.voltage_min,
                 "voltage_max": tracker_state.voltage_max,
                 "last_charged": tracker_state.last_charged.isoformat()
                 if tracker_state.last_charged
                 else None,
-                "last_detected_day": last_detected_day.isoformat()
-                if last_detected_day
-                else None,
             }
         if self.entity_description.key == "battery_charge_detection_status":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
-            last_detected_day = self.coordinator.battery_tracker.last_detected_day_for(
-                self._mac
-            )
             return {
                 "daily_samples": tracker_state.daily_samples,
                 "daily_average": tracker_state.daily_average,
@@ -644,9 +635,6 @@ class ZivyObrazSensor(
                 "previous_3_day_average": tracker_state.previous_average,
                 "stored_days": tracker_state.stored_days,
                 "valid_baseline_days": tracker_state.valid_baseline_days,
-                "last_detected_day": last_detected_day.isoformat()
-                if last_detected_day
-                else None,
                 "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
                 "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
                 "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
