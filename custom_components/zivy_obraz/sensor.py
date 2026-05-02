@@ -246,7 +246,6 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         icon="mdi:cloud-upload-outline",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_skipped_entities",
@@ -255,7 +254,6 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         icon="mdi:debug-step-over",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_failed_entities",
