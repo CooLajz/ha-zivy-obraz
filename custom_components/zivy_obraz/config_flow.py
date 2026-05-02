@@ -264,7 +264,6 @@ def _build_export_schema(
     show_export_key: bool = True,
     name: str = DEFAULT_NAME,
     export_key: str | None = None,
-    group_id: str = "",
     timeout: int = DEFAULT_TIMEOUT,
 ) -> vol.Schema:
     """Build Export API config schema."""
@@ -275,7 +274,7 @@ def _build_export_schema(
     if show_export_key:
         schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
 
-    schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
+    schema[vol.Optional(CONF_GROUP_ID)] = str
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
     )
@@ -317,6 +316,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
+                user_input.setdefault(CONF_GROUP_ID, "")
                 prepared_input = _prepare_user_input(user_input)
                 _validate_push_settings(prepared_input)
 
@@ -351,6 +351,10 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_import()
 
         schema = _build_export_schema()
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {CONF_GROUP_ID: ""},
+        )
 
         return self.async_show_form(
             step_id="user",
@@ -364,6 +368,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_user()
 
         if user_input is not None:
+            user_input.setdefault(CONF_PREFIX, "")
             prepared_input = _prepare_user_input(
                 {
                     **self._export_input,
@@ -472,6 +477,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
+                user_input.setdefault(CONF_GROUP_ID, "")
                 merged_input = {
                     **current_values,
                     **user_input,
@@ -500,8 +506,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             show_export_key=not has_export_key,
             name=current_values[CONF_NAME],
             export_key=current_values[CONF_EXPORT_KEY],
-            group_id=current_values[CONF_GROUP_ID],
             timeout=current_values[CONF_TIMEOUT],
+        )
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {CONF_GROUP_ID: current_values[CONF_GROUP_ID]},
         )
 
         return self.async_show_form(
@@ -516,6 +525,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         has_import_key = bool(_normalize_api_key(current_values[CONF_IMPORT_KEY]))
 
         if user_input is not None:
+            user_input.setdefault(CONF_PREFIX, "")
             prepared_input = _prepare_user_input(
                 {
                     **current_values,
