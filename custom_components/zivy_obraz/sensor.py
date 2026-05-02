@@ -225,14 +225,6 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
 
 PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
     ZivyObrazPushSensorDescription(
-        key="push_last_push",
-        value_key="last_push",
-        name="Last push",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    ZivyObrazPushSensorDescription(
         key="push_last_successful_push",
         value_key="last_successful_push",
         name="Last successful push",
@@ -296,14 +288,6 @@ PUSH_NEXT_SENSOR_DESCRIPTION = ZivyObrazPushSensorDescription(
 
 SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
     ZivyObrazSyncSensorDescription(
-        key="sync_last_sync",
-        value_key="last_sync",
-        name="Last sync",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
-    ZivyObrazSyncSensorDescription(
         key="sync_last_successful_sync",
         value_key="last_successful_sync",
         name="Last successful sync",
@@ -338,6 +322,38 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
 )
 
 
+def _timestamp_attribute(value: Any) -> str | None:
+    """Return a timestamp attribute in a storage-friendly form."""
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+@callback
+def _remove_obsolete_diagnostic_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Remove diagnostic entities that were replaced by status attributes."""
+    obsolete_unique_ids = {
+        f"{entry.entry_id}_push_last_push",
+        f"{entry.entry_id}_sync_last_sync",
+    }
+    entity_registry = er.async_get(hass)
+
+    for entity_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        if entity_entry.domain != "sensor":
+            continue
+        if entity_entry.unique_id not in obsolete_unique_ids:
+            continue
+        entity_registry.async_remove(entity_entry.entity_id)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -349,6 +365,7 @@ async def async_setup_entry(
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
     )
+    _remove_obsolete_diagnostic_entities(hass, entry)
 
     def _should_create_entity(
         mac: str, description: ZivyObrazSensorDescription
@@ -690,6 +707,10 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
 
         if self.entity_description.key == "push_status":
             return {
+                "last_attempt": _timestamp_attribute(diagnostics.last_push),
+                "last_success": _timestamp_attribute(
+                    diagnostics.last_successful_push
+                ),
                 "last_error": diagnostics.last_error,
                 "pushed_entities": diagnostics.pushed_entities,
                 "skipped_entities": diagnostics.skipped_entities,
@@ -759,6 +780,13 @@ class ZivyObrazSyncDiagnosticSensor(
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra details for the sync status sensor."""
         if self.entity_description.key == "sync_status":
-            return {"last_error": self.coordinator.diagnostics.last_error}
+            diagnostics = self.coordinator.diagnostics
+            return {
+                "last_attempt": _timestamp_attribute(diagnostics.last_sync),
+                "last_success": _timestamp_attribute(
+                    diagnostics.last_successful_sync
+                ),
+                "last_error": diagnostics.last_error,
+            }
 
         return None

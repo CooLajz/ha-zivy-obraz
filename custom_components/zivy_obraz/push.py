@@ -222,6 +222,8 @@ class ZivyObrazPushManager:
     ) -> None:
         """Push prepared key/value pairs and update diagnostics."""
         self.diagnostics.last_push = pushed_at
+        self.diagnostics.status = "sending"
+        self.diagnostics.last_error = None
         self._set_variable_preview(dict(entity_pairs))
         self.diagnostics.pushed_entities = 0
         self.diagnostics.skipped_entities = len(skipped_pairs)
@@ -229,6 +231,7 @@ class ZivyObrazPushManager:
         self._set_skipped_variable_preview(dict(skipped_pairs))
         self._set_failed_variable_preview(dict(failed_pairs))
         self.diagnostics.request_batches = 0
+        self._notify_listeners()
 
         if not entity_pairs:
             if failed_pairs:

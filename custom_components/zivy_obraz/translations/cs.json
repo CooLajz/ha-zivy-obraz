@@ -154,9 +154,6 @@
       "last_display_refresh_ms": {
         "name": "Poslední obnovení displeje"
       },
-      "push_last_push": {
-        "name": "Poslední odeslání"
-      },
       "push_last_successful_push": {
         "name": "Poslední úspěšné odeslání"
       },
@@ -164,6 +161,7 @@
         "name": "Stav odesílání",
         "state": {
           "idle": "Nečinné",
+          "sending": "Odesílání",
           "success": "Úspěšné",
           "failed": "Selhalo",
           "partial_failure": "Částečné selhání",
@@ -188,9 +186,6 @@
       "push_next_push": {
         "name": "Další odeslání"
       },
-      "sync_last_sync": {
-        "name": "Poslední synchronizace"
-      },
       "sync_last_successful_sync": {
         "name": "Poslední úspěšná synchronizace"
       },
@@ -198,6 +193,7 @@
         "name": "Stav synchronizace",
         "state": {
           "idle": "Nečinné",
+          "syncing": "Synchronizuji",
           "success": "Úspěšná",
           "failed": "Selhala",
           "no_new_data": "Žádná nová data"

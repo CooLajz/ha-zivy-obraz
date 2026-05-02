@@ -154,9 +154,6 @@
       "last_display_refresh_ms": {
         "name": "Last display refresh"
       },
-      "push_last_push": {
-        "name": "Last push"
-      },
       "push_last_successful_push": {
         "name": "Last successful push"
       },
@@ -164,6 +161,7 @@
         "name": "Push status",
         "state": {
           "idle": "Idle",
+          "sending": "Sending",
           "success": "Success",
           "failed": "Failed",
           "partial_failure": "Partial failure",
@@ -188,9 +186,6 @@
       "push_next_push": {
         "name": "Next push"
       },
-      "sync_last_sync": {
-        "name": "Last sync"
-      },
       "sync_last_successful_sync": {
         "name": "Last successful sync"
       },
@@ -198,6 +193,7 @@
         "name": "Sync status",
         "state": {
           "idle": "Idle",
+          "syncing": "Syncing",
           "success": "Success",
           "failed": "Failed",
           "no_new_data": "No new data"

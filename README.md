@@ -246,7 +246,6 @@ původní plánovaný čas dalšího automatického odeslání.
 Pod tímto zařízením jsou také dostupné diagnostické entity pro poslední
 odeslání:
 
-- `Last push`
 - `Last successful push`
 - `Push status`
 - `Pushed entities`
@@ -256,7 +255,9 @@ odeslání:
 - `Push problem`
 - `Next push`
 
-Senzor `Push status` obsahuje v atributech poslední chybu. Senzor
+Senzor `Push status` obsahuje v atributech poslední pokus, poslední úspěšné
+odeslání a poslední chybu. Během běhu odesílání přejde krátce do stavu
+`sending`. Senzor
 `Pushed entities` obsahuje omezený náhled odesílaných proměnných a senzor
 `Skipped entities` obsahuje omezený náhled proměnných přeskočených kvůli
 nezměněné hodnotě. Senzor `Failed entities` obsahuje omezený náhled proměnných,
@@ -275,12 +276,15 @@ Assistantu. Pokud je automatické odesílání vypnuté, `Next push` bude `Unkno
 
 Stejné zařízení obsahuje také diagnostické entity pro načítání dat z Export API:
 
-- `Last sync`
 - `Last successful sync`
 - `Sync status`
 - `Next sync`
 - `Device count`
 - `Sync problem`
+
+Senzor `Sync status` obsahuje v atributech poslední pokus, poslední úspěšnou
+synchronizaci a poslední chybu. Během načítání dat přejde krátce do stavu
+`syncing`.
 
 U panelů, které posílají `battery_volts`, integrace navíc vytváří bateriovou
 diagnostiku:
@@ -683,7 +687,6 @@ the previously scheduled next automatic push time.
 
 The device also exposes diagnostic entities for the last push attempt:
 
-- `Last push`
 - `Last successful push`
 - `Push status`
 - `Pushed entities`
@@ -693,7 +696,9 @@ The device also exposes diagnostic entities for the last push attempt:
 - `Push problem`
 - `Next push`
 
-The `Push status` sensor exposes the last error as an attribute. The
+The `Push status` sensor exposes the last attempt, last successful push, and
+last error as attributes. While a push is running, it briefly changes to
+`sending`. The
 `Pushed entities` sensor exposes a bounded preview of pushed variables and the
 `Skipped entities` sensor exposes a bounded preview of variables skipped because
 their value did not change. The `Failed entities` sensor exposes a bounded
@@ -711,12 +716,15 @@ state attributes. When scheduled push is disabled, `Next push` is `Unknown`.
 
 The same device also exposes Export API synchronization diagnostic entities:
 
-- `Last sync`
 - `Last successful sync`
 - `Sync status`
 - `Next sync`
 - `Device count`
 - `Sync problem`
+
+The `Sync status` sensor exposes the last attempt, last successful sync, and
+last error as attributes. While data is being fetched, it briefly changes to
+`syncing`.
 
 Panels that report `battery_volts` also get battery diagnostics:
 

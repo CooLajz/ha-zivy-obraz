@@ -295,6 +295,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Fetch data from remote JSON endpoint."""
         sync_started_at = dt_util.now()
         self.diagnostics.last_sync = sync_started_at
+        self.diagnostics.status = "syncing"
+        self.diagnostics.last_error = None
+        self._notify_diagnostic_listeners()
 
         try:
             data = await self._async_fetch_json()
