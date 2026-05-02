@@ -102,14 +102,6 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
-        key="battery_last_charged",
-        value_key="battery_volts",
-        name="Battery last charged",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        icon="mdi:battery-clock",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    ZivyObrazSensorDescription(
         key="battery_days_since_last_charge",
         value_key="battery_volts",
         name="Battery days since last charge",
@@ -512,11 +504,6 @@ class ZivyObrazSensor(
         last_sensor_data = await self.async_get_last_sensor_data()
         if last_sensor_data is not None:
             self._restored_native_value = last_sensor_data.native_value
-            if self.entity_description.key == "battery_last_charged":
-                self.coordinator.battery_tracker.restore_last_charged(
-                    self._mac,
-                    last_sensor_data.native_value,
-                )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -579,14 +566,6 @@ class ZivyObrazSensor(
             except (TypeError, ValueError):
                 return None
 
-        if self.entity_description.key == "battery_last_charged":
-            last_charged = self.coordinator.battery_tracker.state_for(
-                self._mac
-            ).last_charged
-            if last_charged is not None:
-                return last_charged
-            return self._restored_native_value
-
         if self.entity_description.key == "battery_days_since_last_charge":
             last_charged = self.coordinator.battery_tracker.state_for(
                 self._mac
@@ -643,6 +622,19 @@ class ZivyObrazSensor(
             return {
                 "voltage_min": tracker_state.voltage_min,
                 "voltage_max": tracker_state.voltage_max,
+            }
+        if self.entity_description.key == "battery_days_since_last_charge":
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            last_detected_day = self.coordinator.battery_tracker.last_detected_day_for(
+                self._mac
+            )
+            return {
+                "last_charged": tracker_state.last_charged.isoformat()
+                if tracker_state.last_charged
+                else None,
+                "last_detected_day": last_detected_day.isoformat()
+                if last_detected_day
+                else None,
             }
         if self.entity_description.key == "battery_charge_detection_status":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)

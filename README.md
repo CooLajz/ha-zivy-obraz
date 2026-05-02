@@ -285,7 +285,6 @@ Stejné zařízení obsahuje také diagnostické entity pro načítání dat z E
 U panelů, které posílají `battery_volts`, integrace navíc vytváří bateriovou
 diagnostiku:
 
-- `Battery last charged`
 - `Battery days since last charge`
 - `Battery charge detection status`
 
@@ -301,6 +300,8 @@ nabíjení, protože napětí baterie se u různých desek, baterek a intervalů
 chová příliš rozdílně.
 Celkové minimum a maximum validního napětí baterie jsou dostupné jako atributy
 senzoru `Battery voltage`.
+Datum posledního nabití je dostupné jako atribut senzoru
+`Battery days since last charge`.
 
 Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
 entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
@@ -719,7 +720,6 @@ The same device also exposes Export API synchronization diagnostic entities:
 
 Panels that report `battery_volts` also get battery diagnostics:
 
-- `Battery last charged`
 - `Battery days since last charge`
 - `Battery charge detection status`
 
@@ -736,6 +736,8 @@ because voltage behavior differs too much between boards, batteries, and refresh
 intervals.
 The overall minimum and maximum valid battery voltage are available as
 attributes on the `Battery voltage` sensor.
+The last charge timestamp is available as an attribute on the
+`Battery days since last charge` sensor.
 
 Main operational entities are enabled by default. Detailed diagnostic entities
 such as `Push status`, `Sync status`, counters, and variable previews are hidden

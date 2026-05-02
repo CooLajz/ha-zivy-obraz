@@ -104,9 +104,6 @@
       "battery_volts": {
         "name": "Battery voltage"
       },
-      "battery_last_charged": {
-        "name": "Battery last charged"
-      },
       "battery_days_since_last_charge": {
         "name": "Battery days since last charge"
       },
