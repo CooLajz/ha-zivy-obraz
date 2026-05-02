@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Data download / Export API",
-        "description": "Enter the Export key used to download panel data. Export and Import keys are available on the Živý Obraz website in Account.",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
@@ -13,7 +13,7 @@
       },
       "import": {
         "title": "Data upload / Import API",
-        "description": "Import key is optional. Fill it only when you want to send Home Assistant values to Živý Obraz. Export and Import keys are available on the Živý Obraz website in Account.",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
         "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
@@ -41,7 +41,7 @@
     "step": {
       "init": {
         "title": "Data download / Export API",
-        "description": "Edit Export API settings used to download panel data. Export and Import keys are available on the Živý Obraz website in Account.",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
@@ -51,7 +51,7 @@
       },
       "import": {
         "title": "Data upload / Import API",
-        "description": "Import key is optional. Fill it only when you want to send Home Assistant values to Živý Obraz. Export and Import keys are available on the Živý Obraz website in Account.",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
         "data": {
           "import_key": "Import key",
           "label": "Entity label for push",

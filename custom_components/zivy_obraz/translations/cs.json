@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Načítání dat / Export API",
-        "description": "Zadejte Export key pro načítání dat panelů. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "description": "Export key najdete na webu Živého obrazu v sekci Účet. Vyplněné ID skupiny načte jen panely v této skupině; prázdné pole načte vše pod účtem.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
@@ -13,7 +13,7 @@
       },
       "import": {
         "title": "Odesílání dat / Import API",
-        "description": "Import key je volitelný. Vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "description": "Import key najdete na webu Živého obrazu v sekci Účet. Je volitelný; vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu.",
         "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
@@ -41,7 +41,7 @@
     "step": {
       "init": {
         "title": "Načítání dat / Export API",
-        "description": "Upravte nastavení Export API pro načítání dat panelů. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "description": "Export key najdete na webu Živého obrazu v sekci Účet. Vyplněné ID skupiny načte jen panely v této skupině; prázdné pole načte vše pod účtem.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
@@ -51,7 +51,7 @@
       },
       "import": {
         "title": "Odesílání dat / Import API",
-        "description": "Import key je volitelný. Vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "description": "Import key najdete na webu Živého obrazu v sekci Účet. Je volitelný; vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu.",
         "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
