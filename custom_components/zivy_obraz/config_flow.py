@@ -360,6 +360,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=schema,
             errors=errors,
+            last_step=False,
         )
 
     async def async_step_import(self, user_input=None):
@@ -391,6 +392,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="import",
             data_schema=schema,
             errors={},
+            last_step=True,
         )
 
     @staticmethod
@@ -517,6 +519,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=schema,
             errors=errors,
+            last_step=False,
         )
 
     async def async_step_import(self, user_input=None):
@@ -551,4 +554,5 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             step_id="import",
             data_schema=schema,
             errors={},
+            last_step=True,
         )
