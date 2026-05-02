@@ -6,10 +6,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import label_registry as lr
 
 LABEL_DESCRIPTION_CS = (
-    "Označené entity nebo zařízení budou odeslány do služby Živý Obraz."
+    "Označené entity nebo zařízení budou odeslány do služby Živý Obraz {name}."
 )
 LABEL_DESCRIPTION_EN = (
-    "Tagged entities or devices will be sent to the Živý Obraz service."
+    "Tagged entities or devices will be sent to the Živý Obraz {name} service."
 )
 LABEL_ICON = "mdi:panorama-variant"
 
@@ -21,13 +21,14 @@ def _normalize_label_name(value: str) -> str:
     return value
 
 
-def _label_description(hass: HomeAssistant) -> str:
+def _label_description(hass: HomeAssistant, instance_name: str | None) -> str:
     """Return label description for the configured Home Assistant language."""
+    name = (instance_name or "").strip()
     language = str(getattr(hass.config, "language", "") or "").casefold()
     if language.startswith("cs"):
-        return LABEL_DESCRIPTION_CS
+        return LABEL_DESCRIPTION_CS.format(name=name)
 
-    return LABEL_DESCRIPTION_EN
+    return LABEL_DESCRIPTION_EN.format(name=name)
 
 
 def _ensure_label_metadata(
@@ -55,7 +56,11 @@ def _ensure_label_metadata(
         return
 
 
-async def async_ensure_label_exists(hass: HomeAssistant, label_name: str) -> str | None:
+async def async_ensure_label_exists(
+    hass: HomeAssistant,
+    label_name: str,
+    instance_name: str | None = None,
+) -> str | None:
     """Ensure a Home Assistant label exists and return its label_id.
 
     Matching is case-insensitive and whitespace-insensitive, so labels like:
@@ -70,7 +75,7 @@ async def async_ensure_label_exists(hass: HomeAssistant, label_name: str) -> str
 
     wanted = _normalize_label_name(label_name)
     label_registry = lr.async_get(hass)
-    description = _label_description(hass)
+    description = _label_description(hass, instance_name)
 
     for label_id, entry in label_registry.labels.items():
         normalized_name = getattr(entry, "normalized_name", None)

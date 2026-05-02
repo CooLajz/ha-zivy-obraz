@@ -496,7 +496,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     push_always_label_name = f"{label} Always"
 
     if import_key:
-        push_label_id = await async_ensure_label_exists(hass, label)
+        push_label_id = await async_ensure_label_exists(hass, label, entry.title)
         push_always_label_id = await async_get_label_id(hass, push_always_label_name)
 
         if push_label_id:
