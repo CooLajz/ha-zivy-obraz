@@ -2,14 +2,19 @@
   "config": {
     "step": {
       "user": {
-        "title": "Živý Obraz",
-        "description": "Připojení k exportu panelů",
+        "title": "Načítání dat / Export API",
+        "description": "Zadejte Export key pro načítání dat panelů. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odesílání dat / Import API",
+        "description": "Import key je volitelný. Vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných"
@@ -23,27 +28,31 @@
       "unknown": "Neočekávaná chyba",
       "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
       "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny",
       "scan_interval_range": "Interval obnovy musí být mezi 60 a 86400 sekundami",
       "push_interval_range": "Interval odesílání musí být mezi 60 a 86400 sekundami",
       "timeout_range": "HTTP timeout musí být mezi 5 a 120 sekundami",
       "overdue_tolerance_range": "Tolerance zpoždění musí být mezi 0 a 10080 minutami"
     },
     "abort": {
-      "already_configured": "Tento export key a filtr skupiny už jsou nakonfigurované"
+      "already_configured": "Tento export key a ID skupiny už jsou nakonfigurované"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Živý Obraz",
-        "description": "Upravit nastavení integrace",
+        "title": "Načítání dat / Export API",
+        "description": "Upravte nastavení Export API pro načítání dat panelů. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odesílání dat / Import API",
+        "description": "Import key je volitelný. Vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu. Export key i Import key najdete na webu Živého obrazu v sekci Účet.",
+        "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných"
@@ -57,7 +66,6 @@
       "unknown": "Neočekávaná chyba",
       "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
       "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny",
       "scan_interval_range": "Interval obnovy musí být mezi 60 a 86400 sekundami",
       "push_interval_range": "Interval odesílání musí být mezi 60 a 86400 sekundami",
       "timeout_range": "HTTP timeout musí být mezi 5 a 120 sekundami",

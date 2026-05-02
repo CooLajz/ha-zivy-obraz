@@ -34,7 +34,6 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
-    CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
     DEFAULT_LABEL,
     DEFAULT_NAME,
@@ -45,7 +44,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
-    DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     PLATFORMS,
     SERVICE_PUSH,
@@ -112,9 +110,9 @@ def _get_prefix_value(entry: ConfigEntry) -> str:
     return str(_get_config_value(entry, CONF_PREFIX, DEFAULT_PREFIX) or "").strip()
 
 
-def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
+def _build_export_url(export_key: str, group_id) -> str:
     """Build export URL from config."""
-    return build_export_url(export_key, use_group_filter, group_id)
+    return build_export_url(export_key, group_id is not None, group_id)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -425,23 +423,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         _get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])
     ).strip()
 
-    use_group_filter = _get_config_value(
-        entry,
-        CONF_USE_GROUP_FILTER,
-        DEFAULT_USE_GROUP_FILTER,
-    )
-
     if CONF_GROUP_ID in entry.options:
         raw_group_id = entry.options[CONF_GROUP_ID]
     else:
         raw_group_id = entry.data.get(CONF_GROUP_ID)
 
-    group_id = raw_group_id if use_group_filter else None
+    group_id = raw_group_id if str(raw_group_id or "").strip() else None
 
     timeout = _get_config_value(entry, CONF_TIMEOUT, DEFAULT_TIMEOUT)
     scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
-    url = _build_export_url(export_key, use_group_filter, group_id)
+    url = _build_export_url(export_key, group_id)
 
     push_enabled = bool(
         _get_config_value(

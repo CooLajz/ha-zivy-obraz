@@ -2,14 +2,19 @@
   "config": {
     "step": {
       "user": {
-        "title": "Živý Obraz",
-        "description": "Connect to panel export",
+        "title": "Data download / Export API",
+        "description": "Enter the Export key used to download panel data. Export and Import keys are available on the Živý Obraz website in Account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
-          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Data upload / Import API",
+        "description": "Import key is optional. Fill it only when you want to send Home Assistant values to Živý Obraz. Export and Import keys are available on the Živý Obraz website in Account.",
+        "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix"
@@ -23,27 +28,31 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",
       "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
       "overdue_tolerance_range": "Overdue tolerance must be between 0 and 10080 minutes"
     },
     "abort": {
-      "already_configured": "This export key and group filter are already configured"
+      "already_configured": "This export key and Group ID are already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Živý Obraz",
-        "description": "Edit integration settings",
+        "title": "Data download / Export API",
+        "description": "Edit Export API settings used to download panel data. Export and Import keys are available on the Živý Obraz website in Account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
-          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Data upload / Import API",
+        "description": "Import key is optional. Fill it only when you want to send Home Assistant values to Živý Obraz. Export and Import keys are available on the Živý Obraz website in Account.",
+        "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix"
@@ -57,7 +66,6 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",
       "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
