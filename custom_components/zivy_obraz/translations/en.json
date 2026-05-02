@@ -12,8 +12,7 @@
           "timeout": "HTTP timeout (s)",
           "import_key": "Import key",
           "label": "Entity label for push",
-          "prefix": "Variable name prefix",
-          "replace_invalid_states_with_na": "Send N/A for invalid entity states"
+          "prefix": "Variable name prefix"
         }
       }
     },
@@ -47,8 +46,7 @@
           "timeout": "HTTP timeout (s)",
           "import_key": "Import key",
           "label": "Entity label for push",
-          "prefix": "Variable name prefix",
-          "replace_invalid_states_with_na": "Send N/A for invalid entity states"
+          "prefix": "Variable name prefix"
         }
       }
     },
@@ -87,6 +85,9 @@
       },
       "send_only_changed": {
         "name": "Send only changed entity states"
+      },
+      "replace_invalid_states_with_na": {
+        "name": "Send N/A for invalid entity states"
       }
     },
     "button": {

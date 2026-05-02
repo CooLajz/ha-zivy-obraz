@@ -12,8 +12,7 @@
           "timeout": "HTTP timeout (s)",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
-          "prefix": "Prefix názvu proměnných",
-          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
+          "prefix": "Prefix názvu proměnných"
         }
       }
     },
@@ -47,8 +46,7 @@
           "timeout": "HTTP timeout (s)",
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
-          "prefix": "Prefix názvu proměnných",
-          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
+          "prefix": "Prefix názvu proměnných"
         }
       }
     },
@@ -87,6 +85,9 @@
       },
       "send_only_changed": {
         "name": "Odesílat jen změněné hodnoty entit"
+      },
+      "replace_invalid_states_with_na": {
+        "name": "Odesílat N/A pro neplatné stavy entit"
       }
     },
     "button": {

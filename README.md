@@ -143,8 +143,8 @@ chybějícím stavem neodesílají a zobrazí se v diagnostice `Failed entities`
 s důvodem `invalid_state`. Prázdný textový stav `""` je validní hodnota a
 odesílá se beze změny.
 
-V nastavení integrace lze zapnout volbu
-`Send N/A for invalid entity states`. Pokud je zapnutá, integrace místo
+Při vyplněném `Import key` lze zapnout konfigurační přepínač
+`Send N/A for invalid entity states`. Pokud je zapnutý, integrace místo
 neplatné hodnoty odešle do Živého obrazu hodnotu `N/A`. Entita se pak počítá
 jako úspěšně odeslaná, takže nezvyšuje `Failed entities`. Na eINK displeji je
 díky tomu vidět například `N/A` nebo `N/A °C` místo staré hodnoty.
@@ -229,6 +229,7 @@ Pod tímto zařízením jsou dostupné provozní konfigurační entity:
 - `Push interval` - interval automatického odesílání do Import API v sekundách
 - `Automatic push` - zapnutí/vypnutí automatického odesílání
 - `Send only changed entity states` - odesílat pouze změněné hodnoty entit
+- `Send N/A for invalid entity states` - odeslat `N/A` místo neplatných stavů
 
 Push nastavení a tlačítko `Push values now` se vytvoří pouze při vyplněném
 `Import key`.
@@ -419,10 +420,10 @@ Klíč najdete po přihlášení do služby v sekci **Účet**.
 
 ## Send N/A for invalid entity states
 
-Volitelné nastavení pro odesílání do Import API. Pokud je zapnuté, hodnoty entit
-ve stavu `unknown`, `unavailable` nebo bez dostupného stavu se odešlou jako
-`N/A` místo toho, aby se zařadily mezi failed entity. Prázdný textový stav `""`
-se odesílá beze změny.
+Volitelný konfigurační přepínač pro odesílání do Import API. Pokud je zapnutý,
+hodnoty entit ve stavu `unknown`, `unavailable` nebo bez dostupného stavu se
+odešlou jako `N/A` místo toho, aby se zařadily mezi failed entity. Prázdný
+textový stav `""` se odesílá beze změny.
 
 ---
 
@@ -589,9 +590,9 @@ By default, entities with state `unknown`, `unavailable`, or a missing state are
 not sent and appear in `Failed entities` with the `invalid_state` reason. An
 empty text state `""` is a valid value and is sent unchanged.
 
-The integration options include `Send N/A for invalid entity states`. When it is
-enabled, the integration sends `N/A` to Živý Obraz instead of the invalid value.
-The entity is counted as successfully pushed, so it does not increase
+When an `Import key` is configured, the `Send N/A for invalid entity states`
+config switch can be enabled. It sends `N/A` to Živý Obraz instead of the
+invalid value. The entity is counted as successfully pushed, so it does not increase
 `Failed entities`. This makes the eINK display show values such as `N/A` or
 `N/A °C` instead of keeping an old value.
 
@@ -675,6 +676,7 @@ This device exposes operational config entities:
 - `Push interval` - scheduled Import API push interval in seconds
 - `Automatic push` - enable/disable scheduled push
 - `Send only changed entity states` - send only changed entity values
+- `Send N/A for invalid entity states` - send `N/A` instead of invalid states
 
 Push settings and the `Push values now` button are created only when an
 `Import key` is configured.
@@ -849,9 +851,9 @@ https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 
 ## Send N/A for invalid entity states
 
-Optional Import API setting. When enabled, entity values with state `unknown`,
-`unavailable`, or no available state are sent as `N/A` instead of being reported
-as failed entities. Empty text state `""` is sent unchanged.
+Optional Import API config switch. When enabled, entity values with state
+`unknown`, `unavailable`, or no available state are sent as `N/A` instead of
+being reported as failed entities. Empty text state `""` is sent unchanged.
 
 ---
 

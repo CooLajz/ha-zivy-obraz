@@ -649,6 +649,15 @@ def _async_apply_runtime_options(
             )
         )
 
+    if CONF_REPLACE_INVALID_STATES_WITH_NA in changed_keys:
+        push_manager.replace_invalid_states_with_na = bool(
+            _get_config_value(
+                entry,
+                CONF_REPLACE_INVALID_STATES_WITH_NA,
+                DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+            )
+        )
+
     if not {CONF_PUSH_ENABLED, CONF_PUSH_INTERVAL} & changed_keys:
         return
 

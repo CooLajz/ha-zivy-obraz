@@ -16,16 +16,22 @@ from .const import (
     CONF_IMPORT_KEY,
     CONF_OVERDUE_NOTIFICATION,
     CONF_PUSH_ENABLED,
+    CONF_REPLACE_INVALID_STATES_WITH_NA,
     CONF_SEND_ONLY_CHANGED,
     DEFAULT_IMPORT_KEY,
     DEFAULT_OVERDUE_NOTIFICATION,
     DEFAULT_PUSH_ENABLED,
+    DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
     DEFAULT_SEND_ONLY_CHANGED,
     DOMAIN,
 )
 from .device import diagnostic_device_identifier
 
-PUSH_SWITCH_KEYS = {CONF_PUSH_ENABLED, CONF_SEND_ONLY_CHANGED}
+PUSH_SWITCH_KEYS = {
+    CONF_PUSH_ENABLED,
+    CONF_REPLACE_INVALID_STATES_WITH_NA,
+    CONF_SEND_ONLY_CHANGED,
+}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -59,6 +65,14 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
         option_key=CONF_SEND_ONLY_CHANGED,
         default_value=DEFAULT_SEND_ONLY_CHANGED,
         icon="mdi:delta",
+        entity_category=EntityCategory.CONFIG,
+    ),
+    ZivyObrazSwitchDescription(
+        key="replace_invalid_states_with_na",
+        translation_key="replace_invalid_states_with_na",
+        option_key=CONF_REPLACE_INVALID_STATES_WITH_NA,
+        default_value=DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+        icon="mdi:cloud-question-outline",
         entity_category=EntityCategory.CONFIG,
     ),
 )

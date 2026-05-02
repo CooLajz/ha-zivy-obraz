@@ -278,7 +278,6 @@ def _build_schema(
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
-    replace_invalid_states_with_na: bool = DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
 ) -> vol.Schema:
     """Build config schema."""
     schema: dict[Any, Any] = {}
@@ -299,12 +298,6 @@ def _build_schema(
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
-    schema[
-        vol.Optional(
-            CONF_REPLACE_INVALID_STATES_WITH_NA,
-            default=replace_invalid_states_with_na,
-        )
-    ] = bool
 
     return vol.Schema(schema)
 
@@ -492,7 +485,6 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             import_key=current_import_key,
             label=current_label,
             prefix=current_prefix,
-            replace_invalid_states_with_na=current_replace_invalid_states_with_na,
         )
         schema = self.add_suggested_values_to_schema(
             schema,
