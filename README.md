@@ -224,20 +224,24 @@ Integrace vytvoří pro danou instanci samostatné zařízení:
 Pod tímto zařízením jsou dostupné provozní konfigurační entity:
 
 - `Import refresh interval` - interval načítání dat z Export API v sekundách
-- `Push interval` - interval automatického odesílání do Import API v sekundách
 - `Overdue tolerance` - tolerance zpoždění v minutách
 - `Create overdue notifications` - zapnutí/vypnutí oznámení při overdue stavu
+- `Push interval` - interval automatického odesílání do Import API v sekundách
 - `Automatic push` - zapnutí/vypnutí automatického odesílání
 - `Send only changed entity states` - odesílat pouze změněné hodnoty entit
 
-Intervaly `Import refresh interval` a `Push interval` lze nastavit v rozsahu
-60 až 86400 sekund. `Overdue tolerance` se automaticky hlídá tak, aby nebyla
-nižší než aktuální interval načítání přepočtený na minuty.
+Push nastavení a tlačítko `Push values now` se vytvoří pouze při vyplněném
+`Import key`.
+
+Intervaly `Import refresh interval` a případně `Push interval` lze nastavit v
+rozsahu 60 až 86400 sekund. `Overdue tolerance` se automaticky hlídá tak, aby
+nebyla nižší než aktuální interval načítání přepočtený na minuty.
 
 Stejné zařízení obsahuje také akční tlačítka:
 
 - `Refresh import now` - okamžitě stáhne aktuální data z Export API
-- `Push values now` - okamžitě odešle hodnoty podle aktuálního nastavení
+- `Push values now` - okamžitě odešle hodnoty podle aktuálního nastavení, pokud
+  je vyplněný `Import key`
 
 Ruční tlačítka neresetují automatické časovače. `Refresh import now` zachová
 původní plánovaný čas dalšího automatického načtení a `Push values now` zachová
@@ -666,20 +670,24 @@ The integration creates a separate device for the integration instance:
 This device exposes operational config entities:
 
 - `Import refresh interval` - Export API refresh interval in seconds
-- `Push interval` - scheduled Import API push interval in seconds
 - `Overdue tolerance` - overdue tolerance in minutes
 - `Create overdue notifications` - enable/disable overdue notifications
+- `Push interval` - scheduled Import API push interval in seconds
 - `Automatic push` - enable/disable scheduled push
 - `Send only changed entity states` - send only changed entity values
 
-`Import refresh interval` and `Push interval` can be set from 60 to 86400
-seconds. `Overdue tolerance` is kept at least as high as the current refresh
-interval converted to minutes.
+Push settings and the `Push values now` button are created only when an
+`Import key` is configured.
+
+`Import refresh interval` and, when available, `Push interval` can be set from
+60 to 86400 seconds. `Overdue tolerance` is kept at least as high as the current
+refresh interval converted to minutes.
 
 The same device also exposes action buttons:
 
 - `Refresh import now` - fetch current data from the Export API immediately
-- `Push values now` - send values immediately using the current settings
+- `Push values now` - send values immediately using the current settings, when
+  an `Import key` is configured
 
 Manual buttons do not reset scheduled timers. `Refresh import now` keeps the
 previously scheduled next automatic refresh time, and `Push values now` keeps

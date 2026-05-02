@@ -5,22 +5,27 @@ from dataclasses import dataclass
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_helpers import async_update_option, get_config_value, options_update_signal
 from .const import (
+    CONF_IMPORT_KEY,
     CONF_OVERDUE_NOTIFICATION,
     CONF_PUSH_ENABLED,
     CONF_SEND_ONLY_CHANGED,
+    DEFAULT_IMPORT_KEY,
     DEFAULT_OVERDUE_NOTIFICATION,
     DEFAULT_PUSH_ENABLED,
     DEFAULT_SEND_ONLY_CHANGED,
     DOMAIN,
 )
 from .device import diagnostic_device_identifier
+
+PUSH_SWITCH_KEYS = {CONF_PUSH_ENABLED, CONF_SEND_ONLY_CHANGED}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -65,10 +70,34 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Živý Obraz config switch entities."""
+    has_import_key = bool(
+        str(get_config_value(entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY) or "").strip()
+    )
+    if not has_import_key:
+        _remove_push_config_switches(hass, entry)
+
     async_add_entities(
         ZivyObrazConfigSwitch(hass, entry, description)
         for description in SWITCH_DESCRIPTIONS
+        if has_import_key or description.key not in PUSH_SWITCH_KEYS
     )
+
+
+@callback
+def _remove_push_config_switches(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove push config switches when Import key is not configured."""
+    entity_registry = er.async_get(hass)
+    obsolete_unique_ids = {f"{entry.entry_id}_{key}" for key in PUSH_SWITCH_KEYS}
+
+    for entity_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        if entity_entry.domain != "switch":
+            continue
+        if entity_entry.unique_id not in obsolete_unique_ids:
+            continue
+        entity_registry.async_remove(entity_entry.entity_id)
 
 
 class ZivyObrazConfigSwitch(SwitchEntity):
