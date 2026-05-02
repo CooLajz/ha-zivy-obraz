@@ -114,7 +114,7 @@
         "name": "Napětí baterie"
       },
       "battery_days_since_last_charge": {
-        "name": "Dní od posledního nabití baterie"
+        "name": "Dnů od posledního nabití baterie"
       },
       "battery_charge_detection_status": {
         "name": "Stav detekce nabití baterie",
