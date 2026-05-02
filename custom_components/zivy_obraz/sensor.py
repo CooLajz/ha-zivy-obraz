@@ -617,6 +617,10 @@ class ZivyObrazSensor(
             group_id = self._device_data.get("group_id")
             if group_id is not None:
                 return {"group_id": group_id}
+        if self.entity_description.key == "fw_build":
+            fw = self._device_data.get("fw")
+            if fw is not None:
+                return {"major_version": str(fw)}
         if self.entity_description.key == "battery_volts":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
             return {
