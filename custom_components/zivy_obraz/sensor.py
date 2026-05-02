@@ -619,16 +619,12 @@ class ZivyObrazSensor(
                 return {"group_id": group_id}
         if self.entity_description.key == "battery_volts":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
-            return {
-                "voltage_min": tracker_state.voltage_min,
-                "voltage_max": tracker_state.voltage_max,
-            }
-        if self.entity_description.key == "battery_days_since_last_charge":
-            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
             last_detected_day = self.coordinator.battery_tracker.last_detected_day_for(
                 self._mac
             )
             return {
+                "voltage_min": tracker_state.voltage_min,
+                "voltage_max": tracker_state.voltage_max,
                 "last_charged": tracker_state.last_charged.isoformat()
                 if tracker_state.last_charged
                 else None,
