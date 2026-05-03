@@ -28,13 +28,13 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .battery import (
+from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
     BATTERY_CHARGE_COOLDOWN_DAYS,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
+    DOMAIN,
 )
-from .const import DOMAIN
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
 from .push import ZivyObrazPushManager
