@@ -227,6 +227,18 @@
       }
     }
   },
+  "notifications": {
+    "overdue": {
+      "title": "Živý Obraz - Overdue display",
+      "expected_contact_minutes": "Display \"{caption}\" is {minutes} minutes past the expected contact.",
+      "missed_expected_contact": "Display \"{caption}\" has not checked in at the expected time.",
+      "group": "Group: {group_name}",
+      "tolerance": "Overdue tolerance: {minutes} minutes",
+      "minutes_overdue": "Past tolerance by: {minutes} minutes",
+      "next_contact": "Last expected contact: {datetime}",
+      "overdue_after": "Marked overdue since: {datetime}"
+    }
+  },
   "services": {
     "push": {
       "name": "Push values",

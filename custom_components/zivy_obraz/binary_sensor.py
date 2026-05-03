@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import lru_cache
+from importlib import resources
 from typing import Any
 
 from homeassistant.components import persistent_notification
@@ -56,6 +59,60 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
 )
 
 SYNC_PROBLEM_STATUSES = {"failed"}
+
+OVERDUE_NOTIFICATION_FALLBACK_TEXTS = {
+    "title": "Živý Obraz - Overdue display",
+    "expected_contact_minutes": (
+        'Display "{caption}" is {minutes} minutes past the expected contact.'
+    ),
+    "missed_expected_contact": (
+        'Display "{caption}" has not checked in at the expected time.'
+    ),
+    "group": "Group: {group_name}",
+    "tolerance": "Overdue tolerance: {minutes} minutes",
+    "minutes_overdue": "Past tolerance by: {minutes} minutes",
+    "next_contact": "Last expected contact: {datetime}",
+    "overdue_after": "Marked overdue since: {datetime}",
+}
+
+
+@lru_cache(maxsize=16)
+def _load_overdue_notification_texts(language: str) -> dict[str, str]:
+    """Load overdue notification translations for the selected language."""
+    language = (
+        (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
+    )
+    filename = f"{language}.json" if language in {"cs", "en"} else "en.json"
+
+    try:
+        raw_translations = (
+            resources.files(__package__)
+            .joinpath("translations", filename)
+            .read_text(encoding="utf-8")
+        )
+        translations = json.loads(raw_translations)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+    notification_texts = translations.get("notifications", {}).get("overdue", {})
+    return {
+        key: value
+        for key, value in notification_texts.items()
+        if isinstance(key, str) and isinstance(value, str)
+    }
+
+
+def _overdue_notification_texts(hass: HomeAssistant) -> dict[str, str]:
+    """Return overdue notification texts for the configured HA language."""
+    language = str(getattr(hass.config, "language", "") or "en")
+    texts = {
+        **OVERDUE_NOTIFICATION_FALLBACK_TEXTS,
+        **_load_overdue_notification_texts("en"),
+    }
+    if not language.casefold().startswith("en"):
+        texts.update(_load_overdue_notification_texts(language))
+
+    return texts
 
 
 class ZivyObrazProblemNotificationMixin:
@@ -427,38 +484,45 @@ class ZivyObrazOverdueBinarySensor(
         minutes_overdue = self._minutes_overdue()
         next_contact = self._parse_next_contact()
         overdue_after = self._overdue_after()
+        texts = _overdue_notification_texts(self.hass)
 
         lines: list[str] = []
 
         if expected_contact_minutes_ago is not None:
             lines.append(
-                f'Displej "{caption}" je po očekávaném kontaktu již '
-                f"{expected_contact_minutes_ago} minut."
+                texts["expected_contact_minutes"].format(
+                    caption=caption,
+                    minutes=expected_contact_minutes_ago,
+                )
             )
         else:
-            lines.append(f'Displej "{caption}" se nehlásí v očekávaném čase.')
+            lines.append(texts["missed_expected_contact"].format(caption=caption))
 
         if group_name:
             lines.append("")
-            lines.append(f"Skupina: {group_name}")
+            lines.append(texts["group"].format(group_name=group_name))
 
-        lines.append(f"Tolerance overdue: {self._overdue_tolerance_minutes} minut")
+        lines.append(
+            texts["tolerance"].format(minutes=self._overdue_tolerance_minutes)
+        )
 
         if minutes_overdue is not None:
-            lines.append(f"Po překročení tolerance: {minutes_overdue} minut")
+            lines.append(texts["minutes_overdue"].format(minutes=minutes_overdue))
 
         formatted_next_contact = self._format_local_datetime(next_contact)
         if formatted_next_contact:
-            lines.append(f"Poslední očekávaný kontakt: {formatted_next_contact}")
+            lines.append(texts["next_contact"].format(datetime=formatted_next_contact))
 
         formatted_overdue_after = self._format_local_datetime(overdue_after)
         if formatted_overdue_after:
-            lines.append(f"Za overdue označen od: {formatted_overdue_after}")
+            lines.append(
+                texts["overdue_after"].format(datetime=formatted_overdue_after)
+            )
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title="Živý Obraz - Overdue displej",
+            title=texts["title"],
             notification_id=self._notification_id(),
         )
 
