@@ -227,40 +227,6 @@
       }
     }
   },
-  "notifications": {
-    "overdue": {
-      "title": "Živý Obraz - Overdue display",
-      "expected_contact_minutes": "Display \"{caption}\" is {minutes} minutes past the expected contact.",
-      "missed_expected_contact": "Display \"{caption}\" has not checked in at the expected time.",
-      "group": "Group: {group_name}",
-      "tolerance": "Overdue tolerance: {minutes} minutes",
-      "minutes_overdue": "Past tolerance by: {minutes} minutes",
-      "next_contact": "Last expected contact: {datetime}",
-      "overdue_after": "Marked overdue since: {datetime}"
-    },
-    "push_problem": {
-      "title": "Živý Obraz - Push problem ({entry})",
-      "intro": "Pushing values to Živý Obraz reports a problem.",
-      "instance": "Instance: {entry}",
-      "status": "Status: {status}",
-      "reason": "Reason: {reason}",
-      "last_push": "Last push attempt: {datetime}",
-      "failed_entities": "Failed entities: {entities}"
-    },
-    "sync_problem": {
-      "title": "Živý Obraz - Sync problem ({entry})",
-      "intro": "Data sync from Živý Obraz reports a problem.",
-      "instance": "Instance: {entry}",
-      "status": "Status: {status}",
-      "reason": "Reason: {reason}",
-      "last_sync": "Last sync attempt: {datetime}"
-    }
-  },
-  "labels": {
-    "push": {
-      "description": "Tagged entities or devices will be sent to the Živý Obraz {name} service."
-    }
-  },
   "services": {
     "push": {
       "name": "Push values",

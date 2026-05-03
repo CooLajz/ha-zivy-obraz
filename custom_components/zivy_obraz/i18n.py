@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 
 @lru_cache(maxsize=16)
 def _load_translations(language: str) -> dict[str, Any]:
-    """Load integration translations for the selected language."""
+    """Load runtime translations for the selected language."""
     language = (
         (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
     )
@@ -19,7 +19,7 @@ def _load_translations(language: str) -> dict[str, Any]:
     try:
         raw_translations = (
             resources.files(__package__)
-            .joinpath("translations", filename)
+            .joinpath("runtime_translations", filename)
             .read_text(encoding="utf-8")
         )
         translations = json.loads(raw_translations)
