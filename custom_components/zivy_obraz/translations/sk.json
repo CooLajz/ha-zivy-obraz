@@ -1,0 +1,291 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Načítanie dát / Export API",
+        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.",
+        "data": {
+          "name": "Názov inštancie",
+          "export_key": "Export key",
+          "group_id": "ID skupiny",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odosielanie dát / Import API",
+        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.",
+        "data": {
+          "import_key": "Import key",
+          "label": "Štítok entít na odosielanie",
+          "prefix": "Prefix názvu premenných"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodarilo sa pripojiť",
+      "invalid_json": "Endpoint nevracia platný JSON",
+      "timeout": "Vypršal časový limit",
+      "unknown": "Neočakávaná chyba",
+      "import_key_required": "Ak je odosielanie zapnuté, musí byť vyplnený Import key",
+      "invalid_group_id": "ID skupiny musí byť celé číslo 0 alebo vyššie",
+      "scan_interval_range": "Interval obnovy musí byť medzi 60 a 86400 sekundami",
+      "push_interval_range": "Interval odosielania musí byť medzi 60 a 86400 sekundami",
+      "timeout_range": "HTTP timeout musí byť medzi 5 a 120 sekundami",
+      "overdue_tolerance_range": "Tolerancia oneskorenia musí byť medzi 0 a 10080 minútami"
+    },
+    "abort": {
+      "already_configured": "Tento export key a ID skupiny už sú nakonfigurované"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Načítanie dát / Export API",
+        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.",
+        "data": {
+          "name": "Názov inštancie",
+          "export_key": "Export key",
+          "group_id": "ID skupiny",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odosielanie dát / Import API",
+        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.",
+        "data": {
+          "import_key": "Import key",
+          "label": "Štítok entít na odosielanie",
+          "prefix": "Prefix názvu premenných"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepodarilo sa pripojiť",
+      "invalid_json": "Endpoint nevracia platný JSON",
+      "timeout": "Vypršal časový limit",
+      "unknown": "Neočakávaná chyba",
+      "import_key_required": "Ak je odosielanie zapnuté, musí byť vyplnený Import key",
+      "invalid_group_id": "ID skupiny musí byť celé číslo 0 alebo vyššie",
+      "scan_interval_range": "Interval obnovy musí byť medzi 60 a 86400 sekundami",
+      "push_interval_range": "Interval odosielania musí byť medzi 60 a 86400 sekundami",
+      "timeout_range": "HTTP timeout musí byť medzi 5 a 120 sekundami",
+      "overdue_tolerance_range": "Tolerancia oneskorenia musí byť medzi 0 a 10080 minútami"
+    }
+  },
+  "entity": {
+    "number": {
+      "import_refresh_interval": {
+        "name": "Interval obnovy importu"
+      },
+      "push_interval": {
+        "name": "Interval odosielania"
+      },
+      "overdue_tolerance": {
+        "name": "Tolerancia oneskorenia"
+      }
+    },
+    "switch": {
+      "overdue_notification": {
+        "name": "Vytvárať oznámenia"
+      },
+      "push_enabled": {
+        "name": "Automatické odosielanie"
+      },
+      "send_only_changed": {
+        "name": "Odosielať len zmenené hodnoty entít"
+      },
+      "replace_invalid_states_with_na": {
+        "name": "Odosielať N/A pre neplatné stavy entít"
+      }
+    },
+    "button": {
+      "refresh_import": {
+        "name": "Stiahnuť dáta teraz"
+      },
+      "push_now": {
+        "name": "Odoslať hodnoty teraz"
+      }
+    },
+    "sensor": {
+      "battery_percent": {
+        "name": "Batéria"
+      },
+      "battery_volts": {
+        "name": "Napätie batérie"
+      },
+      "battery_days_since_last_charge": {
+        "name": "Dní od posledného nabitia batérie"
+      },
+      "battery_charge_detection_status": {
+        "name": "Stav detekcie nabitia batérie",
+        "state": {
+          "warming_up": "Zahrievanie detekcie",
+          "insufficient_samples": "Nedostatok vzoriek",
+          "baseline": "Zbieranie východiskových dát",
+          "idle": "Nabitie nedetekované",
+          "charge_detected": "Nabitie detekované",
+          "cooldown": "Čakacia doba"
+        }
+      },
+      "temperature": {
+        "name": "Teplota"
+      },
+      "humidity": {
+        "name": "Vlhkosť"
+      },
+      "pressure": {
+        "name": "Tlak"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "ssid": {
+        "name": "WiFi SSID"
+      },
+      "last_contact": {
+        "name": "Posledný kontakt"
+      },
+      "next_contact": {
+        "name": "Ďalší kontakt"
+      },
+      "group_name": {
+        "name": "Názov skupiny"
+      },
+      "fw_build": {
+        "name": "Zostavenie FW"
+      },
+      "reset_reason": {
+        "name": "Dôvod reštartu"
+      },
+      "last_picture_download_ms": {
+        "name": "Posledné stiahnutie obrázka"
+      },
+      "last_display_refresh_ms": {
+        "name": "Posledné obnovenie displeja"
+      },
+      "push_last_successful_push": {
+        "name": "Posledné úspešné odoslanie"
+      },
+      "push_status": {
+        "name": "Stav odosielania",
+        "state": {
+          "idle": "Nečinné",
+          "sending": "Odosielanie",
+          "success": "Úspešné",
+          "failed": "Zlyhalo",
+          "partial_failure": "Čiastočné zlyhanie",
+          "no_batches": "Žiadne dávky požiadaviek",
+          "no_valid_entities": "Žiadne platné entity",
+          "no_new_data": "Žiadne nové dáta",
+          "no_entities": "Žiadne entity"
+        }
+      },
+      "push_pushed_entities": {
+        "name": "Odoslané entity"
+      },
+      "push_skipped_entities": {
+        "name": "Preskočené entity"
+      },
+      "push_failed_entities": {
+        "name": "Neodoslané entity"
+      },
+      "push_request_batches": {
+        "name": "Dávky požiadaviek"
+      },
+      "push_next_push": {
+        "name": "Ďalšie odoslanie"
+      },
+      "sync_last_successful_sync": {
+        "name": "Posledná úspešná synchronizácia"
+      },
+      "sync_status": {
+        "name": "Stav synchronizácie",
+        "state": {
+          "idle": "Nečinné",
+          "syncing": "Synchronizujem",
+          "success": "Úspešná",
+          "failed": "Zlyhala",
+          "no_new_data": "Žiadne nové dáta"
+        }
+      },
+      "sync_next_sync": {
+        "name": "Ďalšia synchronizácia"
+      },
+      "sync_device_count": {
+        "name": "Počet zariadení"
+      }
+    },
+    "binary_sensor": {
+      "overdue": {
+        "name": "Po termíne"
+      },
+      "push_problem": {
+        "name": "Problém odosielania"
+      },
+      "sync_problem": {
+        "name": "Problém synchronizácie"
+      }
+    }
+  },
+  "services": {
+    "push": {
+      "name": "Odoslať hodnoty",
+      "description": "Okamžite odošle vybrané hodnoty entít z Home Assistanta do Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfiguračnej položky",
+          "description": "Voliteľné ID konfiguračnej položky. Ak zostane prázdne, odošlú sa všetky nakonfigurované inštancie."
+        },
+        "name": {
+          "name": "Názov inštancie",
+          "description": "Voliteľný názov inštancie. Ak zostane prázdny, odošlú sa všetky nakonfigurované inštancie."
+        },
+        "send_all": {
+          "name": "Odoslať všetko",
+          "description": "Voliteľné prepísanie nastavenia. Pri true sa odošlú všetky vybrané entity. Pri false sa odošlú len zmenené entity. Ak zostane prázdne, použije sa nastavenie integrácie."
+        }
+      }
+    },
+    "push_values": {
+      "name": "Odoslať vlastné hodnoty",
+      "description": "Okamžite odošle viac vlastných hodnôt do Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfiguračnej položky",
+          "description": "Voliteľné ID konfiguračnej položky. Ak zostane prázdne, odošle sa do všetkých nakonfigurovaných inštancií."
+        },
+        "name": {
+          "name": "Názov inštancie",
+          "description": "Voliteľný názov inštancie. Ak zostane prázdny, odošle sa do všetkých nakonfigurovaných inštancií."
+        },
+        "values": {
+          "name": "Hodnoty",
+          "description": "Zoznam názvov premenných Živého obrazu a ich hodnôt."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "push_entry_id_and_name": {
+      "message": "Použite buď ID konfiguračnej položky, alebo názov inštancie, nie oboje."
+    },
+    "push_entry_not_loaded": {
+      "message": "Konfiguračná položka Živého obrazu \"{entry}\" nie je načítaná."
+    },
+    "push_name_not_found": {
+      "message": "Inštancia Živého obrazu s názvom \"{name}\" nebola nájdená."
+    },
+    "push_name_not_unique": {
+      "message": "Názov inštancie Živého obrazu \"{name}\" nie je jedinečný. Použite ID konfiguračnej položky."
+    },
+    "push_no_entries_ready": {
+      "message": "Žiadna načítaná inštancia Živého obrazu nie je pripravená na odoslanie."
+    },
+    "push_entry_not_ready": {
+      "message": "Konfiguračná položka Živého obrazu \"{entry}\" nie je pripravená na odoslanie."
+    },
+    "push_values_empty": {
+      "message": "Nie sú zadané žiadne vlastné hodnoty na odoslanie."
+    }
+  }
+}

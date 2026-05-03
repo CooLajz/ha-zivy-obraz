@@ -14,7 +14,7 @@ def _load_translations(language: str) -> dict[str, Any]:
     language = (
         (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
     )
-    filename = f"{language}.json" if language in {"cs", "en"} else "en.json"
+    filename = f"{language}.json" if language in {"cs", "en", "sk"} else "en.json"
 
     try:
         raw_translations = (
