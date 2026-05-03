@@ -237,6 +237,28 @@
       "minutes_overdue": "Po překročení tolerance: {minutes} minut",
       "next_contact": "Poslední očekávaný kontakt: {datetime}",
       "overdue_after": "Jako po termínu označen od: {datetime}"
+    },
+    "push_problem": {
+      "title": "Živý Obraz - Problém odesílání ({entry})",
+      "intro": "Odesílání hodnot do Živého Obrazu hlásí problém.",
+      "instance": "Instance: {entry}",
+      "status": "Stav: {status}",
+      "reason": "Důvod: {reason}",
+      "last_push": "Poslední pokus o odeslání: {datetime}",
+      "failed_entities": "Neodeslané entity: {entities}"
+    },
+    "sync_problem": {
+      "title": "Živý Obraz - Problém synchronizace ({entry})",
+      "intro": "Synchronizace dat ze Živého Obrazu hlásí problém.",
+      "instance": "Instance: {entry}",
+      "status": "Stav: {status}",
+      "reason": "Důvod: {reason}",
+      "last_sync": "Poslední pokus o synchronizaci: {datetime}"
+    }
+  },
+  "labels": {
+    "push": {
+      "description": "Označené entity nebo zařízení budou odeslány do služby Živý Obraz {name}."
     }
   },
   "services": {

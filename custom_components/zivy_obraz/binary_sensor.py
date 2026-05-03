@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from functools import lru_cache
-from importlib import resources
 from typing import Any
 
 from homeassistant.components import persistent_notification
@@ -34,6 +31,7 @@ from .const import (
 )
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
+from .i18n import localized_mapping
 from .push import PUSH_PROBLEM_STATUSES, ZivyObrazPushManager
 
 
@@ -60,59 +58,49 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
 
 SYNC_PROBLEM_STATUSES = {"failed"}
 
-OVERDUE_NOTIFICATION_FALLBACK_TEXTS = {
-    "title": "Živý Obraz - Overdue display",
-    "expected_contact_minutes": (
-        'Display "{caption}" is {minutes} minutes past the expected contact.'
-    ),
-    "missed_expected_contact": (
-        'Display "{caption}" has not checked in at the expected time.'
-    ),
-    "group": "Group: {group_name}",
-    "tolerance": "Overdue tolerance: {minutes} minutes",
-    "minutes_overdue": "Past tolerance by: {minutes} minutes",
-    "next_contact": "Last expected contact: {datetime}",
-    "overdue_after": "Marked overdue since: {datetime}",
+NOTIFICATION_FALLBACK_TEXTS = {
+    "overdue": {
+        "title": "Živý Obraz - Overdue display",
+        "expected_contact_minutes": (
+            'Display "{caption}" is {minutes} minutes past the expected contact.'
+        ),
+        "missed_expected_contact": (
+            'Display "{caption}" has not checked in at the expected time.'
+        ),
+        "group": "Group: {group_name}",
+        "tolerance": "Overdue tolerance: {minutes} minutes",
+        "minutes_overdue": "Past tolerance by: {minutes} minutes",
+        "next_contact": "Last expected contact: {datetime}",
+        "overdue_after": "Marked overdue since: {datetime}",
+    },
+    "push_problem": {
+        "title": "Živý Obraz - Push problem ({entry})",
+        "intro": "Pushing values to Živý Obraz reports a problem.",
+        "instance": "Instance: {entry}",
+        "status": "Status: {status}",
+        "reason": "Reason: {reason}",
+        "last_push": "Last push attempt: {datetime}",
+        "failed_entities": "Failed entities: {entities}",
+    },
+    "sync_problem": {
+        "title": "Živý Obraz - Sync problem ({entry})",
+        "intro": "Data sync from Živý Obraz reports a problem.",
+        "instance": "Instance: {entry}",
+        "status": "Status: {status}",
+        "reason": "Reason: {reason}",
+        "last_sync": "Last sync attempt: {datetime}",
+    },
 }
 
 
-@lru_cache(maxsize=16)
-def _load_overdue_notification_texts(language: str) -> dict[str, str]:
-    """Load overdue notification translations for the selected language."""
-    language = (
-        (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
+def _notification_texts(hass: HomeAssistant, notification_key: str) -> dict[str, str]:
+    """Return notification texts for the configured HA language."""
+    return localized_mapping(
+        hass,
+        "notifications",
+        notification_key,
+        NOTIFICATION_FALLBACK_TEXTS[notification_key],
     )
-    filename = f"{language}.json" if language in {"cs", "en"} else "en.json"
-
-    try:
-        raw_translations = (
-            resources.files(__package__)
-            .joinpath("translations", filename)
-            .read_text(encoding="utf-8")
-        )
-        translations = json.loads(raw_translations)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-    notification_texts = translations.get("notifications", {}).get("overdue", {})
-    return {
-        key: value
-        for key, value in notification_texts.items()
-        if isinstance(key, str) and isinstance(value, str)
-    }
-
-
-def _overdue_notification_texts(hass: HomeAssistant) -> dict[str, str]:
-    """Return overdue notification texts for the configured HA language."""
-    language = str(getattr(hass.config, "language", "") or "en")
-    texts = {
-        **OVERDUE_NOTIFICATION_FALLBACK_TEXTS,
-        **_load_overdue_notification_texts("en"),
-    }
-    if not language.casefold().startswith("en"):
-        texts.update(_load_overdue_notification_texts(language))
-
-    return texts
 
 
 class ZivyObrazProblemNotificationMixin:
@@ -484,7 +472,7 @@ class ZivyObrazOverdueBinarySensor(
         minutes_overdue = self._minutes_overdue()
         next_contact = self._parse_next_contact()
         overdue_after = self._overdue_after()
-        texts = _overdue_notification_texts(self.hass)
+        texts = _notification_texts(self.hass, "overdue")
 
         lines: list[str] = []
 
@@ -631,27 +619,32 @@ class ZivyObrazPushProblemBinarySensor(
     async def _async_create_problem_notification(self) -> None:
         """Create/update push problem notification."""
         diagnostics = self._push_manager.diagnostics
+        texts = _notification_texts(self.hass, "push_problem")
         lines = [
-            "Odesílání hodnot do Živého Obrazu hlásí problém.",
+            texts["intro"],
             "",
-            f"Instance: {self._entry.title}",
-            f"Stav: {diagnostics.status}",
+            texts["instance"].format(entry=self._entry.title),
+            texts["status"].format(status=diagnostics.status),
         ]
 
         if diagnostics.last_error:
-            lines.append(f"Důvod: {diagnostics.last_error}")
+            lines.append(texts["reason"].format(reason=diagnostics.last_error))
 
         formatted_last_push = self._format_problem_datetime(diagnostics.last_push)
         if formatted_last_push:
-            lines.append(f"Poslední pokus o odeslání: {formatted_last_push}")
+            lines.append(texts["last_push"].format(datetime=formatted_last_push))
 
         if diagnostics.failed_entities:
-            lines.append(f"Neodeslané entity: {diagnostics.failed_entities}")
+            lines.append(
+                texts["failed_entities"].format(
+                    entities=diagnostics.failed_entities,
+                )
+            )
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title=f"Živý Obraz - Problém odesílání ({self._entry.title})",
+            title=texts["title"].format(entry=self._entry.title),
             notification_id=self._problem_notification_id,
         )
 
@@ -723,23 +716,24 @@ class ZivyObrazSyncProblemBinarySensor(
     async def _async_create_problem_notification(self) -> None:
         """Create/update sync problem notification."""
         diagnostics = self._coordinator.diagnostics
+        texts = _notification_texts(self.hass, "sync_problem")
         lines = [
-            "Synchronizace dat ze Živého Obrazu hlásí problém.",
+            texts["intro"],
             "",
-            f"Instance: {self._entry.title}",
-            f"Stav: {diagnostics.status}",
+            texts["instance"].format(entry=self._entry.title),
+            texts["status"].format(status=diagnostics.status),
         ]
 
         if diagnostics.last_error:
-            lines.append(f"Důvod: {diagnostics.last_error}")
+            lines.append(texts["reason"].format(reason=diagnostics.last_error))
 
         formatted_last_sync = self._format_problem_datetime(diagnostics.last_sync)
         if formatted_last_sync:
-            lines.append(f"Poslední pokus o synchronizaci: {formatted_last_sync}")
+            lines.append(texts["last_sync"].format(datetime=formatted_last_sync))
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title=f"Živý Obraz - Problém synchronizace ({self._entry.title})",
+            title=texts["title"].format(entry=self._entry.title),
             notification_id=self._problem_notification_id,
         )

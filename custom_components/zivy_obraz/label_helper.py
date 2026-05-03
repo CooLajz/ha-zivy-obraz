@@ -5,12 +5,14 @@ import re
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import label_registry as lr
 
-LABEL_DESCRIPTION_CS = (
-    "Označené entity nebo zařízení budou odeslány do služby Živý Obraz {name}."
-)
-LABEL_DESCRIPTION_EN = (
-    "Tagged entities or devices will be sent to the Živý Obraz {name} service."
-)
+from .i18n import localized_mapping
+
+LABEL_DESCRIPTION_FALLBACK_TEXTS = {
+    "description": (
+        "Tagged entities or devices will be sent to the "
+        "Živý Obraz {name} service."
+    ),
+}
 LABEL_ICON = "mdi:panorama-variant"
 
 
@@ -24,11 +26,13 @@ def _normalize_label_name(value: str) -> str:
 def _label_description(hass: HomeAssistant, instance_name: str | None) -> str:
     """Return label description for the configured Home Assistant language."""
     name = (instance_name or "").strip()
-    language = str(getattr(hass.config, "language", "") or "").casefold()
-    if language.startswith("cs"):
-        return LABEL_DESCRIPTION_CS.format(name=name)
-
-    return LABEL_DESCRIPTION_EN.format(name=name)
+    texts = localized_mapping(
+        hass,
+        "labels",
+        "push",
+        LABEL_DESCRIPTION_FALLBACK_TEXTS,
+    )
+    return texts["description"].format(name=name)
 
 
 def _ensure_label_metadata(
