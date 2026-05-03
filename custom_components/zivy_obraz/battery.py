@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
     BATTERY_CHARGE_COOLDOWN_DAYS,
+    BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_HISTORY_DAYS,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
@@ -254,11 +255,12 @@ class BatteryChargeTracker:
         return daily_averages
 
     def _daily_average(self, samples: list[float]) -> float | None:
-        """Return the average battery voltage for a day."""
+        """Return the average battery voltage from recent daily samples."""
         if not samples:
             return None
 
-        return round(sum(samples) / len(samples), 2)
+        recent_samples = samples[-BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT:]
+        return round(sum(recent_samples) / len(recent_samples), 2)
 
     def _in_cooldown(self, state: BatteryChargeState, current_day: date) -> bool:
         """Return whether a recent charge detection is still in cooldown."""

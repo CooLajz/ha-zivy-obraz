@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
     BATTERY_CHARGE_COOLDOWN_DAYS,
+    BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
     DOMAIN,
@@ -650,6 +651,9 @@ class ZivyObrazSensor(
             return {
                 "daily_samples": tracker_state.daily_samples,
                 "daily_average": tracker_state.daily_average,
+                "daily_average_sample_limit": (
+                    BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT
+                ),
                 "excluded_daily_samples": tracker_state.excluded_daily_samples,
                 "previous_3_day_average": tracker_state.previous_average,
                 "stored_days": tracker_state.stored_days,
