@@ -97,7 +97,7 @@
         "name": "Odosielať len zmenené hodnoty entít"
       },
       "replace_invalid_states_with_na": {
-        "name": "Odosielať N/A pre neplatné stavy entít"
+        "name": "Odosielať náhradnú hodnotu pre neplatné stavy entít"
       }
     },
     "button": {

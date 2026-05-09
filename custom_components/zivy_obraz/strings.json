@@ -97,7 +97,7 @@
         "name": "Send only changed entity states"
       },
       "replace_invalid_states_with_na": {
-        "name": "Send N/A for invalid entity states"
+        "name": "Send fallback for invalid entity states"
       }
     },
     "button": {

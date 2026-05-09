@@ -97,7 +97,7 @@
         "name": "Odesílat jen změněné hodnoty entit"
       },
       "replace_invalid_states_with_na": {
-        "name": "Odesílat N/A pro neplatné stavy entit"
+        "name": "Odesílat náhradní hodnotu pro neplatné stavy entit"
       }
     },
     "button": {
