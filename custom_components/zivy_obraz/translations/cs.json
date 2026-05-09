@@ -243,6 +243,10 @@
         "send_all": {
           "name": "Odeslat vše",
           "description": "Volitelné přepsání nastavení. Při true se odešlou všechny vybrané entity. Při false se odešlou jen změněné entity. Pokud zůstane prázdné, použije se nastavení integrace."
+        },
+        "dry_run": {
+          "name": "Suchý běh",
+          "description": "Při zapnutí zobrazí náhled vybraných hodnot bez odeslání do Živého obrazu."
         }
       }
     },

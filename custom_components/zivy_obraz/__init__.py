@@ -6,7 +6,13 @@ import logging
 from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, ServiceCall, callback
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    HomeAssistant,
+    ServiceCall,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
@@ -15,6 +21,7 @@ from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .const import (
+    ATTR_DRY_RUN,
     ATTR_ENTRY_ID,
     ATTR_NAME,
     ATTR_SEND_ALL,
@@ -66,6 +73,7 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
         vol.Optional(ATTR_SEND_ALL): cv.boolean,
+        vol.Optional(ATTR_DRY_RUN): cv.boolean,
     }
 )
 
@@ -119,8 +127,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration."""
     hass.data.setdefault(DOMAIN, {})
 
-    async def _async_handle_push_service(call: ServiceCall) -> None:
-        await _async_handle_manual_push(hass, call)
+    async def _async_handle_push_service(call: ServiceCall) -> dict:
+        return await _async_handle_manual_push(hass, call)
 
     async def _async_handle_push_values_service(call: ServiceCall) -> None:
         await _async_handle_custom_push(
@@ -135,6 +143,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             SERVICE_PUSH,
             _async_handle_push_service,
             schema=PUSH_SERVICE_SCHEMA,
+            supports_response=SupportsResponse.OPTIONAL,
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUES):
@@ -192,11 +201,12 @@ def _sync_diagnostic_device_name(
 async def _async_handle_manual_push(
     hass: HomeAssistant,
     call: ServiceCall,
-) -> None:
+) -> dict:
     """Handle manual push service call."""
     entry_id = call.data.get(ATTR_ENTRY_ID)
     name = call.data.get(ATTR_NAME)
     send_all = call.data.get(ATTR_SEND_ALL)
+    dry_run = bool(call.data.get(ATTR_DRY_RUN, False))
 
     if entry_id and name:
         raise ServiceValidationError(
@@ -213,8 +223,14 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(entry_id)},
             )
 
-        await _async_push_entry(entry_id, entry_data, send_all=send_all)
-        return
+        entry = hass.config_entries.async_get_entry(entry_id)
+        return await _async_push_entry(
+            entry_id,
+            _entry_name(entry) if entry is not None else str(entry_id),
+            entry_data,
+            send_all=send_all,
+            dry_run=dry_run,
+        )
 
     if name:
         matches = [
@@ -246,17 +262,25 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(name)},
             )
 
-        await _async_push_entry(
+        return await _async_push_entry(
             selected_entry.entry_id,
+            _entry_name(selected_entry),
             entry_data,
             send_all=send_all,
+            dry_run=dry_run,
         )
-        return
 
     push_tasks = [
-        _async_push_entry(entry_id, entry_data, send_all=send_all)
-        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
-        if entry_data.get("push_manager") is not None
+        _async_push_entry(
+            entry.entry_id,
+            _entry_name(entry),
+            entry_data,
+            send_all=send_all,
+            dry_run=dry_run,
+        )
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if (entry_data := hass.data.get(DOMAIN, {}).get(entry.entry_id)) is not None
+        and entry_data.get("push_manager") is not None
     ]
 
     if not push_tasks:
@@ -265,7 +289,7 @@ async def _async_handle_manual_push(
             translation_key="push_no_entries_ready",
         )
 
-    await asyncio.gather(*push_tasks)
+    return {"entries": await asyncio.gather(*push_tasks)}
 
 
 async def _async_handle_custom_push(
@@ -377,10 +401,12 @@ def _normalize_custom_values(
 
 async def _async_push_entry(
     entry_id: str,
+    entry_name: str,
     entry_data: dict,
     *,
     send_all: bool | None = None,
-) -> None:
+    dry_run: bool = False,
+) -> dict:
     """Push one loaded config entry."""
     push_manager = entry_data.get("push_manager")
 
@@ -391,7 +417,12 @@ async def _async_push_entry(
             translation_placeholders={"entry": str(entry_id)},
         )
 
-    await push_manager.async_push(send_all=send_all)
+    result = await push_manager.async_push(send_all=send_all, dry_run=dry_run)
+    return {
+        "entry_id": entry_id,
+        "name": entry_name,
+        **result,
+    }
 
 
 async def _async_push_entry_values(

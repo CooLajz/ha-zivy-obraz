@@ -243,6 +243,10 @@
         "send_all": {
           "name": "Send all",
           "description": "Optional override. When true, send all selected entities. When false, send only changed entities. Leave empty to use integration settings."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "When enabled, preview the selected values without sending them to Živý Obraz."
         }
       }
     },

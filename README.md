@@ -173,6 +173,16 @@ data:
 - `send_all: false` odešle jen změněné entity
 - bez `send_all` se použije nastavení integrace
 
+Parametr `dry_run` provede stejnou přípravu dat, ale neodešle HTTP request na
+Import API:
+
+```yaml
+service: zivy_obraz.push
+data:
+  name: "Chata"
+  dry_run: true
+```
+
 Konkrétní instanci lze vybrat podle jejího názvu:
 
 ```yaml
@@ -210,6 +220,39 @@ data:
 
 Pokud není vyplněn `name` ani `entry_id`, hodnoty se odešlou do všech
 načtených instancí s nastaveným Import key.
+
+---
+
+## Náhled a návratová data odeslání
+
+Služba `zivy_obraz.push` umí vracet response data se seznamem hodnot, které
+byly odeslané, přeskočené nebo chybové. Při `dry_run: true` vrátí stejnou
+strukturu jako náhled bez skutečného odeslání.
+
+```yaml
+entry_id: "abc123"
+name: "Chata"
+status: "would_push"
+dry_run: true
+send_only_changed: true
+request_batches: 1
+pushed:
+  - variable: "sensor_teplota_kuchyne"
+    value: "23.5"
+skipped:
+  - variable: "sensor_vlhkost_kuchyne"
+    value: "48"
+    reason: "unchanged"
+failed:
+  - variable: "sensor_neznamy_stav"
+    reason: "invalid_state"
+```
+
+Parametr `send_all` funguje stejně jako u služby `zivy_obraz.push`:
+
+- `send_all: true` zobrazí náhled všech vybraných entit
+- `send_all: false` zobrazí náhled jen změněných entit
+- bez `send_all` se použije nastavení integrace
 
 ---
 
@@ -624,6 +667,16 @@ data:
 - `send_all: false` sends only changed entities
 - without `send_all`, the integration setting is used
 
+The `dry_run` parameter prepares the same data without making an HTTP request
+to the Import API:
+
+```yaml
+service: zivy_obraz.push
+data:
+  name: "Cottage"
+  dry_run: true
+```
+
 Select one instance by its configured name:
 
 ```yaml
@@ -661,6 +714,39 @@ data:
 
 If neither `name` nor `entry_id` is provided, values are sent to all loaded
 instances with an Import key configured.
+
+---
+
+## Push response and dry-run preview
+
+The `zivy_obraz.push` service can return response data with values that were
+pushed, skipped, or reported as failed. With `dry_run: true`, it returns the
+same structure as a preview without sending anything.
+
+```yaml
+entry_id: "abc123"
+name: "Cottage"
+status: "would_push"
+dry_run: true
+send_only_changed: true
+request_batches: 1
+pushed:
+  - variable: "sensor_kitchen_temperature"
+    value: "23.5"
+skipped:
+  - variable: "sensor_kitchen_humidity"
+    value: "48"
+    reason: "unchanged"
+failed:
+  - variable: "sensor_unknown_state"
+    reason: "invalid_state"
+```
+
+The `send_all` parameter works the same way as for `zivy_obraz.push`:
+
+- `send_all: true` previews all selected entities
+- `send_all: false` previews only changed entities
+- without `send_all`, the integration setting is used
 
 ---
 
