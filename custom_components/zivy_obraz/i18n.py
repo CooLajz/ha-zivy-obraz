@@ -7,14 +7,22 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
+SUPPORTED_LANGUAGES = {"cs", "en", "sk"}
+
+
+def _translation_language(language: str) -> str:
+    """Return a supported runtime translation language."""
+    language = (
+        (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
+    )
+    return language if language in SUPPORTED_LANGUAGES else "en"
+
 
 @lru_cache(maxsize=16)
 def _load_translations(language: str) -> dict[str, Any]:
     """Load runtime translations for the selected language."""
-    language = (
-        (language or "en").replace("_", "-").split("-", maxsplit=1)[0].casefold()
-    )
-    filename = f"{language}.json" if language in {"cs", "en", "sk"} else "en.json"
+    language = _translation_language(language)
+    filename = f"{language}.json"
 
     try:
         raw_translations = (
@@ -29,6 +37,13 @@ def _load_translations(language: str) -> dict[str, Any]:
     return translations if isinstance(translations, dict) else {}
 
 
+async def async_preload_runtime_translations(hass: HomeAssistant) -> None:
+    """Preload runtime translations outside the event loop."""
+    await hass.async_add_executor_job(
+        lambda: [_load_translations(language) for language in SUPPORTED_LANGUAGES]
+    )
+
+
 def _language(hass: HomeAssistant) -> str:
     """Return configured Home Assistant language."""
     return str(getattr(hass.config, "language", "") or "en")
@@ -41,7 +56,7 @@ def localized_mapping(
     fallback: dict[str, str],
 ) -> dict[str, str]:
     """Return a localized mapping with English fallback values."""
-    language = _language(hass)
+    language = _translation_language(_language(hass))
     texts = {**fallback}
 
     english_section = _load_translations("en").get(section, {})

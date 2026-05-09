@@ -61,6 +61,7 @@ from .const import (
 from .coordinator import ZivyObrazCoordinator
 from .api import build_export_url
 from .device import diagnostic_device_identifier
+from .i18n import async_preload_runtime_translations
 from .label_helper import async_ensure_label_exists, async_get_label_id
 from .push import ZivyObrazPushManager
 
@@ -128,6 +129,7 @@ def _build_export_url(export_key: str, group_id) -> str:
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration."""
     hass.data.setdefault(DOMAIN, {})
+    await async_preload_runtime_translations(hass)
 
     async def _async_handle_push_service(call: ServiceCall) -> dict:
         return await _async_handle_manual_push(hass, call)
