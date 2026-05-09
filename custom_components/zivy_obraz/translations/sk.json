@@ -245,7 +245,7 @@
           "description": "Voliteľné prepísanie nastavenia. Pri true sa odošlú všetky vybrané entity. Pri false sa odošlú len zmenené entity. Ak zostane prázdne, použije sa nastavenie integrácie."
         },
         "dry_run": {
-          "name": "Suchý beh",
+          "name": "Dry run",
           "description": "Pri zapnutí zobrazí náhľad vybraných hodnôt bez odoslania do Živého obrazu."
         }
       }
