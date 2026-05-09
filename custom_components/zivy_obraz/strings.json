@@ -17,7 +17,8 @@
         "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
-          "prefix": "Variable name prefix"
+          "prefix": "Variable name prefix",
+          "invalid_state_fallback": "Invalid state fallback value"
         }
       }
     },
@@ -55,7 +56,8 @@
         "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
-          "prefix": "Variable name prefix"
+          "prefix": "Variable name prefix",
+          "invalid_state_fallback": "Invalid state fallback value"
         }
       }
     },

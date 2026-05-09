@@ -17,7 +17,8 @@
         "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
-          "prefix": "Prefix názvu proměnných"
+          "prefix": "Prefix názvu proměnných",
+          "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
       }
     },
@@ -55,7 +56,8 @@
         "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
-          "prefix": "Prefix názvu proměnných"
+          "prefix": "Prefix názvu proměnných",
+          "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
       }
     },

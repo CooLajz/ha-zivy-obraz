@@ -145,9 +145,10 @@ odesílá se beze změny.
 
 Při vyplněném `Import key` lze zapnout konfigurační přepínač
 `Send N/A for invalid entity states`. Pokud je zapnutý, integrace místo
-neplatné hodnoty odešle do Živého obrazu hodnotu `N/A`. Entita se pak počítá
-jako úspěšně odeslaná, takže nezvyšuje `Failed entities`. Na eINK displeji je
-díky tomu vidět například `N/A` nebo `N/A °C` místo staré hodnoty.
+neplatné hodnoty odešle do Živého obrazu náhradní hodnotu nastavenou v
+možnostech integrace. Výchozí hodnota je `N/A`. Entita se pak počítá jako
+úspěšně odeslaná, takže nezvyšuje `Failed entities`. Na eINK displeji je díky
+tomu vidět například `N/A`, `--` nebo `N/A °C` místo staré hodnoty.
 
 ## Ruční odeslání hodnot
 
@@ -273,6 +274,9 @@ Pod tímto zařízením jsou dostupné provozní konfigurační entity:
 - `Automatic push` - zapnutí/vypnutí automatického odesílání
 - `Send only changed entity states` - odesílat pouze změněné hodnoty entit
 - `Send N/A for invalid entity states` - odeslat `N/A` místo neplatných stavů
+
+Náhradní hodnota pro neplatné stavy se nastavuje v možnostech integrace na
+stránce `Data upload / Import API`.
 
 Push nastavení a tlačítko `Push values now` se vytvoří pouze při vyplněném
 `Import key`.
@@ -638,10 +642,11 @@ not sent and appear in `Failed entities` with the `invalid_state` reason. An
 empty text state `""` is a valid value and is sent unchanged.
 
 When an `Import key` is configured, the `Send N/A for invalid entity states`
-config switch can be enabled. It sends `N/A` to Živý Obraz instead of the
-invalid value. The entity is counted as successfully pushed, so it does not increase
-`Failed entities`. This makes the eINK display show values such as `N/A` or
-`N/A °C` instead of keeping an old value.
+config switch can be enabled. It sends the fallback value configured in the
+integration options to Živý Obraz instead of the invalid value. The default
+fallback is `N/A`. The entity is counted as successfully pushed, so it does not
+increase `Failed entities`. This makes the eINK display show values such as
+`N/A`, `--`, or `N/A °C` instead of keeping an old value.
 
 ## Manual push
 
@@ -767,6 +772,9 @@ This device exposes operational config entities:
 - `Automatic push` - enable/disable scheduled push
 - `Send only changed entity states` - send only changed entity values
 - `Send N/A for invalid entity states` - send `N/A` instead of invalid states
+
+The invalid-state fallback value is configured in the integration options on
+the `Data upload / Import API` page.
 
 Push settings and the `Push values now` button are created only when an
 `Import key` is configured.

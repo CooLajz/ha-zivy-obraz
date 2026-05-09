@@ -14,6 +14,7 @@ from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
+    CONF_INVALID_STATE_FALLBACK,
     CONF_LABEL,
     CONF_NAME,
     CONF_OVERDUE_NOTIFICATION,
@@ -28,6 +29,7 @@ from .const import (
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
+    DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
     DEFAULT_NAME,
     DEFAULT_OVERDUE_NOTIFICATION,
@@ -103,6 +105,13 @@ def _normalize_prefix(value: Any) -> str:
     return str(value).strip()
 
 
+def _normalize_invalid_state_fallback(value: Any) -> str:
+    """Normalize the fallback value used for invalid entity states."""
+    if value is None:
+        return DEFAULT_INVALID_STATE_FALLBACK
+    return str(value)
+
+
 def _normalize_name(value: Any) -> str:
     """Normalize config entry display name."""
     if value is None:
@@ -173,6 +182,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
     )
     prepared[CONF_PREFIX] = _normalize_prefix(user_input.get(CONF_PREFIX, DEFAULT_PREFIX))
+    prepared[CONF_INVALID_STATE_FALLBACK] = _normalize_invalid_state_fallback(
+        user_input.get(CONF_INVALID_STATE_FALLBACK, DEFAULT_INVALID_STATE_FALLBACK)
+    )
     prepared[CONF_PUSH_ENABLED] = bool(
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
@@ -288,6 +300,7 @@ def _build_import_schema(
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
+    invalid_state_fallback: str = DEFAULT_INVALID_STATE_FALLBACK,
 ) -> vol.Schema:
     """Build Import API config schema."""
     schema: dict[Any, Any] = {}
@@ -297,6 +310,12 @@ def _build_import_schema(
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
+    schema[
+        vol.Optional(
+            CONF_INVALID_STATE_FALLBACK,
+            default=invalid_state_fallback,
+        )
+    ] = str
 
     return vol.Schema(schema)
 
@@ -385,7 +404,10 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = _build_import_schema()
         schema = self.add_suggested_values_to_schema(
             schema,
-            {CONF_PREFIX: DEFAULT_PREFIX},
+            {
+                CONF_PREFIX: DEFAULT_PREFIX,
+                CONF_INVALID_STATE_FALLBACK: DEFAULT_INVALID_STATE_FALLBACK,
+            },
         )
 
         return self.async_show_form(
@@ -458,6 +480,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 self._config_entry, CONF_LABEL, DEFAULT_LABEL
             ),
             CONF_PREFIX: _get_current_prefix(self._config_entry),
+            CONF_INVALID_STATE_FALLBACK: _get_config_value(
+                self._config_entry,
+                CONF_INVALID_STATE_FALLBACK,
+                DEFAULT_INVALID_STATE_FALLBACK,
+            ),
             CONF_PUSH_INTERVAL: _get_config_value(
                 self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
             ),
@@ -544,10 +571,16 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             import_key=current_values[CONF_IMPORT_KEY],
             label=current_values[CONF_LABEL],
             prefix=current_values[CONF_PREFIX],
+            invalid_state_fallback=current_values[CONF_INVALID_STATE_FALLBACK],
         )
         schema = self.add_suggested_values_to_schema(
             schema,
-            {CONF_PREFIX: current_values[CONF_PREFIX]},
+            {
+                CONF_PREFIX: current_values[CONF_PREFIX],
+                CONF_INVALID_STATE_FALLBACK: current_values[
+                    CONF_INVALID_STATE_FALLBACK
+                ],
+            },
         )
 
         return self.async_show_form(

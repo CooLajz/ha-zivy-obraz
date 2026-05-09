@@ -19,13 +19,16 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
-from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
+from .const import (
+    DEFAULT_INVALID_STATE_FALLBACK,
+    MAX_PUSH_URL_LENGTH,
+    ZIVY_OBRAZ_PUSH_URL,
+)
 from .label_helper import get_label_id
 
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", None}
-INVALID_STATE_FALLBACK = "N/A"
 MAX_DIAGNOSTIC_VARIABLES = 50
 PUSH_PROBLEM_STATUSES = {
     "failed",
@@ -83,6 +86,7 @@ class ZivyObrazPushManager:
         timeout: int,
         send_only_changed: bool,
         replace_invalid_states_with_na: bool,
+        invalid_state_fallback: str,
     ) -> None:
         """Initialize the push manager."""
         self.hass = hass
@@ -93,6 +97,11 @@ class ZivyObrazPushManager:
         self.timeout = timeout
         self.send_only_changed = send_only_changed
         self.replace_invalid_states_with_na = replace_invalid_states_with_na
+        self.invalid_state_fallback = (
+            invalid_state_fallback
+            if invalid_state_fallback is not None
+            else DEFAULT_INVALID_STATE_FALLBACK
+        )
         self.session = async_get_clientsession(hass)
         self.diagnostics = PushDiagnostics()
         self._listeners: list[Callable[[], None]] = []
@@ -457,7 +466,12 @@ class ZivyObrazPushManager:
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
                 if self.replace_invalid_states_with_na:
-                    pairs.append((param_name, INVALID_STATE_FALLBACK))
+                    pairs.append(
+                        (
+                            param_name,
+                            self.invalid_state_fallback,
+                        )
+                    )
                 else:
                     failed_pairs.append((param_name, "invalid_state"))
                 continue

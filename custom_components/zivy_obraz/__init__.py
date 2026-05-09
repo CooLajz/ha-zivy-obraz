@@ -31,6 +31,7 @@ from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
+    CONF_INVALID_STATE_FALLBACK,
     CONF_LABEL,
     CONF_NAME,
     CONF_PREFIX,
@@ -42,6 +43,7 @@ from .const import (
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     DEFAULT_IMPORT_KEY,
+    DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
     DEFAULT_NAME,
     DEFAULT_PREFIX,
@@ -498,6 +500,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
         )
     )
+    invalid_state_fallback = str(
+        _get_config_value(
+            entry,
+            CONF_INVALID_STATE_FALLBACK,
+            DEFAULT_INVALID_STATE_FALLBACK,
+        )
+    )
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
@@ -540,13 +549,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 timeout=timeout,
                 send_only_changed=send_only_changed,
                 replace_invalid_states_with_na=replace_invalid_states_with_na,
+                invalid_state_fallback=invalid_state_fallback,
             )
 
             _LOGGER.debug(
                 (
                     "Živý Obraz push ready with label '%s' (label_id=%s), "
                     "always_label_id=%s, prefix='%s', send_only_changed=%s, "
-                    "replace_invalid_states_with_na=%s"
+                    "replace_invalid_states_with_na=%s, invalid_state_fallback='%s'"
                 ),
                 label,
                 push_label_id,
@@ -554,6 +564,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 prefix,
                 send_only_changed,
                 replace_invalid_states_with_na,
+                invalid_state_fallback,
             )
 
             if push_enabled:
@@ -678,6 +689,15 @@ def _async_apply_runtime_options(
                 entry,
                 CONF_REPLACE_INVALID_STATES_WITH_NA,
                 DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+            )
+        )
+
+    if CONF_INVALID_STATE_FALLBACK in changed_keys:
+        push_manager.invalid_state_fallback = str(
+            _get_config_value(
+                entry,
+                CONF_INVALID_STATE_FALLBACK,
+                DEFAULT_INVALID_STATE_FALLBACK,
             )
         )
 
