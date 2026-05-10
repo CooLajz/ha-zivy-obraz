@@ -31,12 +31,19 @@ from .const import (
 )
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
+from .i18n import localized_mapping
 from .push import PUSH_PROBLEM_STATUSES, ZivyObrazPushManager
 
 
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazBinarySensorDescription(BinarySensorEntityDescription):
     """Description for Zivy Obraz binary sensor."""
+
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
 
 
 BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
@@ -50,6 +57,50 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZivyObrazBinarySensorDescription, ...] = (
 )
 
 SYNC_PROBLEM_STATUSES = {"failed"}
+
+NOTIFICATION_FALLBACK_TEXTS = {
+    "overdue": {
+        "title": "Živý Obraz - Overdue display",
+        "expected_contact_minutes": (
+            'Display "{caption}" is {minutes} minutes past the expected contact.'
+        ),
+        "missed_expected_contact": (
+            'Display "{caption}" has not checked in at the expected time.'
+        ),
+        "group": "Group: {group_name}",
+        "tolerance": "Overdue tolerance: {minutes} minutes",
+        "minutes_overdue": "Past tolerance by: {minutes} minutes",
+        "next_contact": "Last expected contact: {datetime}",
+        "overdue_after": "Marked overdue since: {datetime}",
+    },
+    "push_problem": {
+        "title": "Živý Obraz - Push problem ({entry})",
+        "intro": "Pushing values to Živý Obraz reports a problem.",
+        "instance": "Instance: {entry}",
+        "status": "Status: {status}",
+        "reason": "Reason: {reason}",
+        "last_push": "Last push attempt: {datetime}",
+        "failed_entities": "Failed entities: {entities}",
+    },
+    "sync_problem": {
+        "title": "Živý Obraz - Sync problem ({entry})",
+        "intro": "Data sync from Živý Obraz reports a problem.",
+        "instance": "Instance: {entry}",
+        "status": "Status: {status}",
+        "reason": "Reason: {reason}",
+        "last_sync": "Last sync attempt: {datetime}",
+    },
+}
+
+
+def _notification_texts(hass: HomeAssistant, notification_key: str) -> dict[str, str]:
+    """Return notification texts for the configured HA language."""
+    return localized_mapping(
+        hass,
+        "notifications",
+        notification_key,
+        NOTIFICATION_FALLBACK_TEXTS[notification_key],
+    )
 
 
 class ZivyObrazProblemNotificationMixin:
@@ -421,38 +472,45 @@ class ZivyObrazOverdueBinarySensor(
         minutes_overdue = self._minutes_overdue()
         next_contact = self._parse_next_contact()
         overdue_after = self._overdue_after()
+        texts = _notification_texts(self.hass, "overdue")
 
         lines: list[str] = []
 
         if expected_contact_minutes_ago is not None:
             lines.append(
-                f'Displej "{caption}" je po očekávaném kontaktu již '
-                f"{expected_contact_minutes_ago} minut."
+                texts["expected_contact_minutes"].format(
+                    caption=caption,
+                    minutes=expected_contact_minutes_ago,
+                )
             )
         else:
-            lines.append(f'Displej "{caption}" se nehlásí v očekávaném čase.')
+            lines.append(texts["missed_expected_contact"].format(caption=caption))
 
         if group_name:
             lines.append("")
-            lines.append(f"Skupina: {group_name}")
+            lines.append(texts["group"].format(group_name=group_name))
 
-        lines.append(f"Tolerance overdue: {self._overdue_tolerance_minutes} minut")
+        lines.append(
+            texts["tolerance"].format(minutes=self._overdue_tolerance_minutes)
+        )
 
         if minutes_overdue is not None:
-            lines.append(f"Po překročení tolerance: {minutes_overdue} minut")
+            lines.append(texts["minutes_overdue"].format(minutes=minutes_overdue))
 
         formatted_next_contact = self._format_local_datetime(next_contact)
         if formatted_next_contact:
-            lines.append(f"Poslední očekávaný kontakt: {formatted_next_contact}")
+            lines.append(texts["next_contact"].format(datetime=formatted_next_contact))
 
         formatted_overdue_after = self._format_local_datetime(overdue_after)
         if formatted_overdue_after:
-            lines.append(f"Za overdue označen od: {formatted_overdue_after}")
+            lines.append(
+                texts["overdue_after"].format(datetime=formatted_overdue_after)
+            )
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title="Živý Obraz - Overdue displej",
+            title=texts["title"],
             notification_id=self._notification_id(),
         )
 
@@ -501,7 +559,7 @@ class ZivyObrazPushProblemBinarySensor(
     """Binary sensor indicating whether the last push attempt had a problem."""
 
     _attr_has_entity_name = True
-    _attr_name = "Push problem"
+    _attr_translation_key = "push_problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_icon = "mdi:cloud-alert-outline"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -561,27 +619,32 @@ class ZivyObrazPushProblemBinarySensor(
     async def _async_create_problem_notification(self) -> None:
         """Create/update push problem notification."""
         diagnostics = self._push_manager.diagnostics
+        texts = _notification_texts(self.hass, "push_problem")
         lines = [
-            "Odesílání hodnot do Živého Obrazu hlásí problém.",
+            texts["intro"],
             "",
-            f"Instance: {self._entry.title}",
-            f"Stav: {diagnostics.status}",
+            texts["instance"].format(entry=self._entry.title),
+            texts["status"].format(status=diagnostics.status),
         ]
 
         if diagnostics.last_error:
-            lines.append(f"Důvod: {diagnostics.last_error}")
+            lines.append(texts["reason"].format(reason=diagnostics.last_error))
 
         formatted_last_push = self._format_problem_datetime(diagnostics.last_push)
         if formatted_last_push:
-            lines.append(f"Poslední pokus o odeslání: {formatted_last_push}")
+            lines.append(texts["last_push"].format(datetime=formatted_last_push))
 
         if diagnostics.failed_entities:
-            lines.append(f"Neodeslané entity: {diagnostics.failed_entities}")
+            lines.append(
+                texts["failed_entities"].format(
+                    entities=diagnostics.failed_entities,
+                )
+            )
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title=f"Živý Obraz - Problém odesílání ({self._entry.title})",
+            title=texts["title"].format(entry=self._entry.title),
             notification_id=self._problem_notification_id,
         )
 
@@ -593,7 +656,7 @@ class ZivyObrazSyncProblemBinarySensor(
     """Binary sensor indicating whether the last sync attempt had a problem."""
 
     _attr_has_entity_name = True
-    _attr_name = "Sync problem"
+    _attr_translation_key = "sync_problem"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_icon = "mdi:sync-alert"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -653,23 +716,24 @@ class ZivyObrazSyncProblemBinarySensor(
     async def _async_create_problem_notification(self) -> None:
         """Create/update sync problem notification."""
         diagnostics = self._coordinator.diagnostics
+        texts = _notification_texts(self.hass, "sync_problem")
         lines = [
-            "Synchronizace dat ze Živého Obrazu hlásí problém.",
+            texts["intro"],
             "",
-            f"Instance: {self._entry.title}",
-            f"Stav: {diagnostics.status}",
+            texts["instance"].format(entry=self._entry.title),
+            texts["status"].format(status=diagnostics.status),
         ]
 
         if diagnostics.last_error:
-            lines.append(f"Důvod: {diagnostics.last_error}")
+            lines.append(texts["reason"].format(reason=diagnostics.last_error))
 
         formatted_last_sync = self._format_problem_datetime(diagnostics.last_sync)
         if formatted_last_sync:
-            lines.append(f"Poslední pokus o synchronizaci: {formatted_last_sync}")
+            lines.append(texts["last_sync"].format(datetime=formatted_last_sync))
 
         persistent_notification.async_create(
             self.hass,
             message="\n".join(lines),
-            title=f"Živý Obraz - Problém synchronizace ({self._entry.title})",
+            title=texts["title"].format(entry=self._entry.title),
             notification_id=self._problem_notification_id,
         )

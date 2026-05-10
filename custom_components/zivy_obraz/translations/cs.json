@@ -2,18 +2,23 @@
   "config": {
     "step": {
       "user": {
-        "title": "Živý Obraz",
-        "description": "Připojení k exportu panelů",
+        "title": "Načítání dat / Export API",
+        "description": "Export key najdete na webu Živého obrazu v sekci Účet. Vyplněné ID skupiny načte jen panely v této skupině; prázdné pole načte vše pod účtem.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odesílání dat / Import API",
+        "description": "Import key najdete na webu Živého obrazu v sekci Účet. Je volitelný; vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu.",
+        "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
+          "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
       }
     },
@@ -24,31 +29,35 @@
       "unknown": "Neočekávaná chyba",
       "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
       "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny",
       "scan_interval_range": "Interval obnovy musí být mezi 60 a 86400 sekundami",
       "push_interval_range": "Interval odesílání musí být mezi 60 a 86400 sekundami",
       "timeout_range": "HTTP timeout musí být mezi 5 a 120 sekundami",
       "overdue_tolerance_range": "Tolerance zpoždění musí být mezi 0 a 10080 minutami"
     },
     "abort": {
-      "already_configured": "Tento export key a filtr skupiny už jsou nakonfigurované"
+      "already_configured": "Tento export key a ID skupiny už jsou nakonfigurované"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Živý Obraz",
-        "description": "Upravit nastavení integrace",
+        "title": "Načítání dat / Export API",
+        "description": "Export key najdete na webu Živého obrazu v sekci Účet. Vyplněné ID skupiny načte jen panely v této skupině; prázdné pole načte vše pod účtem.",
         "data": {
           "name": "Název instance",
           "export_key": "Export key",
-          "use_group_filter": "Použít filtr skupiny",
           "group_id": "ID skupiny",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Odesílání dat / Import API",
+        "description": "Import key najdete na webu Živého obrazu v sekci Účet. Je volitelný; vyplňte ho jen pokud chcete odesílat hodnoty z Home Assistantu do Živého obrazu.",
+        "data": {
           "import_key": "Import key",
           "label": "Štítek entit pro odesílání",
           "prefix": "Prefix názvu proměnných",
-          "replace_invalid_states_with_na": "Odeslat N/A pro neplatné stavy entit"
+          "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
       }
     },
@@ -59,7 +68,6 @@
       "unknown": "Neočekávaná chyba",
       "import_key_required": "Pokud je odesílání zapnuto, musí být vyplněn Import key",
       "invalid_group_id": "ID skupiny musí být celé číslo 0 nebo vyšší",
-      "group_id_required": "Pokud je filtr skupiny zapnutý, musí být vyplněno ID skupiny",
       "scan_interval_range": "Interval obnovy musí být mezi 60 a 86400 sekundami",
       "push_interval_range": "Interval odesílání musí být mezi 60 a 86400 sekundami",
       "timeout_range": "HTTP timeout musí být mezi 5 a 120 sekundami",
@@ -87,6 +95,9 @@
       },
       "send_only_changed": {
         "name": "Odesílat jen změněné hodnoty entit"
+      },
+      "replace_invalid_states_with_na": {
+        "name": "Odesílat náhradní hodnotu pro neplatné stavy entit"
       }
     },
     "button": {
@@ -95,6 +106,126 @@
       },
       "push_now": {
         "name": "Odeslat hodnoty nyní"
+      }
+    },
+    "sensor": {
+      "battery_percent": {
+        "name": "Baterie"
+      },
+      "battery_volts": {
+        "name": "Napětí baterie"
+      },
+      "battery_days_since_last_charge": {
+        "name": "Dnů od posledního nabití baterie"
+      },
+      "battery_charge_detection_status": {
+        "name": "Stav detekce nabití baterie",
+        "state": {
+          "warming_up": "Zahřívání detekce",
+          "insufficient_samples": "Nedostatek vzorků",
+          "baseline": "Sbírání výchozích dat",
+          "idle": "Nabití nedetekováno",
+          "charge_detected": "Nabití detekováno",
+          "cooldown": "Čekací doba"
+        }
+      },
+      "temperature": {
+        "name": "Teplota"
+      },
+      "humidity": {
+        "name": "Vlhkost"
+      },
+      "pressure": {
+        "name": "Tlak"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "ssid": {
+        "name": "WiFi SSID"
+      },
+      "last_contact": {
+        "name": "Poslední kontakt"
+      },
+      "next_contact": {
+        "name": "Další kontakt"
+      },
+      "group_name": {
+        "name": "Název skupiny"
+      },
+      "fw_build": {
+        "name": "Sestavení FW"
+      },
+      "reset_reason": {
+        "name": "Důvod restartu"
+      },
+      "last_picture_download_ms": {
+        "name": "Poslední stažení obrázku"
+      },
+      "last_display_refresh_ms": {
+        "name": "Poslední obnovení displeje"
+      },
+      "push_last_successful_push": {
+        "name": "Poslední úspěšné odeslání"
+      },
+      "push_status": {
+        "name": "Stav odesílání",
+        "state": {
+          "idle": "Nečinné",
+          "sending": "Odesílání",
+          "success": "Úspěšné",
+          "failed": "Selhalo",
+          "partial_failure": "Částečné selhání",
+          "no_batches": "Žádné dávky požadavků",
+          "no_valid_entities": "Žádné validní entity",
+          "no_new_data": "Žádná nová data",
+          "no_entities": "Žádné entity"
+        }
+      },
+      "push_pushed_entities": {
+        "name": "Odeslané entity"
+      },
+      "push_skipped_entities": {
+        "name": "Přeskočené entity"
+      },
+      "push_failed_entities": {
+        "name": "Neodeslané entity"
+      },
+      "push_request_batches": {
+        "name": "Dávky požadavků"
+      },
+      "push_next_push": {
+        "name": "Další odeslání"
+      },
+      "sync_last_successful_sync": {
+        "name": "Poslední úspěšná synchronizace"
+      },
+      "sync_status": {
+        "name": "Stav synchronizace",
+        "state": {
+          "idle": "Nečinné",
+          "syncing": "Synchronizuji",
+          "success": "Úspěšná",
+          "failed": "Selhala",
+          "no_new_data": "Žádná nová data"
+        }
+      },
+      "sync_next_sync": {
+        "name": "Další synchronizace"
+      },
+      "sync_device_count": {
+        "name": "Počet zařízení"
+      }
+    },
+    "binary_sensor": {
+      "overdue": {
+        "name": "Po termínu"
+      },
+      "push_problem": {
+        "name": "Problém odesílání"
+      },
+      "sync_problem": {
+        "name": "Problém synchronizace"
       }
     }
   },
@@ -114,6 +245,10 @@
         "send_all": {
           "name": "Odeslat vše",
           "description": "Volitelné přepsání nastavení. Při true se odešlou všechny vybrané entity. Při false se odešlou jen změněné entity. Pokud zůstane prázdné, použije se nastavení integrace."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Při zapnutí zobrazí náhled vybraných hodnot bez odeslání do Živého obrazu."
         }
       }
     },

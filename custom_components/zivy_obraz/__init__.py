@@ -6,7 +6,13 @@ import logging
 from typing import TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, ServiceCall, callback
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    HomeAssistant,
+    ServiceCall,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
@@ -15,6 +21,7 @@ from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .const import (
+    ATTR_DRY_RUN,
     ATTR_ENTRY_ID,
     ATTR_NAME,
     ATTR_SEND_ALL,
@@ -24,6 +31,7 @@ from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
+    CONF_INVALID_STATE_FALLBACK,
     CONF_LABEL,
     CONF_NAME,
     CONF_PREFIX,
@@ -34,8 +42,8 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
-    CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
+    DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
     DEFAULT_NAME,
     DEFAULT_PREFIX,
@@ -45,7 +53,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
-    DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     PLATFORMS,
     SERVICE_PUSH,
@@ -54,6 +61,7 @@ from .const import (
 from .coordinator import ZivyObrazCoordinator
 from .api import build_export_url
 from .device import diagnostic_device_identifier
+from .i18n import async_preload_runtime_translations
 from .label_helper import async_ensure_label_exists, async_get_label_id
 from .push import ZivyObrazPushManager
 
@@ -68,6 +76,7 @@ PUSH_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
         vol.Optional(ATTR_SEND_ALL): cv.boolean,
+        vol.Optional(ATTR_DRY_RUN): cv.boolean,
     }
 )
 
@@ -112,17 +121,18 @@ def _get_prefix_value(entry: ConfigEntry) -> str:
     return str(_get_config_value(entry, CONF_PREFIX, DEFAULT_PREFIX) or "").strip()
 
 
-def _build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
+def _build_export_url(export_key: str, group_id) -> str:
     """Build export URL from config."""
-    return build_export_url(export_key, use_group_filter, group_id)
+    return build_export_url(export_key, group_id is not None, group_id)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration."""
     hass.data.setdefault(DOMAIN, {})
+    await async_preload_runtime_translations(hass)
 
-    async def _async_handle_push_service(call: ServiceCall) -> None:
-        await _async_handle_manual_push(hass, call)
+    async def _async_handle_push_service(call: ServiceCall) -> dict:
+        return await _async_handle_manual_push(hass, call)
 
     async def _async_handle_push_values_service(call: ServiceCall) -> None:
         await _async_handle_custom_push(
@@ -137,6 +147,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             SERVICE_PUSH,
             _async_handle_push_service,
             schema=PUSH_SERVICE_SCHEMA,
+            supports_response=SupportsResponse.OPTIONAL,
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH_VALUES):
@@ -194,11 +205,12 @@ def _sync_diagnostic_device_name(
 async def _async_handle_manual_push(
     hass: HomeAssistant,
     call: ServiceCall,
-) -> None:
+) -> dict:
     """Handle manual push service call."""
     entry_id = call.data.get(ATTR_ENTRY_ID)
     name = call.data.get(ATTR_NAME)
     send_all = call.data.get(ATTR_SEND_ALL)
+    dry_run = bool(call.data.get(ATTR_DRY_RUN, False))
 
     if entry_id and name:
         raise ServiceValidationError(
@@ -215,8 +227,14 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(entry_id)},
             )
 
-        await _async_push_entry(entry_id, entry_data, send_all=send_all)
-        return
+        entry = hass.config_entries.async_get_entry(entry_id)
+        return await _async_push_entry(
+            entry_id,
+            _entry_name(entry) if entry is not None else str(entry_id),
+            entry_data,
+            send_all=send_all,
+            dry_run=dry_run,
+        )
 
     if name:
         matches = [
@@ -248,17 +266,25 @@ async def _async_handle_manual_push(
                 translation_placeholders={"entry": str(name)},
             )
 
-        await _async_push_entry(
+        return await _async_push_entry(
             selected_entry.entry_id,
+            _entry_name(selected_entry),
             entry_data,
             send_all=send_all,
+            dry_run=dry_run,
         )
-        return
 
     push_tasks = [
-        _async_push_entry(entry_id, entry_data, send_all=send_all)
-        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items()
-        if entry_data.get("push_manager") is not None
+        _async_push_entry(
+            entry.entry_id,
+            _entry_name(entry),
+            entry_data,
+            send_all=send_all,
+            dry_run=dry_run,
+        )
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if (entry_data := hass.data.get(DOMAIN, {}).get(entry.entry_id)) is not None
+        and entry_data.get("push_manager") is not None
     ]
 
     if not push_tasks:
@@ -267,7 +293,7 @@ async def _async_handle_manual_push(
             translation_key="push_no_entries_ready",
         )
 
-    await asyncio.gather(*push_tasks)
+    return {"entries": await asyncio.gather(*push_tasks)}
 
 
 async def _async_handle_custom_push(
@@ -379,10 +405,12 @@ def _normalize_custom_values(
 
 async def _async_push_entry(
     entry_id: str,
+    entry_name: str,
     entry_data: dict,
     *,
     send_all: bool | None = None,
-) -> None:
+    dry_run: bool = False,
+) -> dict:
     """Push one loaded config entry."""
     push_manager = entry_data.get("push_manager")
 
@@ -393,7 +421,12 @@ async def _async_push_entry(
             translation_placeholders={"entry": str(entry_id)},
         )
 
-    await push_manager.async_push(send_all=send_all)
+    result = await push_manager.async_push(send_all=send_all, dry_run=dry_run)
+    return {
+        "entry_id": entry_id,
+        "name": entry_name,
+        **result,
+    }
 
 
 async def _async_push_entry_values(
@@ -425,23 +458,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         _get_config_value(entry, CONF_EXPORT_KEY, entry.data[CONF_EXPORT_KEY])
     ).strip()
 
-    use_group_filter = _get_config_value(
-        entry,
-        CONF_USE_GROUP_FILTER,
-        DEFAULT_USE_GROUP_FILTER,
-    )
-
     if CONF_GROUP_ID in entry.options:
         raw_group_id = entry.options[CONF_GROUP_ID]
     else:
         raw_group_id = entry.data.get(CONF_GROUP_ID)
 
-    group_id = raw_group_id if use_group_filter else None
+    group_id = raw_group_id if str(raw_group_id or "").strip() else None
 
     timeout = _get_config_value(entry, CONF_TIMEOUT, DEFAULT_TIMEOUT)
     scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
-    url = _build_export_url(export_key, use_group_filter, group_id)
+    url = _build_export_url(export_key, group_id)
 
     push_enabled = bool(
         _get_config_value(
@@ -475,6 +502,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
         )
     )
+    invalid_state_fallback = str(
+        _get_config_value(
+            entry,
+            CONF_INVALID_STATE_FALLBACK,
+            DEFAULT_INVALID_STATE_FALLBACK,
+        )
+    )
 
     coordinator = ZivyObrazCoordinator(
         hass=hass,
@@ -484,6 +518,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
         update_interval_seconds=scan_interval,
     )
 
+    await coordinator.async_load_battery_state()
     await coordinator.async_refresh()
 
     if coordinator.data is None:
@@ -503,7 +538,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     push_always_label_name = f"{label} Always"
 
     if import_key:
-        push_label_id = await async_ensure_label_exists(hass, label)
+        push_label_id = await async_ensure_label_exists(hass, label, entry.title)
         push_always_label_id = await async_get_label_id(hass, push_always_label_name)
 
         if push_label_id:
@@ -516,13 +551,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 timeout=timeout,
                 send_only_changed=send_only_changed,
                 replace_invalid_states_with_na=replace_invalid_states_with_na,
+                invalid_state_fallback=invalid_state_fallback,
             )
 
             _LOGGER.debug(
                 (
                     "Živý Obraz push ready with label '%s' (label_id=%s), "
                     "always_label_id=%s, prefix='%s', send_only_changed=%s, "
-                    "replace_invalid_states_with_na=%s"
+                    "replace_invalid_states_with_na=%s, invalid_state_fallback='%s'"
                 ),
                 label,
                 push_label_id,
@@ -530,6 +566,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
                 prefix,
                 send_only_changed,
                 replace_invalid_states_with_na,
+                invalid_state_fallback,
             )
 
             if push_enabled:
@@ -645,6 +682,24 @@ def _async_apply_runtime_options(
                 entry,
                 CONF_SEND_ONLY_CHANGED,
                 DEFAULT_SEND_ONLY_CHANGED,
+            )
+        )
+
+    if CONF_REPLACE_INVALID_STATES_WITH_NA in changed_keys:
+        push_manager.replace_invalid_states_with_na = bool(
+            _get_config_value(
+                entry,
+                CONF_REPLACE_INVALID_STATES_WITH_NA,
+                DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+            )
+        )
+
+    if CONF_INVALID_STATE_FALLBACK in changed_keys:
+        push_manager.invalid_state_fallback = str(
+            _get_config_value(
+                entry,
+                CONF_INVALID_STATE_FALLBACK,
+                DEFAULT_INVALID_STATE_FALLBACK,
             )
         )
 

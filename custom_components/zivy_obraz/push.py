@@ -19,13 +19,16 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
-from .const import MAX_PUSH_URL_LENGTH, ZIVY_OBRAZ_PUSH_URL
+from .const import (
+    DEFAULT_INVALID_STATE_FALLBACK,
+    MAX_PUSH_URL_LENGTH,
+    ZIVY_OBRAZ_PUSH_URL,
+)
 from .label_helper import get_label_id
 
 _LOGGER = logging.getLogger(__name__)
 
 _INVALID_STATE_VALUES = {"unknown", "unavailable", None}
-INVALID_STATE_FALLBACK = "N/A"
 MAX_DIAGNOSTIC_VARIABLES = 50
 PUSH_PROBLEM_STATUSES = {
     "failed",
@@ -83,6 +86,7 @@ class ZivyObrazPushManager:
         timeout: int,
         send_only_changed: bool,
         replace_invalid_states_with_na: bool,
+        invalid_state_fallback: str,
     ) -> None:
         """Initialize the push manager."""
         self.hass = hass
@@ -93,6 +97,11 @@ class ZivyObrazPushManager:
         self.timeout = timeout
         self.send_only_changed = send_only_changed
         self.replace_invalid_states_with_na = replace_invalid_states_with_na
+        self.invalid_state_fallback = (
+            invalid_state_fallback
+            if invalid_state_fallback is not None
+            else DEFAULT_INVALID_STATE_FALLBACK
+        )
         self.session = async_get_clientsession(hass)
         self.diagnostics = PushDiagnostics()
         self._listeners: list[Callable[[], None]] = []
@@ -156,7 +165,8 @@ class ZivyObrazPushManager:
         _now: Any = None,
         *,
         send_all: bool | None = None,
-    ) -> None:
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
         """Push current labeled entity states to Živý Obraz."""
         pushed_at = dt_util.now()
         collection = self._get_labeled_entity_states()
@@ -178,7 +188,17 @@ class ZivyObrazPushManager:
                 changed_pairs.append((key, value))
             entity_pairs = changed_pairs
 
-        await self._async_push_pairs(
+        if dry_run:
+            return self._build_push_result(
+                status=self._preview_status(entity_pairs, unchanged_pairs, failed_pairs),
+                dry_run=True,
+                send_only_changed=send_only_changed,
+                pushed_pairs=entity_pairs,
+                skipped_pairs=unchanged_pairs,
+                failed_pairs=failed_pairs,
+            )
+
+        return await self._async_push_pairs(
             pushed_at=pushed_at,
             entity_pairs=entity_pairs,
             skipped_pairs=unchanged_pairs,
@@ -189,6 +209,7 @@ class ZivyObrazPushManager:
                 self.label_id,
             ),
             update_cache=True,
+            send_only_changed=send_only_changed,
         )
 
     async def async_push_values(self, values: dict[str, Any]) -> None:
@@ -219,11 +240,13 @@ class ZivyObrazPushManager:
         empty_status: str,
         empty_log_message: tuple[Any, ...],
         update_cache: bool,
-    ) -> None:
+        send_only_changed: bool | None = None,
+    ) -> dict[str, Any]:
         """Push prepared key/value pairs and update diagnostics."""
         self.diagnostics.last_push = pushed_at
+        self.diagnostics.status = "sending"
+        self.diagnostics.last_error = None
         self._set_variable_preview(dict(entity_pairs))
-        self.diagnostics.pushed_entities = 0
         self.diagnostics.skipped_entities = len(skipped_pairs)
         self.diagnostics.failed_entities = 0
         self._set_skipped_variable_preview(dict(skipped_pairs))
@@ -231,6 +254,7 @@ class ZivyObrazPushManager:
         self.diagnostics.request_batches = 0
 
         if not entity_pairs:
+            self.diagnostics.pushed_entities = 0
             if failed_pairs:
                 self.diagnostics.failed_entities = len(failed_pairs)
                 self.diagnostics.status = (
@@ -248,7 +272,19 @@ class ZivyObrazPushManager:
                 self.diagnostics.last_error = None
             _LOGGER.debug(*empty_log_message)
             self._notify_listeners()
-            return
+            return self._build_push_result(
+                status=self.diagnostics.status,
+                dry_run=False,
+                send_only_changed=(
+                    self.send_only_changed
+                    if send_only_changed is None
+                    else send_only_changed
+                ),
+                pushed_pairs=[],
+                skipped_pairs=skipped_pairs,
+                failed_pairs=failed_pairs,
+                request_batches=0,
+            )
 
         self.diagnostics.last_error = None
 
@@ -263,6 +299,7 @@ class ZivyObrazPushManager:
             if key != "import_key"
         }
         self._set_variable_preview(sent_variables)
+        self._notify_listeners()
 
         if not batches:
             self.diagnostics.failed_entities = len(failed_variables)
@@ -273,10 +310,23 @@ class ZivyObrazPushManager:
                 self.label_id,
             )
             self._notify_listeners()
-            return
+            return self._build_push_result(
+                status=self.diagnostics.status,
+                dry_run=False,
+                send_only_changed=(
+                    self.send_only_changed
+                    if send_only_changed is None
+                    else send_only_changed
+                ),
+                pushed_pairs=[],
+                skipped_pairs=skipped_pairs,
+                failed_pairs=list(failed_variables.items()),
+                request_batches=0,
+            )
 
         failed_batches = 0
         successful_variables: dict[str, str] = {}
+        failed_reasons: dict[str, str] = dict(failed_variables)
         last_error: str | None = None
 
         for batch in batches:
@@ -287,6 +337,9 @@ class ZivyObrazPushManager:
             if error is not None:
                 failed_batches += 1
                 failed_variables.update(batch_variables)
+                failed_reasons.update(
+                    {key: error for key in batch_variables}
+                )
                 last_error = error
                 continue
 
@@ -308,6 +361,89 @@ class ZivyObrazPushManager:
         self._set_failed_variable_preview(failed_variables)
         self.diagnostics.last_error = last_error
         self._notify_listeners()
+        return self._build_push_result(
+            status=self.diagnostics.status,
+            dry_run=False,
+            send_only_changed=(
+                self.send_only_changed
+                if send_only_changed is None
+                else send_only_changed
+            ),
+            pushed_pairs=list(successful_variables.items()),
+            skipped_pairs=skipped_pairs,
+            failed_pairs=list(failed_reasons.items()),
+            request_batches=len(batches),
+        )
+
+    def _preview_status(
+        self,
+        pushed_pairs: list[tuple[str, str]],
+        skipped_pairs: list[tuple[str, str]],
+        failed_pairs: list[tuple[str, str]],
+    ) -> str:
+        """Return the status for a dry-run push result."""
+        if pushed_pairs:
+            return "would_push"
+        if failed_pairs:
+            return "no_valid_entities"
+        if skipped_pairs:
+            return "no_new_data"
+        return "no_entities"
+
+    def _build_push_result(
+        self,
+        *,
+        status: str,
+        dry_run: bool,
+        send_only_changed: bool,
+        pushed_pairs: list[tuple[str, str]],
+        skipped_pairs: list[tuple[str, str]],
+        failed_pairs: list[tuple[str, str]],
+        request_batches: int | None = None,
+    ) -> dict[str, Any]:
+        """Build service response data for a push or dry-run push."""
+        failed_variables: dict[str, str] = dict(failed_pairs)
+        batches = self._build_param_batches(pushed_pairs, failed_variables)
+        pushed_variables = {
+            key: value
+            for batch in batches
+            for key, value in batch.items()
+            if key != "import_key"
+        }
+        skipped_variables = dict(skipped_pairs)
+        result_status = status
+
+        if dry_run and not pushed_variables:
+            if failed_variables:
+                result_status = "no_batches" if pushed_pairs else "no_valid_entities"
+            elif skipped_variables:
+                result_status = "no_new_data"
+            else:
+                result_status = "no_entities"
+
+        return {
+            "status": result_status,
+            "dry_run": dry_run,
+            "send_only_changed": send_only_changed,
+            "request_batches": len(batches)
+            if request_batches is None
+            else request_batches,
+            "pushed_entities": len(pushed_variables),
+            "skipped_entities": len(skipped_variables),
+            "failed_entities": len(failed_variables),
+            "pushed": [
+                {"variable": key, "value": value}
+                for key, value in pushed_variables.items()
+            ],
+            "skipped": [
+                {"variable": key, "value": value, "reason": "unchanged"}
+                for key, value in skipped_variables.items()
+            ],
+            "failed": [
+                {"variable": key, "reason": reason}
+                for key, reason in failed_variables.items()
+            ],
+        }
 
     def _get_labeled_entity_states(self) -> _PushEntityCollection:
         """Return list of (param_name, state_value) for entities selected for push."""
@@ -330,7 +466,12 @@ class ZivyObrazPushManager:
             state_obj = self.hass.states.get(entry.entity_id)
             if state_obj is None or state_obj.state in _INVALID_STATE_VALUES:
                 if self.replace_invalid_states_with_na:
-                    pairs.append((param_name, INVALID_STATE_FALLBACK))
+                    pairs.append(
+                        (
+                            param_name,
+                            self.invalid_state_fallback,
+                        )
+                    )
                 else:
                     failed_pairs.append((param_name, "invalid_state"))
                 continue

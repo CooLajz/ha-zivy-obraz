@@ -14,14 +14,17 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .api import normalize_export_payload
+from .battery import BatteryChargeTracker
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
+BATTERY_STORAGE_VERSION = 1
 
 _PANEL_MAC_RE = re.compile(
     r"^(?:"
@@ -77,6 +80,21 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self.known_macs: set[str] = set()
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
         self.diagnostics = SyncDiagnostics()
+        self.battery_tracker = BatteryChargeTracker()
+        self._battery_store = Store(
+            hass,
+            BATTERY_STORAGE_VERSION,
+            f"{DOMAIN}_battery_charge_{config_entry.entry_id}",
+        )
+
+    async def async_load_battery_state(self) -> None:
+        """Load persisted battery charge diagnostics."""
+        data = await self._battery_store.async_load()
+        self.battery_tracker.load_storage_data(data)
+
+    async def async_save_battery_state(self) -> None:
+        """Persist battery charge diagnostics."""
+        await self._battery_store.async_save(self.battery_tracker.as_storage_data())
 
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
@@ -277,6 +295,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Fetch data from remote JSON endpoint."""
         sync_started_at = dt_util.now()
         self.diagnostics.last_sync = sync_started_at
+        self.diagnostics.status = "syncing"
+        self.diagnostics.last_error = None
+        self._notify_diagnostic_listeners()
 
         try:
             data = await self._async_fetch_json()
@@ -317,6 +338,14 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             await self._async_remove_devices(removed_macs)
 
         await self._async_sync_device_metadata(normalized)
+
+        battery_tracker_changed = False
+        for mac, device_data in normalized.items():
+            if self.battery_tracker.process_device(mac, device_data):
+                battery_tracker_changed = True
+
+        if battery_tracker_changed:
+            await self.async_save_battery_state()
 
         data_changed = normalized != (self.data or {})
 

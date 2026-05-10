@@ -2,18 +2,23 @@
   "config": {
     "step": {
       "user": {
-        "title": "Živý Obraz",
-        "description": "Connect to panel export",
+        "title": "Data download / Export API",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
-          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Data upload / Import API",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
+        "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix",
-          "replace_invalid_states_with_na": "Send N/A for invalid entity states"
+          "invalid_state_fallback": "Invalid state fallback value"
         }
       }
     },
@@ -24,31 +29,35 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",
       "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
       "overdue_tolerance_range": "Overdue tolerance must be between 0 and 10080 minutes"
     },
     "abort": {
-      "already_configured": "This export key and group filter are already configured"
+      "already_configured": "This export key and Group ID are already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Živý Obraz",
-        "description": "Edit integration settings",
+        "title": "Data download / Export API",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
-          "use_group_filter": "Enable group filter",
           "group_id": "Group ID",
-          "timeout": "HTTP timeout (s)",
+          "timeout": "HTTP timeout (s)"
+        }
+      },
+      "import": {
+        "title": "Data upload / Import API",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
+        "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix",
-          "replace_invalid_states_with_na": "Send N/A for invalid entity states"
+          "invalid_state_fallback": "Invalid state fallback value"
         }
       }
     },
@@ -59,7 +68,6 @@
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
-      "group_id_required": "Group ID is required when group filter is enabled",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",
       "timeout_range": "HTTP timeout must be between 5 and 120 seconds",
@@ -87,6 +95,9 @@
       },
       "send_only_changed": {
         "name": "Send only changed entity states"
+      },
+      "replace_invalid_states_with_na": {
+        "name": "Send fallback for invalid entity states"
       }
     },
     "button": {
@@ -95,6 +106,126 @@
       },
       "push_now": {
         "name": "Push values now"
+      }
+    },
+    "sensor": {
+      "battery_percent": {
+        "name": "Battery"
+      },
+      "battery_volts": {
+        "name": "Battery voltage"
+      },
+      "battery_days_since_last_charge": {
+        "name": "Battery days since last charge"
+      },
+      "battery_charge_detection_status": {
+        "name": "Battery charge detection status",
+        "state": {
+          "warming_up": "Warming up",
+          "insufficient_samples": "Insufficient samples",
+          "baseline": "Collecting baseline",
+          "idle": "No charge detected",
+          "charge_detected": "Charge detected",
+          "cooldown": "Cooldown"
+        }
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pressure": {
+        "name": "Pressure"
+      },
+      "rssi": {
+        "name": "RSSI"
+      },
+      "ssid": {
+        "name": "WiFi SSID"
+      },
+      "last_contact": {
+        "name": "Last contact"
+      },
+      "next_contact": {
+        "name": "Next contact"
+      },
+      "group_name": {
+        "name": "Group name"
+      },
+      "fw_build": {
+        "name": "FW build"
+      },
+      "reset_reason": {
+        "name": "Reset reason"
+      },
+      "last_picture_download_ms": {
+        "name": "Last picture download"
+      },
+      "last_display_refresh_ms": {
+        "name": "Last display refresh"
+      },
+      "push_last_successful_push": {
+        "name": "Last successful push"
+      },
+      "push_status": {
+        "name": "Push status",
+        "state": {
+          "idle": "Idle",
+          "sending": "Sending",
+          "success": "Success",
+          "failed": "Failed",
+          "partial_failure": "Partial failure",
+          "no_batches": "No request batches",
+          "no_valid_entities": "No valid entities",
+          "no_new_data": "No new data",
+          "no_entities": "No entities"
+        }
+      },
+      "push_pushed_entities": {
+        "name": "Pushed entities"
+      },
+      "push_skipped_entities": {
+        "name": "Skipped entities"
+      },
+      "push_failed_entities": {
+        "name": "Failed entities"
+      },
+      "push_request_batches": {
+        "name": "Request batches"
+      },
+      "push_next_push": {
+        "name": "Next push"
+      },
+      "sync_last_successful_sync": {
+        "name": "Last successful sync"
+      },
+      "sync_status": {
+        "name": "Sync status",
+        "state": {
+          "idle": "Idle",
+          "syncing": "Syncing",
+          "success": "Success",
+          "failed": "Failed",
+          "no_new_data": "No new data"
+        }
+      },
+      "sync_next_sync": {
+        "name": "Next sync"
+      },
+      "sync_device_count": {
+        "name": "Device count"
+      }
+    },
+    "binary_sensor": {
+      "overdue": {
+        "name": "Overdue"
+      },
+      "push_problem": {
+        "name": "Push problem"
+      },
+      "sync_problem": {
+        "name": "Sync problem"
       }
     }
   },
@@ -114,6 +245,10 @@
         "send_all": {
           "name": "Send all",
           "description": "Optional override. When true, send all selected entities. When false, send only changed entities. Leave empty to use integration settings."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "When enabled, preview the selected values without sending them to Živý Obraz."
         }
       }
     },

@@ -43,12 +43,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up Živý Obraz action buttons."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
-
-    def _push_manager() -> ZivyObrazPushManager | None:
-        return hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
+    push_manager: ZivyObrazPushManager | None = (
+        hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
+    )
 
     async def _async_push_now() -> None:
-        push_manager = _push_manager()
         if push_manager is not None:
             await push_manager.async_push()
 
@@ -59,13 +58,17 @@ async def async_setup_entry(
             available=lambda: True,
             press_action=coordinator.async_request_manual_refresh,
         ),
-        ZivyObrazButton(
-            entry,
-            BUTTON_DESCRIPTIONS[1],
-            available=lambda: _push_manager() is not None,
-            press_action=_async_push_now,
-        ),
     ]
+
+    if push_manager is not None:
+        entities.append(
+            ZivyObrazButton(
+                entry,
+                BUTTON_DESCRIPTIONS[1],
+                available=lambda: True,
+                press_action=_async_push_now,
+            )
+        )
 
     async_add_entities(entities)
 

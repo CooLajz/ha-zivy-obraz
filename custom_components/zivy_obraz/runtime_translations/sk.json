@@ -1,0 +1,36 @@
+{
+  "notifications": {
+    "overdue": {
+      "title": "Živý Obraz - Displej po termíne",
+      "expected_contact_minutes": "Displej \"{caption}\" je po očakávanom kontakte už {minutes} minút.",
+      "missed_expected_contact": "Displej \"{caption}\" sa nehlási v očakávanom čase.",
+      "group": "Skupina: {group_name}",
+      "tolerance": "Tolerancia oneskorenia: {minutes} minút",
+      "minutes_overdue": "Po prekročení tolerancie: {minutes} minút",
+      "next_contact": "Posledný očakávaný kontakt: {datetime}",
+      "overdue_after": "Ako po termíne označený od: {datetime}"
+    },
+    "push_problem": {
+      "title": "Živý Obraz - Problém odosielania ({entry})",
+      "intro": "Odosielanie hodnôt do Živého Obrazu hlási problém.",
+      "instance": "Inštancia: {entry}",
+      "status": "Stav: {status}",
+      "reason": "Dôvod: {reason}",
+      "last_push": "Posledný pokus o odoslanie: {datetime}",
+      "failed_entities": "Neodoslané entity: {entities}"
+    },
+    "sync_problem": {
+      "title": "Živý Obraz - Problém synchronizácie ({entry})",
+      "intro": "Synchronizácia dát zo Živého Obrazu hlási problém.",
+      "instance": "Inštancia: {entry}",
+      "status": "Stav: {status}",
+      "reason": "Dôvod: {reason}",
+      "last_sync": "Posledný pokus o synchronizáciu: {datetime}"
+    }
+  },
+  "labels": {
+    "push": {
+      "description": "Označené entity alebo zariadenia budú odoslané do služby Živý Obraz {name}."
+    }
+  }
+}

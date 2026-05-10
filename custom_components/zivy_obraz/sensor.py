@@ -19,6 +19,7 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfPressure,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
@@ -27,7 +28,14 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import (
+    BATTERY_CHARGE_BASELINE_DAYS,
+    BATTERY_CHARGE_COOLDOWN_DAYS,
+    BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
+    BATTERY_CHARGE_MAX_STAT_VOLTAGE,
+    BATTERY_CHARGE_THRESHOLD_VOLTS,
+    DOMAIN,
+)
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
 from .push import ZivyObrazPushManager
@@ -40,6 +48,12 @@ class ZivyObrazSensorDescription(SensorEntityDescription):
     value_key: str
     create_if_missing: bool = False
 
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
 
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazPushSensorDescription(SensorEntityDescription):
@@ -47,12 +61,24 @@ class ZivyObrazPushSensorDescription(SensorEntityDescription):
 
     value_key: str
 
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
 
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazSyncSensorDescription(SensorEntityDescription):
     """Sensor description for Živý Obraz sync diagnostics."""
 
     value_key: str
+
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
 
 
 SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
@@ -72,6 +98,24 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_days_since_last_charge",
+        value_key="battery_volts",
+        name="Battery days since last charge",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        icon="mdi:battery-clock-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="battery_charge_detection_status",
+        value_key="battery_volts",
+        name="Battery charge detection status",
+        translation_key="battery_charge_detection_status",
+        icon="mdi:battery-sync-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -106,6 +150,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         icon="mdi:wifi-strength-2",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -161,6 +206,7 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         native_unit_of_measurement="ms",
         icon="mdi:image-sync",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -171,20 +217,13 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         native_unit_of_measurement="ms",
         icon="mdi:monitor-dashboard",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
 )
 
 PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
-    ZivyObrazPushSensorDescription(
-        key="push_last_push",
-        value_key="last_push",
-        name="Last push",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
     ZivyObrazPushSensorDescription(
         key="push_last_successful_push",
         value_key="last_successful_push",
@@ -207,7 +246,6 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         icon="mdi:cloud-upload-outline",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_skipped_entities",
@@ -216,7 +254,6 @@ PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
         icon="mdi:debug-step-over",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
     ZivyObrazPushSensorDescription(
         key="push_failed_entities",
@@ -248,14 +285,6 @@ PUSH_NEXT_SENSOR_DESCRIPTION = ZivyObrazPushSensorDescription(
 )
 
 SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
-    ZivyObrazSyncSensorDescription(
-        key="sync_last_sync",
-        value_key="last_sync",
-        name="Last sync",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-    ),
     ZivyObrazSyncSensorDescription(
         key="sync_last_successful_sync",
         value_key="last_successful_sync",
@@ -291,6 +320,38 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
 )
 
 
+def _timestamp_attribute(value: Any) -> str | None:
+    """Return a timestamp attribute in a storage-friendly form."""
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+@callback
+def _remove_obsolete_diagnostic_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Remove diagnostic entities that were replaced by status attributes."""
+    obsolete_unique_ids = {
+        f"{entry.entry_id}_push_last_push",
+        f"{entry.entry_id}_sync_last_sync",
+    }
+    entity_registry = er.async_get(hass)
+
+    for entity_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        if entity_entry.domain != "sensor":
+            continue
+        if entity_entry.unique_id not in obsolete_unique_ids:
+            continue
+        entity_registry.async_remove(entity_entry.entity_id)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -302,6 +363,7 @@ async def async_setup_entry(
     push_manager: ZivyObrazPushManager | None = (
         hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("push_manager")
     )
+    _remove_obsolete_diagnostic_entities(hass, entry)
 
     def _should_create_entity(
         mac: str, description: ZivyObrazSensorDescription
@@ -519,6 +581,23 @@ class ZivyObrazSensor(
             except (TypeError, ValueError):
                 return None
 
+        if self.entity_description.key == "battery_days_since_last_charge":
+            last_charged = self.coordinator.battery_tracker.state_for(
+                self._mac
+            ).last_charged
+            if last_charged is None:
+                return None
+            try:
+                days_since_charge = (
+                    dt_util.now().date() - dt_util.as_local(last_charged).date()
+                ).days
+                return max(days_since_charge, 0)
+            except (TypeError, ValueError):
+                return None
+
+        if self.entity_description.key == "battery_charge_detection_status":
+            return self.coordinator.battery_tracker.state_for(self._mac).status
+
         if self.entity_description.key in (
             "temperature",
             "humidity",
@@ -553,6 +632,36 @@ class ZivyObrazSensor(
             group_id = self._device_data.get("group_id")
             if group_id is not None:
                 return {"group_id": group_id}
+        if self.entity_description.key == "fw_build":
+            fw = self._device_data.get("fw")
+            if fw is not None:
+                return {"major_version": str(fw)}
+        if self.entity_description.key == "battery_volts":
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            return {
+                "voltage_min": tracker_state.voltage_min,
+                "voltage_max": tracker_state.voltage_max,
+                "last_charged": tracker_state.last_charged.isoformat()
+                if tracker_state.last_charged
+                else None,
+            }
+        if self.entity_description.key == "battery_charge_detection_status":
+            tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            return {
+                "daily_samples": tracker_state.daily_samples,
+                "daily_average": tracker_state.daily_average,
+                "daily_average_sample_limit": (
+                    BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT
+                ),
+                "excluded_daily_samples": tracker_state.excluded_daily_samples,
+                "previous_3_day_average": tracker_state.previous_average,
+                "stored_days": tracker_state.stored_days,
+                "valid_baseline_days": tracker_state.valid_baseline_days,
+                "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
+                "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
+                "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
+                "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
+            }
         return None
 
 
@@ -599,6 +708,10 @@ class ZivyObrazPushDiagnosticSensor(SensorEntity):
 
         if self.entity_description.key == "push_status":
             return {
+                "last_attempt": _timestamp_attribute(diagnostics.last_push),
+                "last_success": _timestamp_attribute(
+                    diagnostics.last_successful_push
+                ),
                 "last_error": diagnostics.last_error,
                 "pushed_entities": diagnostics.pushed_entities,
                 "skipped_entities": diagnostics.skipped_entities,
@@ -668,6 +781,13 @@ class ZivyObrazSyncDiagnosticSensor(
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra details for the sync status sensor."""
         if self.entity_description.key == "sync_status":
-            return {"last_error": self.coordinator.diagnostics.last_error}
+            diagnostics = self.coordinator.diagnostics
+            return {
+                "last_attempt": _timestamp_attribute(diagnostics.last_sync),
+                "last_success": _timestamp_attribute(
+                    diagnostics.last_successful_sync
+                ),
+                "last_error": diagnostics.last_error,
+            }
 
         return None

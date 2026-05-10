@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTime
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -18,9 +19,11 @@ from .config_helpers import (
     options_update_signal,
 )
 from .const import (
+    CONF_IMPORT_KEY,
     CONF_OVERDUE_TOLERANCE,
     CONF_PUSH_INTERVAL,
     CONF_SCAN_INTERVAL,
+    DEFAULT_IMPORT_KEY,
     DEFAULT_OVERDUE_TOLERANCE,
     DEFAULT_PUSH_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
@@ -33,6 +36,8 @@ from .const import (
     MIN_SCAN_INTERVAL,
 )
 from .device import diagnostic_device_identifier
+
+PUSH_NUMBER_KEYS = {CONF_PUSH_INTERVAL}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -89,10 +94,34 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Živý Obraz config number entities."""
+    has_import_key = bool(
+        str(get_config_value(entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY) or "").strip()
+    )
+    if not has_import_key:
+        _remove_push_config_numbers(hass, entry)
+
     async_add_entities(
         ZivyObrazConfigNumber(hass, entry, description)
         for description in NUMBER_DESCRIPTIONS
+        if has_import_key or description.key not in PUSH_NUMBER_KEYS
     )
+
+
+@callback
+def _remove_push_config_numbers(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove push config number entities when Import key is not configured."""
+    entity_registry = er.async_get(hass)
+    obsolete_unique_ids = {f"{entry.entry_id}_{key}" for key in PUSH_NUMBER_KEYS}
+
+    for entity_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        if entity_entry.domain != "number":
+            continue
+        if entity_entry.unique_id not in obsolete_unique_ids:
+            continue
+        entity_registry.async_remove(entity_entry.entity_id)
 
 
 class ZivyObrazConfigNumber(NumberEntity):

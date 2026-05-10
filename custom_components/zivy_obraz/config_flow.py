@@ -14,6 +14,7 @@ from .const import (
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
+    CONF_INVALID_STATE_FALLBACK,
     CONF_LABEL,
     CONF_NAME,
     CONF_OVERDUE_NOTIFICATION,
@@ -28,6 +29,7 @@ from .const import (
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
     DEFAULT_IMPORT_KEY,
+    DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
     DEFAULT_NAME,
     DEFAULT_OVERDUE_NOTIFICATION,
@@ -39,7 +41,6 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_ONLY_CHANGED,
     DEFAULT_TIMEOUT,
-    DEFAULT_USE_GROUP_FILTER,
     DOMAIN,
     MAX_OVERDUE_TOLERANCE,
     MAX_PUSH_INTERVAL,
@@ -53,7 +54,6 @@ from .const import (
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
     "invalid_group_id": (CONF_GROUP_ID, "invalid_group_id"),
-    "group_id_required": (CONF_GROUP_ID, "group_id_required"),
     "scan_interval_range": (CONF_SCAN_INTERVAL, "scan_interval_range"),
     "push_interval_range": (CONF_PUSH_INTERVAL, "push_interval_range"),
     "timeout_range": (CONF_TIMEOUT, "timeout_range"),
@@ -69,14 +69,9 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     session = async_get_clientsession(hass)
     timeout = data[CONF_TIMEOUT]
 
-    if data.get(CONF_USE_GROUP_FILTER):
-        group_id = data.get(CONF_GROUP_ID)
-        if group_id is None:
-            raise ValueError("group_id_required")
-
     url = build_export_url(
         data[CONF_EXPORT_KEY],
-        data.get(CONF_USE_GROUP_FILTER, False),
+        data.get(CONF_GROUP_ID) is not None,
         data.get(CONF_GROUP_ID),
     )
 
@@ -108,6 +103,13 @@ def _normalize_prefix(value: Any) -> str:
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _normalize_invalid_state_fallback(value: Any) -> str:
+    """Normalize the fallback value used for invalid entity states."""
+    if value is None:
+        return DEFAULT_INVALID_STATE_FALLBACK
+    return str(value)
 
 
 def _normalize_name(value: Any) -> str:
@@ -171,8 +173,8 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     prepared = dict(user_input)
 
     prepared[CONF_NAME] = _normalize_name(user_input.get(CONF_NAME, DEFAULT_NAME))
-    prepared[CONF_USE_GROUP_FILTER] = bool(user_input.get(CONF_USE_GROUP_FILTER, False))
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
+    prepared[CONF_USE_GROUP_FILTER] = prepared[CONF_GROUP_ID] is not None
     prepared[CONF_OVERDUE_NOTIFICATION] = bool(
         user_input.get(CONF_OVERDUE_NOTIFICATION, DEFAULT_OVERDUE_NOTIFICATION)
     )
@@ -180,6 +182,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
     )
     prepared[CONF_PREFIX] = _normalize_prefix(user_input.get(CONF_PREFIX, DEFAULT_PREFIX))
+    prepared[CONF_INVALID_STATE_FALLBACK] = _normalize_invalid_state_fallback(
+        user_input.get(CONF_INVALID_STATE_FALLBACK, DEFAULT_INVALID_STATE_FALLBACK)
+    )
     prepared[CONF_PUSH_ENABLED] = bool(
         user_input.get(CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED)
     )
@@ -266,21 +271,14 @@ def _get_current_prefix(config_entry) -> str:
     return _normalize_prefix(_get_config_value(config_entry, CONF_PREFIX, DEFAULT_PREFIX))
 
 
-def _build_schema(
+def _build_export_schema(
     *,
     show_export_key: bool = True,
-    show_import_key: bool = True,
     name: str = DEFAULT_NAME,
     export_key: str | None = None,
-    use_group_filter: bool = DEFAULT_USE_GROUP_FILTER,
-    group_id: str = "",
     timeout: int = DEFAULT_TIMEOUT,
-    import_key: str = DEFAULT_IMPORT_KEY,
-    label: str = DEFAULT_LABEL,
-    prefix: str = DEFAULT_PREFIX,
-    replace_invalid_states_with_na: bool = DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
 ) -> vol.Schema:
-    """Build config schema."""
+    """Build Export API config schema."""
     schema: dict[Any, Any] = {}
 
     schema[vol.Required(CONF_NAME, default=name)] = str
@@ -288,11 +286,24 @@ def _build_schema(
     if show_export_key:
         schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
 
-    schema[vol.Optional(CONF_USE_GROUP_FILTER, default=use_group_filter)] = bool
-    schema[vol.Optional(CONF_GROUP_ID, default=group_id)] = str
+    schema[vol.Optional(CONF_GROUP_ID)] = str
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
         vol.Coerce(int),
     )
+
+    return vol.Schema(schema)
+
+
+def _build_import_schema(
+    *,
+    show_import_key: bool = True,
+    import_key: str = DEFAULT_IMPORT_KEY,
+    label: str = DEFAULT_LABEL,
+    prefix: str = DEFAULT_PREFIX,
+    invalid_state_fallback: str = DEFAULT_INVALID_STATE_FALLBACK,
+) -> vol.Schema:
+    """Build Import API config schema."""
+    schema: dict[Any, Any] = {}
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
@@ -301,10 +312,10 @@ def _build_schema(
     schema[vol.Optional(CONF_PREFIX)] = str
     schema[
         vol.Optional(
-            CONF_REPLACE_INVALID_STATES_WITH_NA,
-            default=replace_invalid_states_with_na,
+            CONF_INVALID_STATE_FALLBACK,
+            default=invalid_state_fallback,
         )
-    ] = bool
+    ] = str
 
     return vol.Schema(schema)
 
@@ -314,19 +325,23 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize config flow."""
+        self._export_input: dict[str, Any] | None = None
+
     async def async_step_user(self, user_input=None):
-        """Handle initial step."""
+        """Handle Export API setup."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
+                user_input.setdefault(CONF_GROUP_ID, "")
                 prepared_input = _prepare_user_input(user_input)
                 _validate_push_settings(prepared_input)
 
                 unique_group = (
                     str(prepared_input[CONF_GROUP_ID])
-                    if prepared_input.get(CONF_USE_GROUP_FILTER)
-                    and prepared_input[CONF_GROUP_ID] is not None
+                    if prepared_input[CONF_GROUP_ID] is not None
                     else "all"
                 )
 
@@ -351,21 +366,55 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception:
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(
-                    title=prepared_input[CONF_NAME],
-                    data=prepared_input,
-                )
+                self._export_input = prepared_input
+                return await self.async_step_import()
 
-        schema = _build_schema()
+        schema = _build_export_schema()
         schema = self.add_suggested_values_to_schema(
             schema,
-            {CONF_PREFIX: DEFAULT_PREFIX},
+            {CONF_GROUP_ID: ""},
         )
 
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
             errors=errors,
+            last_step=False,
+        )
+
+    async def async_step_import(self, user_input=None):
+        """Handle Import API setup."""
+        if self._export_input is None:
+            return await self.async_step_user()
+
+        if user_input is not None:
+            user_input.setdefault(CONF_PREFIX, "")
+            prepared_input = _prepare_user_input(
+                {
+                    **self._export_input,
+                    **user_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            return self.async_create_entry(
+                title=prepared_input[CONF_NAME],
+                data=prepared_input,
+            )
+
+        schema = _build_import_schema()
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {
+                CONF_PREFIX: DEFAULT_PREFIX,
+                CONF_INVALID_STATE_FALLBACK: DEFAULT_INVALID_STATE_FALLBACK,
+            },
+        )
+
+        return self.async_show_form(
+            step_id="import",
+            data_schema=schema,
+            errors={},
+            last_step=True,
         )
 
     @staticmethod
@@ -380,23 +429,10 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         """Initialize options flow."""
         self._config_entry = config_entry
+        self._export_input: dict[str, Any] | None = None
 
-    async def async_step_init(self, user_input=None):
-        """Manage the options."""
-        errors: dict[str, str] = {}
-
-        current_name = _get_config_value(
-            self._config_entry,
-            CONF_NAME,
-            self._config_entry.title or DEFAULT_NAME,
-        )
-        current_export_key = _get_config_value(self._config_entry, CONF_EXPORT_KEY, "")
-        current_use_group_filter = _get_config_value(
-            self._config_entry,
-            CONF_USE_GROUP_FILTER,
-            DEFAULT_USE_GROUP_FILTER,
-        )
-
+    def _current_values(self) -> dict[str, Any]:
+        """Return current options merged with stored entry data."""
         if CONF_GROUP_ID in self._config_entry.options:
             current_group_id = _display_group_id(
                 self._config_entry.options.get(CONF_GROUP_ID)
@@ -406,59 +442,73 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 self._config_entry.data.get(CONF_GROUP_ID)
             )
 
-        current_scan_interval = _get_config_value(
-            self._config_entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-        )
-        current_timeout = _get_config_value(
-            self._config_entry, CONF_TIMEOUT, DEFAULT_TIMEOUT
-        )
-        current_overdue_tolerance = _get_config_value(
-            self._config_entry,
-            CONF_OVERDUE_TOLERANCE,
-            DEFAULT_OVERDUE_TOLERANCE,
-        )
-        current_overdue_notification = _get_config_value(
-            self._config_entry,
-            CONF_OVERDUE_NOTIFICATION,
-            DEFAULT_OVERDUE_NOTIFICATION,
-        )
-        current_push_enabled = _get_config_value(
-            self._config_entry, CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED
-        )
-        current_import_key = _get_config_value(
-            self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
-        )
-        current_label = _get_config_value(self._config_entry, CONF_LABEL, DEFAULT_LABEL)
-        current_prefix = _get_current_prefix(self._config_entry)
-        current_push_interval = _get_config_value(
-            self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
-        )
-        current_send_only_changed = _get_config_value(
-            self._config_entry, CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED
-        )
-        current_replace_invalid_states_with_na = _get_config_value(
-            self._config_entry,
-            CONF_REPLACE_INVALID_STATES_WITH_NA,
-            DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
-        )
+        return {
+            CONF_NAME: _get_config_value(
+                self._config_entry,
+                CONF_NAME,
+                self._config_entry.title or DEFAULT_NAME,
+            ),
+            CONF_EXPORT_KEY: _normalize_api_key(
+                _get_config_value(self._config_entry, CONF_EXPORT_KEY, "")
+            ),
+            CONF_GROUP_ID: current_group_id,
+            CONF_SCAN_INTERVAL: _get_config_value(
+                self._config_entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+            ),
+            CONF_TIMEOUT: _get_config_value(
+                self._config_entry, CONF_TIMEOUT, DEFAULT_TIMEOUT
+            ),
+            CONF_OVERDUE_TOLERANCE: _get_config_value(
+                self._config_entry,
+                CONF_OVERDUE_TOLERANCE,
+                DEFAULT_OVERDUE_TOLERANCE,
+            ),
+            CONF_OVERDUE_NOTIFICATION: _get_config_value(
+                self._config_entry,
+                CONF_OVERDUE_NOTIFICATION,
+                DEFAULT_OVERDUE_NOTIFICATION,
+            ),
+            CONF_PUSH_ENABLED: _get_config_value(
+                self._config_entry, CONF_PUSH_ENABLED, DEFAULT_PUSH_ENABLED
+            ),
+            CONF_IMPORT_KEY: _normalize_api_key(
+                _get_config_value(
+                    self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
+                )
+            ),
+            CONF_LABEL: _get_config_value(
+                self._config_entry, CONF_LABEL, DEFAULT_LABEL
+            ),
+            CONF_PREFIX: _get_current_prefix(self._config_entry),
+            CONF_INVALID_STATE_FALLBACK: _get_config_value(
+                self._config_entry,
+                CONF_INVALID_STATE_FALLBACK,
+                DEFAULT_INVALID_STATE_FALLBACK,
+            ),
+            CONF_PUSH_INTERVAL: _get_config_value(
+                self._config_entry, CONF_PUSH_INTERVAL, DEFAULT_PUSH_INTERVAL
+            ),
+            CONF_SEND_ONLY_CHANGED: _get_config_value(
+                self._config_entry, CONF_SEND_ONLY_CHANGED, DEFAULT_SEND_ONLY_CHANGED
+            ),
+            CONF_REPLACE_INVALID_STATES_WITH_NA: _get_config_value(
+                self._config_entry,
+                CONF_REPLACE_INVALID_STATES_WITH_NA,
+                DEFAULT_REPLACE_INVALID_STATES_WITH_NA,
+            ),
+        }
 
-        has_export_key = bool(_normalize_api_key(current_export_key))
-        has_import_key = bool(_normalize_api_key(current_import_key))
+    async def async_step_init(self, user_input=None):
+        """Manage Export API options."""
+        errors: dict[str, str] = {}
+        current_values = self._current_values()
+        has_export_key = bool(current_values[CONF_EXPORT_KEY])
 
         if user_input is not None:
             try:
+                user_input.setdefault(CONF_GROUP_ID, "")
                 merged_input = {
-                    CONF_EXPORT_KEY: _normalize_api_key(current_export_key),
-                    CONF_IMPORT_KEY: _normalize_api_key(current_import_key),
-                    CONF_SCAN_INTERVAL: current_scan_interval,
-                    CONF_OVERDUE_TOLERANCE: current_overdue_tolerance,
-                    CONF_OVERDUE_NOTIFICATION: current_overdue_notification,
-                    CONF_PUSH_ENABLED: current_push_enabled,
-                    CONF_PUSH_INTERVAL: current_push_interval,
-                    CONF_SEND_ONLY_CHANGED: current_send_only_changed,
-                    CONF_REPLACE_INVALID_STATES_WITH_NA: (
-                        current_replace_invalid_states_with_na
-                    ),
+                    **current_values,
                     **user_input,
                 }
                 prepared_input = _prepare_user_input(merged_input)
@@ -478,29 +528,64 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             except Exception:
                 errors["base"] = "unknown"
             else:
-                prepared_input[CONF_PREFIX_OVERRIDE] = True
-                return self.async_create_entry(title="", data=prepared_input)
+                self._export_input = prepared_input
+                return await self.async_step_import()
 
-        schema = _build_schema(
+        schema = _build_export_schema(
             show_export_key=not has_export_key,
-            show_import_key=not has_import_key,
-            name=current_name,
-            export_key=current_export_key,
-            use_group_filter=current_use_group_filter,
-            group_id=current_group_id,
-            timeout=current_timeout,
-            import_key=current_import_key,
-            label=current_label,
-            prefix=current_prefix,
-            replace_invalid_states_with_na=current_replace_invalid_states_with_na,
+            name=current_values[CONF_NAME],
+            export_key=current_values[CONF_EXPORT_KEY],
+            timeout=current_values[CONF_TIMEOUT],
         )
         schema = self.add_suggested_values_to_schema(
             schema,
-            {CONF_PREFIX: current_prefix},
+            {CONF_GROUP_ID: current_values[CONF_GROUP_ID]},
         )
 
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
             errors=errors,
+            last_step=False,
+        )
+
+    async def async_step_import(self, user_input=None):
+        """Manage Import API options."""
+        current_values = self._export_input or self._current_values()
+        has_import_key = bool(_normalize_api_key(current_values[CONF_IMPORT_KEY]))
+
+        if user_input is not None:
+            user_input.setdefault(CONF_PREFIX, "")
+            prepared_input = _prepare_user_input(
+                {
+                    **current_values,
+                    **user_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            prepared_input[CONF_PREFIX_OVERRIDE] = True
+            return self.async_create_entry(title="", data=prepared_input)
+
+        schema = _build_import_schema(
+            show_import_key=not has_import_key,
+            import_key=current_values[CONF_IMPORT_KEY],
+            label=current_values[CONF_LABEL],
+            prefix=current_values[CONF_PREFIX],
+            invalid_state_fallback=current_values[CONF_INVALID_STATE_FALLBACK],
+        )
+        schema = self.add_suggested_values_to_schema(
+            schema,
+            {
+                CONF_PREFIX: current_values[CONF_PREFIX],
+                CONF_INVALID_STATE_FALLBACK: current_values[
+                    CONF_INVALID_STATE_FALLBACK
+                ],
+            },
+        )
+
+        return self.async_show_form(
+            step_id="import",
+            data_schema=schema,
+            errors={},
+            last_step=True,
         )

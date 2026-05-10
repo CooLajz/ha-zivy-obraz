@@ -11,11 +11,19 @@ push:
     name:
       name: Instance name
       description: Optional instance name. Leave empty to push all configured instances.
+      example: "Cottage"
       selector:
         text:
     send_all:
       name: Send all
       description: Optional override. When true, send all selected entities. When false, send only changed entities. Leave empty to use integration settings.
+      example: true
+      selector:
+        boolean:
+    dry_run:
+      name: Dry run
+      description: When enabled, preview the selected values without sending them to Živý Obraz.
+      example: true
       selector:
         boolean:
 
