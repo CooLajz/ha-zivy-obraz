@@ -1,6 +1,6 @@
 # Home Assistant – Živý obraz Integration
 
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://hacs.xyz)
 [![GitHub release](https://img.shields.io/github/release/CooLajz/ha-zivy-obraz.svg)](https://github.com/CooLajz/ha-zivy-obraz/releases)
 [![License](https://img.shields.io/github/license/CooLajz/ha-zivy-obraz.svg)](LICENSE)
 ![Hassfest](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hassfest.yaml/badge.svg)
@@ -58,30 +58,16 @@ Díky tomu lze zobrazovat data z Home Assistant na e-paper displejích napojený
 
 1. Nainstalujte **HACS**
 2. Otevřete **HACS → Integrations**
-3. Klikněte na **tři tečky vpravo nahoře**
-4. Vyberte **Custom repositories**
-5. Přidejte repozitář
-
-```
-https://github.com/CooLajz/ha-zivy-obraz
-```
-
-Typ:
-
-```
-Integration
-```
-
-6. Vyhledejte **Živý Obraz**
-7. Klikněte **Install**
-8. Restartujte Home Assistant
-9. Jděte do
+3. Vyhledejte **Živý Obraz**
+4. Klikněte **Install**
+5. Restartujte Home Assistant
+6. Jděte do
 
 ```
 Settings → Devices & Services → Add Integration
 ```
 
-10. Vyhledejte **Živý Obraz**
+7. Vyhledejte **Živý Obraz**
 
 ---
 
@@ -557,30 +543,16 @@ in.zivyobraz.eu
 
 1. Install **HACS**
 2. Open **HACS → Integrations**
-3. Click **three dots**
-4. Select **Custom repositories**
-5. Add repository
-
-```
-https://github.com/CooLajz/ha-zivy-obraz
-```
-
-Type:
-
-```
-Integration
-```
-
-6. Search for **Živý Obraz**
-7. Click **Install**
-8. Restart Home Assistant
-9. Go to
+3. Search for **Živý Obraz**
+4. Click **Install**
+5. Restart Home Assistant
+6. Go to
 
 ```
 Settings → Devices & Services → Add Integration
 ```
 
-10. Search for **Živý Obraz**
+7. Search for **Živý Obraz**
 
 ---
 
