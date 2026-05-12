@@ -165,6 +165,12 @@
       "last_display_refresh_ms": {
         "name": "Last display refresh"
       },
+      "daily_contacts": {
+        "name": "Daily contacts"
+      },
+      "daily_display_refreshes": {
+        "name": "Daily display refreshes"
+      },
       "push_last_successful_push": {
         "name": "Last successful push"
       },

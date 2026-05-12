@@ -338,6 +338,18 @@ Senzor `Sync status` obsahuje v atributech poslední pokus, poslední úspěšno
 synchronizaci a poslední chybu. Během načítání dat přejde krátce do stavu
 `syncing`.
 
+Jednotlivé panely také obsahují denní diagnostické čítače:
+
+- `Daily contacts`
+- `Daily display refreshes`
+
+`Daily contacts` počítá nově pozorované změny `last_contact` za aktuální lokální
+den Home Assistantu. `Daily display refreshes` se zvýší pouze u nového kontaktu,
+kde `last_display_refresh_ms` obsahuje číselnou hodnotu. Oba senzory používají
+`total_increasing`, takže se hodí pro denní statistiky a grafy. Čítače sledují
+kontakty, které integrace uvidí při načítání Export API; pokud se panel spojí
+vícekrát mezi dvěma načteními, v API může zůstat jen poslední kontakt.
+
 U panelů, které posílají `battery_volts`, integrace navíc vytváří bateriovou
 diagnostiku:
 
@@ -359,8 +371,8 @@ senzoru `Battery voltage`.
 Datum posledního nabití je dostupné jako atribut senzoru
 `Battery days since last charge`.
 
-Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
-entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
+Hlavní provozní entity jsou ve výchozím stavu zapnuté. Některé detailní
+diagnostické entity jako `Push status`, `Sync status` a náhledy proměnných jsou
 ve výchozím stavu skryté a lze je zapnout ručně v Home Assistant.
 
 ---
@@ -834,6 +846,18 @@ The `Sync status` sensor exposes the last attempt, last successful sync, and
 last error as attributes. While data is being fetched, it briefly changes to
 `syncing`.
 
+Individual panels also expose daily diagnostic counters:
+
+- `Daily contacts`
+- `Daily display refreshes`
+
+`Daily contacts` counts newly observed `last_contact` changes for the current
+Home Assistant local day. `Daily display refreshes` increments only for a new
+contact where `last_display_refresh_ms` contains a numeric value. Both sensors
+use `total_increasing`, making them useful for daily statistics and graphs. The
+counters track contacts observed during Export API polling; if a panel connects
+multiple times between two polls, the API may only retain the latest contact.
+
 Panels that report `battery_volts` also get battery diagnostics:
 
 - `Battery days since last charge`
@@ -855,8 +879,8 @@ attributes on the `Battery voltage` sensor.
 The last charge timestamp is available as an attribute on the
 `Battery days since last charge` sensor.
 
-Main operational entities are enabled by default. Detailed diagnostic entities
-such as `Push status`, `Sync status`, counters, and variable previews are hidden
+Main operational entities are enabled by default. Some detailed diagnostic
+entities such as `Push status`, `Sync status`, and variable previews are hidden
 by default and can be enabled manually in Home Assistant.
 
 ---

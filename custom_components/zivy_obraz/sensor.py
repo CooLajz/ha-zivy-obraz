@@ -221,6 +221,22 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
+    ZivyObrazSensorDescription(
+        key="daily_contacts",
+        value_key="last_contact",
+        name="Daily contacts",
+        icon="mdi:counter",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="daily_display_refreshes",
+        value_key="last_contact",
+        name="Daily display refreshes",
+        icon="mdi:monitor-dashboard",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 
 PUSH_SENSOR_DESCRIPTIONS: tuple[ZivyObrazPushSensorDescription, ...] = (
@@ -598,6 +614,16 @@ class ZivyObrazSensor(
         if self.entity_description.key == "battery_charge_detection_status":
             return self.coordinator.battery_tracker.state_for(self._mac).status
 
+        if self.entity_description.key == "daily_contacts":
+            return self.coordinator.display_activity_tracker.state_for(
+                self._mac
+            ).daily_contacts
+
+        if self.entity_description.key == "daily_display_refreshes":
+            return self.coordinator.display_activity_tracker.state_for(
+                self._mac
+            ).daily_display_refreshes
+
         if self.entity_description.key in (
             "temperature",
             "humidity",
@@ -661,6 +687,27 @@ class ZivyObrazSensor(
                 "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
                 "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
                 "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
+            }
+        if self.entity_description.key == "daily_contacts":
+            tracker_state = self.coordinator.display_activity_tracker.state_for(
+                self._mac
+            )
+            return {
+                "date": tracker_state.day.isoformat() if tracker_state.day else None,
+                "daily_display_refreshes": tracker_state.daily_display_refreshes,
+                "last_counted_contact": tracker_state.last_counted_contact,
+            }
+        if self.entity_description.key == "daily_display_refreshes":
+            tracker_state = self.coordinator.display_activity_tracker.state_for(
+                self._mac
+            )
+            return {
+                "date": tracker_state.day.isoformat() if tracker_state.day else None,
+                "daily_contacts": tracker_state.daily_contacts,
+                "refresh_ratio": tracker_state.refresh_ratio,
+                "refresh_percentage": tracker_state.refresh_percentage,
+                "last_counted_contact": tracker_state.last_counted_contact,
+                "last_display_refresh_ms": tracker_state.last_display_refresh_ms,
             }
         return None
 

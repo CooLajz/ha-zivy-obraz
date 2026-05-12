@@ -22,9 +22,11 @@ from .api import normalize_export_payload
 from .battery import BatteryChargeTracker
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
+from .display_activity import DisplayActivityTracker
 
 _LOGGER = logging.getLogger(__name__)
 BATTERY_STORAGE_VERSION = 1
+DISPLAY_ACTIVITY_STORAGE_VERSION = 1
 
 _PANEL_MAC_RE = re.compile(
     r"^(?:"
@@ -81,10 +83,16 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
         self.diagnostics = SyncDiagnostics()
         self.battery_tracker = BatteryChargeTracker()
+        self.display_activity_tracker = DisplayActivityTracker()
         self._battery_store = Store(
             hass,
             BATTERY_STORAGE_VERSION,
             f"{DOMAIN}_battery_charge_{config_entry.entry_id}",
+        )
+        self._display_activity_store = Store(
+            hass,
+            DISPLAY_ACTIVITY_STORAGE_VERSION,
+            f"{DOMAIN}_display_activity_{config_entry.entry_id}",
         )
 
     async def async_load_battery_state(self) -> None:
@@ -95,6 +103,17 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     async def async_save_battery_state(self) -> None:
         """Persist battery charge diagnostics."""
         await self._battery_store.async_save(self.battery_tracker.as_storage_data())
+
+    async def async_load_display_activity_state(self) -> None:
+        """Load persisted display activity diagnostics."""
+        data = await self._display_activity_store.async_load()
+        self.display_activity_tracker.load_storage_data(data)
+
+    async def async_save_display_activity_state(self) -> None:
+        """Persist display activity diagnostics."""
+        await self._display_activity_store.async_save(
+            self.display_activity_tracker.as_storage_data()
+        )
 
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
@@ -340,12 +359,17 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         await self._async_sync_device_metadata(normalized)
 
         battery_tracker_changed = False
+        display_activity_tracker_changed = False
         for mac, device_data in normalized.items():
             if self.battery_tracker.process_device(mac, device_data):
                 battery_tracker_changed = True
+            if self.display_activity_tracker.process_device(mac, device_data):
+                display_activity_tracker_changed = True
 
         if battery_tracker_changed:
             await self.async_save_battery_state()
+        if display_activity_tracker_changed:
+            await self.async_save_display_activity_state()
 
         data_changed = normalized != (self.data or {})
 
