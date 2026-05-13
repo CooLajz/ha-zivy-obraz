@@ -67,6 +67,16 @@ class DisplayActivityTracker:
 
         return True
 
+    def reset_for_new_day(self) -> bool:
+        """Reset all daily counters when Home Assistant reaches a new local day."""
+        changed = False
+
+        for state in self._states.values():
+            if self._ensure_today(state):
+                changed = True
+
+        return changed
+
     def as_storage_data(self) -> dict[str, Any]:
         """Return serializable display activity tracker state."""
         panels: dict[str, Any] = {}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 import json
 import logging
 import re
@@ -14,6 +14,7 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -94,6 +95,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             DISPLAY_ACTIVITY_STORAGE_VERSION,
             f"{DOMAIN}_display_activity_{config_entry.entry_id}",
         )
+        self._unsub_display_activity_midnight: CALLBACK_TYPE | None = None
 
     async def async_load_battery_state(self) -> None:
         """Load persisted battery charge diagnostics."""
@@ -114,6 +116,48 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         await self._display_activity_store.async_save(
             self.display_activity_tracker.as_storage_data()
         )
+
+    @callback
+    def async_start_display_activity_midnight_reset(self) -> CALLBACK_TYPE:
+        """Schedule daily display activity counter reset at local midnight."""
+        self._schedule_display_activity_midnight_reset()
+        return self._cancel_display_activity_midnight_reset
+
+    @callback
+    def _cancel_display_activity_midnight_reset(self) -> None:
+        """Cancel the scheduled local midnight display activity reset."""
+        if self._unsub_display_activity_midnight is None:
+            return
+
+        self._unsub_display_activity_midnight()
+        self._unsub_display_activity_midnight = None
+
+    @callback
+    def _schedule_display_activity_midnight_reset(self) -> None:
+        """Schedule the next local midnight reset."""
+        self._cancel_display_activity_midnight_reset()
+
+        self._unsub_display_activity_midnight = async_track_point_in_time(
+            self.hass,
+            self._async_reset_display_activity_at_midnight,
+            self._next_local_midnight(),
+        )
+
+    async def _async_reset_display_activity_at_midnight(self, _now) -> None:
+        """Reset display activity counters and schedule the next reset."""
+        self._unsub_display_activity_midnight = None
+
+        if self.display_activity_tracker.reset_for_new_day():
+            await self.async_save_display_activity_state()
+            self._notify_diagnostic_listeners()
+
+        self._schedule_display_activity_midnight_reset()
+
+    def _next_local_midnight(self) -> datetime:
+        """Return the next local midnight timestamp."""
+        now = dt_util.now()
+        tomorrow = now.date() + timedelta(days=1)
+        return datetime.combine(tomorrow, time.min, now.tzinfo)
 
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
