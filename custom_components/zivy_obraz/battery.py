@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -13,6 +14,7 @@ from .const import (
     BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_HISTORY_DAYS,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
+    BATTERY_SENSOR_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
 )
 
@@ -370,3 +372,108 @@ class BatteryChargeTracker:
             for samples in state._samples_by_day.values()
             if self._daily_average(samples) is not None
         )
+
+
+@dataclass
+class BatterySensorValueState:
+    """Smoothed battery sensor values for one panel."""
+
+    percent_raw: int | None = None
+    percent_average: int | None = None
+    voltage_raw: float | None = None
+    voltage_average: float | None = None
+    _percent_samples: deque[int] = field(default_factory=deque)
+    _voltage_samples: deque[float] = field(default_factory=deque)
+    _last_percent_sample_id: str | None = None
+    _last_voltage_sample_id: str | None = None
+
+
+class BatterySensorValueTracker:
+    """Track short moving averages for displayed battery sensor values."""
+
+    def __init__(self) -> None:
+        """Initialize the tracker."""
+        self._states: dict[str, BatterySensorValueState] = {}
+
+    def state_for(self, mac: str) -> BatterySensorValueState:
+        """Return displayed battery value state for a panel."""
+        return self._states.setdefault(mac, BatterySensorValueState())
+
+    def process_device(self, mac: str, device_data: dict[str, Any]) -> None:
+        """Process raw battery values from one panel payload."""
+        state = self.state_for(mac)
+        last_contact = device_data.get("last_contact")
+
+        self._process_value(
+            state,
+            value=device_data.get("battery_percent"),
+            parser=self._parse_percent,
+            samples=state._percent_samples,
+            last_sample_id_attr="_last_percent_sample_id",
+            raw_attr="percent_raw",
+            average_attr="percent_average",
+            sample_id_prefix="percent",
+            last_contact=last_contact,
+            round_average=lambda average: max(0, min(round(average), 100)),
+        )
+        self._process_value(
+            state,
+            value=device_data.get("battery_volts"),
+            parser=self._parse_voltage,
+            samples=state._voltage_samples,
+            last_sample_id_attr="_last_voltage_sample_id",
+            raw_attr="voltage_raw",
+            average_attr="voltage_average",
+            sample_id_prefix="voltage",
+            last_contact=last_contact,
+            round_average=lambda average: round(average, 2),
+        )
+
+    def _process_value(
+        self,
+        state: BatterySensorValueState,
+        *,
+        value: Any,
+        parser: Callable[[Any], int | float | None],
+        samples: deque[int] | deque[float],
+        last_sample_id_attr: str,
+        raw_attr: str,
+        average_attr: str,
+        sample_id_prefix: str,
+        last_contact: Any,
+        round_average: Callable[[float], int | float],
+    ) -> None:
+        """Process one raw value into a short moving average."""
+        parsed = parser(value)
+        if parsed is None:
+            setattr(state, raw_attr, None)
+            setattr(state, average_attr, None)
+            setattr(state, last_sample_id_attr, None)
+            samples.clear()
+            return
+
+        setattr(state, raw_attr, parsed)
+        sample_id = f"{sample_id_prefix}:{last_contact}:{parsed}"
+        if getattr(state, last_sample_id_attr) == sample_id:
+            return
+
+        setattr(state, last_sample_id_attr, sample_id)
+        samples.append(parsed)
+        while len(samples) > BATTERY_SENSOR_AVERAGE_SAMPLE_LIMIT:
+            samples.popleft()
+
+        setattr(state, average_attr, round_average(sum(samples) / len(samples)))
+
+    def _parse_percent(self, value: Any) -> int | None:
+        """Parse and clamp a battery percent value."""
+        try:
+            return max(0, min(int(value), 100))
+        except (TypeError, ValueError):
+            return None
+
+    def _parse_voltage(self, value: Any) -> float | None:
+        """Parse and round a battery voltage value."""
+        try:
+            return round(float(value), 2)
+        except (TypeError, ValueError):
+            return None

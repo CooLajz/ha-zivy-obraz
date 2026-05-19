@@ -340,6 +340,9 @@ do detekce ani do celkového minima/maxima nezahrnují, aby případné nabíjec
 špičky nezkreslovaly baseline. Integrace záměrně nevytváří senzor aktuálního
 nabíjení, protože napětí baterie se u různých desek, baterek a intervalů refresh
 chová příliš rozdílně.
+Senzory `Battery` a `Battery voltage` zobrazují průměr z posledních až deseti
+validních měření. Poslední načtená surová hodnota je dostupná jako atribut
+`raw_value`.
 Celkové minimum a maximum validního napětí baterie jsou dostupné jako atributy
 senzoru `Battery voltage`.
 Datum posledního nabití je dostupné jako atribut senzoru
@@ -822,6 +825,9 @@ overall minimum/maximum sensors so charging spikes do not distort the baseline.
 The integration intentionally does not expose a current charging binary sensor
 because voltage behavior differs too much between boards, batteries, and refresh
 intervals.
+The `Battery` and `Battery voltage` sensors show the average of up to the last
+ten valid readings. The latest raw reading is available as the `raw_value`
+attribute.
 The overall minimum and maximum valid battery voltage are available as
 attributes on the `Battery voltage` sensor.
 The last charge timestamp is available as an attribute on the
