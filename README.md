@@ -6,8 +6,7 @@
 ![Hassfest](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hassfest.yaml/badge.svg)
 ![HACS Validation](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hacs.yaml/badge.svg)
 
-Home Assistant integrace pro službu **Živý obraz**  
-https://zivyobraz.eu
+Home Assistant integrace pro službu [**Živý Obraz**](https://zivyobraz.eu/?page=o-sluzbe)
 
 Integrace umožňuje **obousměrnou komunikaci** mezi Home Assistant a službou Živý obraz:
 
