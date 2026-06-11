@@ -30,7 +30,6 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
-    BATTERY_CHARGE_COOLDOWN_DAYS,
     BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
@@ -565,6 +564,9 @@ class ZivyObrazSensor(
                 return None
 
         if self.entity_description.key == "battery_percent":
+            value_state = self.coordinator.battery_value_tracker.state_for(self._mac)
+            if value_state.percent_average is not None:
+                return value_state.percent_average
             if value is None:
                 return None
             try:
@@ -574,6 +576,9 @@ class ZivyObrazSensor(
             return max(0, min(value, 100))
 
         if self.entity_description.key == "battery_volts":
+            value_state = self.coordinator.battery_value_tracker.state_for(self._mac)
+            if value_state.voltage_average is not None:
+                return value_state.voltage_average
             if value is None:
                 return None
             try:
@@ -636,9 +641,16 @@ class ZivyObrazSensor(
             fw = self._device_data.get("fw")
             if fw is not None:
                 return {"major_version": str(fw)}
+        if self.entity_description.key == "battery_percent":
+            value_state = self.coordinator.battery_value_tracker.state_for(self._mac)
+            if value_state.percent_raw is not None:
+                return {"raw_value": value_state.percent_raw}
+            return None
         if self.entity_description.key == "battery_volts":
             tracker_state = self.coordinator.battery_tracker.state_for(self._mac)
+            value_state = self.coordinator.battery_value_tracker.state_for(self._mac)
             return {
+                "raw_value": value_state.voltage_raw,
                 "voltage_min": tracker_state.voltage_min,
                 "voltage_max": tracker_state.voltage_max,
                 "last_charged": tracker_state.last_charged.isoformat()
@@ -660,7 +672,6 @@ class ZivyObrazSensor(
                 "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
                 "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
                 "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
-                "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
             }
         return None
 

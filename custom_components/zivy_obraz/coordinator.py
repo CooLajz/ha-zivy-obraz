@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import normalize_export_payload
-from .battery import BatteryChargeTracker
+from .battery import BatteryChargeTracker, BatterySensorValueTracker
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
@@ -81,6 +81,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
         self.diagnostics = SyncDiagnostics()
         self.battery_tracker = BatteryChargeTracker()
+        self.battery_value_tracker = BatterySensorValueTracker()
         self._battery_store = Store(
             hass,
             BATTERY_STORAGE_VERSION,
@@ -341,6 +342,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
         battery_tracker_changed = False
         for mac, device_data in normalized.items():
+            self.battery_value_tracker.process_device(mac, device_data)
             if self.battery_tracker.process_device(mac, device_data):
                 battery_tracker_changed = True
 
