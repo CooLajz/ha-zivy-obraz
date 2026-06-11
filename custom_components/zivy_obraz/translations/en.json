@@ -125,8 +125,7 @@
           "insufficient_samples": "Insufficient samples",
           "baseline": "Collecting baseline",
           "idle": "No charge detected",
-          "charge_detected": "Charge detected",
-          "cooldown": "Cooldown"
+          "charge_detected": "Charge detected"
         }
       },
       "temperature": {

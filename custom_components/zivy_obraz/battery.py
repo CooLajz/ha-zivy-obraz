@@ -10,7 +10,6 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
-    BATTERY_CHARGE_COOLDOWN_DAYS,
     BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_HISTORY_DAYS,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
@@ -219,10 +218,6 @@ class BatteryChargeTracker:
             state.status = "baseline"
             return
 
-        if self._in_cooldown(state, current_day):
-            state.status = "cooldown"
-            return
-
         increase = state.daily_average - state.previous_average
         if increase >= BATTERY_CHARGE_THRESHOLD_VOLTS:
             state.last_charged = now
@@ -243,6 +238,10 @@ class BatteryChargeTracker:
             sample_day
             for sample_day in sorted(state._samples_by_day, reverse=True)
             if sample_day < current_day
+            and (
+                state._last_detected_day is None
+                or sample_day > state._last_detected_day
+            )
         ]
 
         for sample_day in previous_days:
@@ -263,15 +262,6 @@ class BatteryChargeTracker:
 
         recent_samples = samples[-BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT:]
         return round(sum(recent_samples) / len(recent_samples), 2)
-
-    def _in_cooldown(self, state: BatteryChargeState, current_day: date) -> bool:
-        """Return whether a recent charge detection is still in cooldown."""
-        if state._last_detected_day is None:
-            return False
-
-        return (
-            current_day - state._last_detected_day
-        ).days < BATTERY_CHARGE_COOLDOWN_DAYS
 
     def _parse_sample_time(self, value: Any) -> datetime | None:
         """Parse a device contact timestamp for battery sample bucketing."""

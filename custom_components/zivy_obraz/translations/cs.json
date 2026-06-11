@@ -125,8 +125,7 @@
           "insufficient_samples": "Nedostatek vzorků",
           "baseline": "Sbírání výchozích dat",
           "idle": "Nabití nedetekováno",
-          "charge_detected": "Nabití detekováno",
-          "cooldown": "Čekací doba"
+          "charge_detected": "Nabití detekováno"
         }
       },
       "temperature": {

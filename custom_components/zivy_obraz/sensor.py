@@ -30,7 +30,6 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     BATTERY_CHARGE_BASELINE_DAYS,
-    BATTERY_CHARGE_COOLDOWN_DAYS,
     BATTERY_CHARGE_DAILY_AVERAGE_SAMPLE_LIMIT,
     BATTERY_CHARGE_MAX_STAT_VOLTAGE,
     BATTERY_CHARGE_THRESHOLD_VOLTS,
@@ -673,7 +672,6 @@ class ZivyObrazSensor(
                 "threshold_volts": BATTERY_CHARGE_THRESHOLD_VOLTS,
                 "max_stat_voltage": BATTERY_CHARGE_MAX_STAT_VOLTAGE,
                 "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
-                "cooldown_days": BATTERY_CHARGE_COOLDOWN_DAYS,
             }
         return None
 
