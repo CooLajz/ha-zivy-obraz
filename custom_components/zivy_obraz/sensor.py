@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -70,6 +70,19 @@ class ZivyObrazPushSensorDescription(SensorEntityDescription):
 @dataclass(frozen=True, kw_only=True)
 class ZivyObrazSyncSensorDescription(SensorEntityDescription):
     """Sensor description for Živý Obraz sync diagnostics."""
+
+    value_key: str
+
+    def __post_init__(self) -> None:
+        """Use the entity key as the default translation key."""
+        if self.translation_key is None:
+            object.__setattr__(self, "translation_key", self.key)
+        object.__setattr__(self, "name", None)
+
+
+@dataclass(frozen=True, kw_only=True)
+class ZivyObrazAccountSensorDescription(SensorEntityDescription):
+    """Sensor description for Živý Obraz account information."""
 
     value_key: str
 
@@ -318,6 +331,26 @@ SYNC_SENSOR_DESCRIPTIONS: tuple[ZivyObrazSyncSensorDescription, ...] = (
     ),
 )
 
+ACCOUNT_SENSOR_DESCRIPTIONS: tuple[ZivyObrazAccountSensorDescription, ...] = (
+    ZivyObrazAccountSensorDescription(
+        key="account_prepaid_devices",
+        value_key="prepaid_devices",
+        name="Prepaid devices",
+        icon="mdi:devices",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+    ),
+    ZivyObrazAccountSensorDescription(
+        key="account_subscription_days_remaining",
+        value_key="prepaid_until",
+        name="Subscription days remaining",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        icon="mdi:calendar-clock",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+    ),
+)
+
 
 def _timestamp_attribute(value: Any) -> str | None:
     """Return a timestamp attribute in a storage-friendly form."""
@@ -326,6 +359,21 @@ def _timestamp_attribute(value: Any) -> str | None:
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return str(value)
+
+
+def _account_date(value: Any) -> date | None:
+    """Return an account date from a date-only API value."""
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if value is None:
+        return None
+
+    try:
+        return date.fromisoformat(str(value).strip())
+    except (TypeError, ValueError):
+        return None
 
 
 @callback
@@ -459,6 +507,11 @@ async def async_setup_entry(
                 PUSH_NEXT_SENSOR_DESCRIPTION,
             )
         )
+
+    initial_entities.extend(
+        ZivyObrazAccountSensor(entry, coordinator, description)
+        for description in ACCOUNT_SENSOR_DESCRIPTIONS
+    )
 
     initial_entities.extend(
         ZivyObrazSyncDiagnosticSensor(entry, coordinator, description)
@@ -674,6 +727,73 @@ class ZivyObrazSensor(
                 "baseline_days": BATTERY_CHARGE_BASELINE_DAYS,
             }
         return None
+
+
+class ZivyObrazAccountSensor(
+    CoordinatorEntity[ZivyObrazCoordinator],
+    SensorEntity,
+):
+    """Representation of one Živý Obraz account information sensor."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        coordinator: ZivyObrazCoordinator,
+        description: ZivyObrazAccountSensorDescription,
+    ) -> None:
+        """Initialize the account information sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_entity_registry_enabled_default = (
+            description.entity_registry_enabled_default
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={diagnostic_device_identifier(entry)},
+            name=f"Živý Obraz - {entry.title}",
+            manufacturer="Živý Obraz",
+        )
+
+    @property
+    def available(self) -> bool:
+        """Return availability."""
+        return bool(self.coordinator.account_data)
+
+    @property
+    def native_value(self):
+        """Return account information value."""
+        value = self.coordinator.account_data.get(self.entity_description.value_key)
+
+        if self.entity_description.key == "account_prepaid_devices":
+            if value is None:
+                return None
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        if self.entity_description.key == "account_subscription_days_remaining":
+            prepaid_until = _account_date(value)
+            if prepaid_until is None:
+                return None
+            return (prepaid_until - dt_util.now().date()).days
+
+        return value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return account details only where they add value."""
+        if self.entity_description.key != "account_subscription_days_remaining":
+            return None
+
+        value = self.coordinator.account_data.get(self.entity_description.value_key)
+        prepaid_until = _account_date(value)
+        if prepaid_until is None:
+            return None
+
+        return {"prepaid_until": prepaid_until.isoformat()}
 
 
 class ZivyObrazPushDiagnosticSensor(SensorEntity):

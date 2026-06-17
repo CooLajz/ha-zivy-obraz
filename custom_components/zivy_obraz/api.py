@@ -18,6 +18,16 @@ def build_export_url(export_key: str, use_group_filter: bool, group_id) -> str:
     return f"{ZIVY_OBRAZ_EXPORT_URL}?{urlencode(params)}"
 
 
+def build_account_url(export_key: str) -> str:
+    """Build Account API URL with safely encoded query parameters."""
+    params: dict[str, str] = {
+        "export_key": export_key,
+        "account": "json",
+    }
+
+    return f"{ZIVY_OBRAZ_EXPORT_URL}?{urlencode(params)}"
+
+
 def normalize_export_payload(payload: Any) -> dict[str, Any]:
     """Normalize Export API payload variants to the internal object shape."""
     if isinstance(payload, dict):

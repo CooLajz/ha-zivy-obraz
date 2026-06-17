@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 import json
 import logging
 import re
@@ -25,6 +25,8 @@ from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
 BATTERY_STORAGE_VERSION = 1
+ACCOUNT_REFRESH_HOUR = 0
+ACCOUNT_REFRESH_MINUTE = 10
 
 _PANEL_MAC_RE = re.compile(
     r"^(?:"
@@ -59,6 +61,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self,
         hass: HomeAssistant,
         url: str,
+        account_url: str,
         config_entry: ConfigEntry,
         timeout: int | None = None,
         update_interval_seconds: int | None = None,
@@ -74,11 +77,16 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             always_update=False,
         )
         self.url = url
+        self.account_url = account_url
         self.config_entry = config_entry
         self.timeout = timeout or DEFAULT_TIMEOUT
         self.session = async_get_clientsession(hass)
         self.known_macs: set[str] = set()
         self._new_device_listeners: list[Callable[[set[str]], None]] = []
+        self.account_data: dict[str, Any] = {}
+        self.account_last_sync: datetime | None = None
+        self.account_next_sync: datetime | None = None
+        self.account_last_error: str | None = None
         self.diagnostics = SyncDiagnostics()
         self.battery_tracker = BatteryChargeTracker()
         self.battery_value_tracker = BatterySensorValueTracker()
@@ -100,6 +108,49 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def _set_next_sync(self) -> None:
         """Set expected next sync timestamp."""
         self.diagnostics.next_sync = dt_util.now() + self.update_interval
+
+    def _next_account_sync_time(
+        self,
+        reference_time: datetime | None = None,
+    ) -> datetime:
+        """Return the next local account refresh time after the reference."""
+        now = reference_time or dt_util.now()
+        next_sync = now.replace(
+            hour=ACCOUNT_REFRESH_HOUR,
+            minute=ACCOUNT_REFRESH_MINUTE,
+            second=0,
+            microsecond=0,
+        )
+        if now >= next_sync:
+            next_sync += timedelta(days=1)
+        return next_sync
+
+    def _account_refresh_due(self) -> bool:
+        """Return True when account data should be refreshed."""
+        if not self.account_data or self.account_next_sync is None:
+            return True
+
+        return dt_util.now() >= self.account_next_sync
+
+    async def _async_refresh_account_if_due(self) -> None:
+        """Refresh account data on startup and then once daily after midnight."""
+        if not self._account_refresh_due():
+            return
+
+        sync_started_at = dt_util.now()
+
+        try:
+            account_data = await self._async_fetch_account_json()
+        except UpdateFailed as err:
+            self.account_last_error = str(err)
+            self.account_next_sync = self._next_account_sync_time(sync_started_at)
+            _LOGGER.warning("Failed to fetch Živý Obraz account data: %s", err)
+            return
+
+        self.account_data = account_data
+        self.account_last_sync = sync_started_at
+        self.account_last_error = None
+        self.account_next_sync = self._next_account_sync_time(sync_started_at)
 
     async def async_request_manual_refresh(self) -> None:
         """Refresh data on demand without changing the scheduled refresh time."""
@@ -152,41 +203,60 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         for listener in list(self._new_device_listeners):
             listener(new_macs)
 
-    async def _async_fetch_json(self) -> dict[str, Any]:
+    async def _async_fetch_json(self, url: str, endpoint_name: str) -> Any:
         """Fetch JSON payload from endpoint."""
         try:
             async with asyncio.timeout(self.timeout):
                 async with self.session.get(
-                    self.url,
+                    url,
                     headers={"Accept": "application/json"},
                 ) as response:
                     response.raise_for_status()
                     raw_text = await response.text()
         except TimeoutError as err:
-            raise UpdateFailed("Timeout fetching data from Export API") from err
+            raise UpdateFailed(f"Timeout fetching data from {endpoint_name}") from err
         except ClientResponseError as err:
             raise UpdateFailed(
-                f"HTTP error fetching data: {err.status} {err.message}"
+                f"HTTP error fetching data from {endpoint_name}: "
+                f"{err.status} {err.message}"
             ) from err
         except ClientError as err:
-            raise UpdateFailed("Connection error fetching data from Export API") from err
+            raise UpdateFailed(
+                f"Connection error fetching data from {endpoint_name}"
+            ) from err
 
         raw_text = raw_text.strip()
         if not raw_text:
-            raise UpdateFailed("Endpoint returned an empty response instead of JSON")
+            raise UpdateFailed(
+                f"{endpoint_name} returned an empty response instead of JSON"
+            )
 
         try:
-            data = json.loads(raw_text)
+            return json.loads(raw_text)
         except json.JSONDecodeError as err:
             preview = raw_text[:200].replace("\n", " ").replace("\r", " ")
             raise UpdateFailed(
-                f"Endpoint did not return valid JSON. First 200 chars: {preview}"
+                f"{endpoint_name} did not return valid JSON. "
+                f"First 200 chars: {preview}"
             ) from err
+
+    async def _async_fetch_export_json(self) -> dict[str, Any]:
+        """Fetch and normalize panel export JSON."""
+        data = await self._async_fetch_json(self.url, "Export API")
 
         try:
             return normalize_export_payload(data)
         except ValueError as err:
             raise UpdateFailed(str(err)) from err
+
+    async def _async_fetch_account_json(self) -> dict[str, Any]:
+        """Fetch account JSON."""
+        data = await self._async_fetch_json(self.account_url, "Account API")
+
+        if not isinstance(data, dict):
+            raise UpdateFailed("Account API JSON must be an object/dict")
+
+        return data
 
     @callback
     def _async_registry_macs_for_entry(self) -> set[str]:
@@ -301,13 +371,15 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._notify_diagnostic_listeners()
 
         try:
-            data = await self._async_fetch_json()
+            data = await self._async_fetch_export_json()
         except UpdateFailed as err:
             self.diagnostics.status = "failed"
             self.diagnostics.last_error = str(err)
             self._set_next_sync()
             self._notify_diagnostic_listeners()
             raise
+
+        await self._async_refresh_account_if_due()
 
         normalized: dict[str, dict[str, Any]] = {}
         epapers = data.get("epapers")
