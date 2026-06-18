@@ -59,7 +59,7 @@ from .const import (
     SERVICE_PUSH_VALUES,
 )
 from .coordinator import ZivyObrazCoordinator
-from .api import build_export_url
+from .api import build_account_url, build_export_url
 from .device import diagnostic_device_identifier
 from .i18n import async_preload_runtime_translations
 from .label_helper import async_ensure_label_exists, async_get_label_id
@@ -124,6 +124,11 @@ def _get_prefix_value(entry: ConfigEntry) -> str:
 def _build_export_url(export_key: str, group_id) -> str:
     """Build export URL from config."""
     return build_export_url(export_key, group_id is not None, group_id)
+
+
+def _build_account_url(export_key: str) -> str:
+    """Build account URL from config."""
+    return build_account_url(export_key)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -469,6 +474,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     url = _build_export_url(export_key, group_id)
+    account_url = _build_account_url(export_key)
 
     push_enabled = bool(
         _get_config_value(
@@ -513,6 +519,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     coordinator = ZivyObrazCoordinator(
         hass=hass,
         url=url,
+        account_url=account_url,
         config_entry=entry,
         timeout=timeout,
         update_interval_seconds=scan_interval,

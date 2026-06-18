@@ -214,6 +214,12 @@
       },
       "sync_device_count": {
         "name": "Počet zařízení"
+      },
+      "account_prepaid_devices": {
+        "name": "Předplacená zařízení"
+      },
+      "account_subscription_days_remaining": {
+        "name": "Dnů do konce předplatného"
       }
     },
     "binary_sensor": {
