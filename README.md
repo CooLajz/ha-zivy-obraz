@@ -444,6 +444,10 @@ http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 Pokud vyplníte `Group ID`, načtou se pouze panely z této skupiny. Pokud pole
 necháte prázdné, načtou se všechny panely pod daným účtem.
 
+U existující konfigurace je uložený `Export key` v nastavení skrytý. Pro jeho
+výměnu zaškrtněte `Změnit Export key`; následně se zobrazí prázdné pole pro
+nový klíč.
+
 ---
 
 ## Odesílání dat / Import API
@@ -457,6 +461,10 @@ https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 
 Pokud `Import key` nevyplníte, push tlačítko, push diagnostika a push
 konfigurační entity se nevytvoří.
+
+U existující konfigurace je uložený `Import key` v nastavení skrytý. Volba
+`Změnit nebo odebrat Import key` zobrazí prázdné pole; pokud ho necháte prázdné,
+Import key se odebere a automatické odesílání se vypne.
 
 ---
 
@@ -923,6 +931,9 @@ http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 Fill `Group ID` to load only panels in that group. Leave it empty to load all
 panels in the account.
 
+For an existing configuration, the stored `Export key` is hidden in options.
+Enable `Change Export key` to reveal an empty field for a replacement key.
+
 ---
 
 ## Data upload / Import API
@@ -936,6 +947,10 @@ https://in.zivyobraz.eu/?import_key=IMPORT_KEY
 
 Without `Import key`, the push button, push diagnostics, and push config
 entities are not created.
+
+For an existing configuration, the stored `Import key` is hidden in options.
+Enable `Change or remove Import key` to reveal an empty field. Leaving it empty
+removes the Import key and disables automatic push.
 
 ---
 
