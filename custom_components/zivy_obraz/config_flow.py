@@ -7,7 +7,6 @@ from typing import Any
 import voluptuous as vol
 from aiohttp import ClientError, ContentTypeError
 from homeassistant import config_entries
-from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import build_export_url, normalize_export_payload
@@ -309,9 +308,7 @@ def _build_export_schema(
     if show_export_key:
         schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
     elif allow_export_key_change:
-        schema[vol.Optional(_CONF_CHANGE_EXPORT_KEY, default=False)] = (
-            selector.BooleanSelector()
-        )
+        schema[vol.Optional(_CONF_CHANGE_EXPORT_KEY, default=False)] = bool
 
     schema[vol.Optional(CONF_GROUP_ID)] = str
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
@@ -336,9 +333,7 @@ def _build_import_schema(
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
     elif allow_import_key_change:
-        schema[vol.Optional(_CONF_CHANGE_IMPORT_KEY, default=False)] = (
-            selector.BooleanSelector()
-        )
+        schema[vol.Optional(_CONF_CHANGE_IMPORT_KEY, default=False)] = bool
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
