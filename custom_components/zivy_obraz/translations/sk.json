@@ -28,6 +28,7 @@
       "timeout": "Vypršal časový limit",
       "unknown": "Neočakávaná chyba",
       "import_key_required": "Ak je odosielanie zapnuté, musí byť vyplnený Import key",
+      "export_key_required": "Export key musí byť vyplnený",
       "invalid_group_id": "ID skupiny musí byť celé číslo 0 alebo vyššie",
       "scan_interval_range": "Interval obnovy musí byť medzi 60 a 86400 sekundami",
       "push_interval_range": "Interval odosielania musí byť medzi 60 a 86400 sekundami",
@@ -46,6 +47,7 @@
         "data": {
           "name": "Názov inštancie",
           "export_key": "Export key",
+          "change_export_key": "Zmeniť Export key",
           "group_id": "ID skupiny",
           "timeout": "HTTP timeout (s)"
         }
@@ -55,6 +57,7 @@
         "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.",
         "data": {
           "import_key": "Import key",
+          "change_import_key": "Zmeniť alebo odobrať Import key",
           "label": "Štítok entít na odosielanie",
           "prefix": "Prefix názvu premenných",
           "invalid_state_fallback": "Náhradná hodnota pre neplatné stavy"
@@ -67,6 +70,8 @@
       "timeout": "Vypršal časový limit",
       "unknown": "Neočakávaná chyba",
       "import_key_required": "Ak je odosielanie zapnuté, musí byť vyplnený Import key",
+      "export_key_required": "Export key musí byť vyplnený",
+      "already_configured": "Tento export key a ID skupiny už sú nakonfigurované",
       "invalid_group_id": "ID skupiny musí byť celé číslo 0 alebo vyššie",
       "scan_interval_range": "Interval obnovy musí byť medzi 60 a 86400 sekundami",
       "push_interval_range": "Interval odosielania musí byť medzi 60 a 86400 sekundami",

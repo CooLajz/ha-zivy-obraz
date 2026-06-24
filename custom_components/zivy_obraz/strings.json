@@ -28,6 +28,7 @@
       "timeout": "Request timed out",
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
+      "export_key_required": "Export key is required",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",
@@ -46,6 +47,7 @@
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
+          "change_export_key": "Change Export key",
           "group_id": "Group ID",
           "timeout": "HTTP timeout (s)"
         }
@@ -55,6 +57,7 @@
         "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
         "data": {
           "import_key": "Import key",
+          "change_import_key": "Change or remove Import key",
           "label": "Entity label for push",
           "prefix": "Variable name prefix",
           "invalid_state_fallback": "Invalid state fallback value"
@@ -67,6 +70,8 @@
       "timeout": "Request timed out",
       "unknown": "Unexpected error",
       "import_key_required": "Import key is required when push is enabled",
+      "export_key_required": "Export key is required",
+      "already_configured": "This export key and Group ID are already configured",
       "invalid_group_id": "Group ID must be an integer 0 or higher",
       "scan_interval_range": "Refresh interval must be between 60 and 86400 seconds",
       "push_interval_range": "Push interval must be between 60 and 86400 seconds",

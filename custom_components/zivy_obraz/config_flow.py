@@ -53,6 +53,7 @@ from .const import (
 )
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
+    "export_key_required": (CONF_EXPORT_KEY, "export_key_required"),
     "invalid_group_id": (CONF_GROUP_ID, "invalid_group_id"),
     "scan_interval_range": (CONF_SCAN_INTERVAL, "scan_interval_range"),
     "push_interval_range": (CONF_PUSH_INTERVAL, "push_interval_range"),
@@ -62,6 +63,9 @@ _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
         "overdue_tolerance_range",
     ),
 }
+
+_CONF_CHANGE_EXPORT_KEY = "change_export_key"
+_CONF_CHANGE_IMPORT_KEY = "change_import_key"
 
 
 async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
@@ -172,6 +176,10 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Ensure fields are stored in a predictable format."""
     prepared = dict(user_input)
 
+    prepared[CONF_EXPORT_KEY] = _normalize_api_key(user_input.get(CONF_EXPORT_KEY))
+    if not prepared[CONF_EXPORT_KEY]:
+        raise ValueError("export_key_required")
+
     prepared[CONF_NAME] = _normalize_name(user_input.get(CONF_NAME, DEFAULT_NAME))
     prepared[CONF_GROUP_ID] = _normalize_group_id(user_input.get(CONF_GROUP_ID))
     prepared[CONF_USE_GROUP_FILTER] = prepared[CONF_GROUP_ID] is not None
@@ -253,6 +261,19 @@ def _display_group_id(value: Any) -> str:
     return str(value)
 
 
+def _export_unique_id(export_key: str, group_id: int | None) -> str:
+    """Build the config-entry unique id from Export API identity."""
+    unique_group = str(group_id) if group_id is not None else "all"
+    return f"{export_key}::{unique_group}"
+
+
+def _entry_group_id(config_entry) -> int | None:
+    """Return the effective group id stored on a config entry."""
+    if CONF_GROUP_ID in config_entry.options:
+        return _normalize_group_id(config_entry.options.get(CONF_GROUP_ID))
+    return _normalize_group_id(config_entry.data.get(CONF_GROUP_ID))
+
+
 def _get_config_value(
     config_entry,
     key: str,
@@ -274,6 +295,7 @@ def _get_current_prefix(config_entry) -> str:
 def _build_export_schema(
     *,
     show_export_key: bool = True,
+    allow_export_key_change: bool = False,
     name: str = DEFAULT_NAME,
     export_key: str | None = None,
     timeout: int = DEFAULT_TIMEOUT,
@@ -285,6 +307,8 @@ def _build_export_schema(
 
     if show_export_key:
         schema[vol.Required(CONF_EXPORT_KEY, default=export_key or "")] = str
+    elif allow_export_key_change:
+        schema[vol.Optional(_CONF_CHANGE_EXPORT_KEY, default=False)] = bool
 
     schema[vol.Optional(CONF_GROUP_ID)] = str
     schema[vol.Required(CONF_TIMEOUT, default=timeout)] = vol.All(
@@ -297,6 +321,7 @@ def _build_export_schema(
 def _build_import_schema(
     *,
     show_import_key: bool = True,
+    allow_import_key_change: bool = False,
     import_key: str = DEFAULT_IMPORT_KEY,
     label: str = DEFAULT_LABEL,
     prefix: str = DEFAULT_PREFIX,
@@ -307,6 +332,8 @@ def _build_import_schema(
 
     if show_import_key:
         schema[vol.Optional(CONF_IMPORT_KEY, default=import_key)] = str
+    elif allow_import_key_change:
+        schema[vol.Optional(_CONF_CHANGE_IMPORT_KEY, default=False)] = bool
 
     schema[vol.Optional(CONF_LABEL, default=label)] = str
     schema[vol.Optional(CONF_PREFIX)] = str
@@ -339,14 +366,11 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 prepared_input = _prepare_user_input(user_input)
                 _validate_push_settings(prepared_input)
 
-                unique_group = (
-                    str(prepared_input[CONF_GROUP_ID])
-                    if prepared_input[CONF_GROUP_ID] is not None
-                    else "all"
-                )
-
                 await self.async_set_unique_id(
-                    f"{prepared_input[CONF_EXPORT_KEY]}::{unique_group}"
+                    _export_unique_id(
+                        prepared_input[CONF_EXPORT_KEY],
+                        prepared_input[CONF_GROUP_ID],
+                    )
                 )
                 self._abort_if_unique_id_configured()
 
@@ -430,6 +454,8 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
         self._export_input: dict[str, Any] | None = None
+        self._show_export_key = False
+        self._show_import_key = False
 
     def _current_values(self) -> dict[str, Any]:
         """Return current options merged with stored entry data."""
@@ -498,43 +524,52 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             ),
         }
 
-    async def async_step_init(self, user_input=None):
-        """Manage Export API options."""
-        errors: dict[str, str] = {}
-        current_values = self._current_values()
+    def _is_duplicate_export_config(self, prepared_input: dict[str, Any]) -> bool:
+        """Return true when another entry already uses the same Export API identity."""
+        candidate_unique_id = _export_unique_id(
+            prepared_input[CONF_EXPORT_KEY],
+            prepared_input[CONF_GROUP_ID],
+        )
+
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            if entry.entry_id == self._config_entry.entry_id:
+                continue
+
+            export_key = _normalize_api_key(
+                _get_config_value(entry, CONF_EXPORT_KEY, "")
+            )
+            if not export_key:
+                continue
+
+            if (
+                _export_unique_id(export_key, _entry_group_id(entry))
+                == candidate_unique_id
+            ):
+                return True
+
+        return False
+
+    def _update_unique_id(self, prepared_input: dict[str, Any]) -> None:
+        """Keep the config-entry unique id aligned with editable Export API options."""
+        unique_id = _export_unique_id(
+            prepared_input[CONF_EXPORT_KEY],
+            prepared_input[CONF_GROUP_ID],
+        )
+
+        if self._config_entry.unique_id != unique_id:
+            self.hass.config_entries.async_update_entry(
+                self._config_entry,
+                unique_id=unique_id,
+            )
+
+    def _show_export_form(self, errors: dict[str, str], current_values: dict[str, Any]):
+        """Show Export API options form."""
         has_export_key = bool(current_values[CONF_EXPORT_KEY])
-
-        if user_input is not None:
-            try:
-                user_input.setdefault(CONF_GROUP_ID, "")
-                merged_input = {
-                    **current_values,
-                    **user_input,
-                }
-                prepared_input = _prepare_user_input(merged_input)
-                _validate_push_settings(prepared_input)
-                await _validate_input(self.hass, prepared_input)
-            except TimeoutError:
-                errors["base"] = "timeout"
-            except ClientError:
-                errors["base"] = "cannot_connect"
-            except ContentTypeError:
-                errors["base"] = "invalid_json"
-            except ValueError as err:
-                if str(err) == "import_key_required":
-                    errors["base"] = "import_key_required"
-                else:
-                    _set_value_error(errors, err)
-            except Exception:
-                errors["base"] = "unknown"
-            else:
-                self._export_input = prepared_input
-                return await self.async_step_import()
-
         schema = _build_export_schema(
-            show_export_key=not has_export_key,
+            show_export_key=not has_export_key or self._show_export_key,
+            allow_export_key_change=has_export_key and not self._show_export_key,
             name=current_values[CONF_NAME],
-            export_key=current_values[CONF_EXPORT_KEY],
+            export_key="" if self._show_export_key else current_values[CONF_EXPORT_KEY],
             timeout=current_values[CONF_TIMEOUT],
         )
         schema = self.add_suggested_values_to_schema(
@@ -549,26 +584,13 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             last_step=False,
         )
 
-    async def async_step_import(self, user_input=None):
-        """Manage Import API options."""
-        current_values = self._export_input or self._current_values()
+    def _show_import_form(self, errors: dict[str, str], current_values: dict[str, Any]):
+        """Show Import API options form."""
         has_import_key = bool(_normalize_api_key(current_values[CONF_IMPORT_KEY]))
-
-        if user_input is not None:
-            user_input.setdefault(CONF_PREFIX, "")
-            prepared_input = _prepare_user_input(
-                {
-                    **current_values,
-                    **user_input,
-                }
-            )
-            _validate_push_settings(prepared_input)
-            prepared_input[CONF_PREFIX_OVERRIDE] = True
-            return self.async_create_entry(title="", data=prepared_input)
-
         schema = _build_import_schema(
-            show_import_key=not has_import_key,
-            import_key=current_values[CONF_IMPORT_KEY],
+            show_import_key=not has_import_key or self._show_import_key,
+            allow_import_key_change=has_import_key and not self._show_import_key,
+            import_key="" if self._show_import_key else current_values[CONF_IMPORT_KEY],
             label=current_values[CONF_LABEL],
             prefix=current_values[CONF_PREFIX],
             invalid_state_fallback=current_values[CONF_INVALID_STATE_FALLBACK],
@@ -586,6 +608,104 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="import",
             data_schema=schema,
-            errors={},
+            errors=errors,
             last_step=True,
         )
+
+    async def async_step_init(self, user_input=None):
+        """Manage Export API options."""
+        errors: dict[str, str] = {}
+        current_values = self._current_values()
+        has_export_key = bool(current_values[CONF_EXPORT_KEY])
+
+        if user_input is not None:
+            if (
+                has_export_key
+                and not self._show_export_key
+                and user_input.get(_CONF_CHANGE_EXPORT_KEY)
+            ):
+                cleaned_input = dict(user_input)
+                cleaned_input.pop(_CONF_CHANGE_EXPORT_KEY, None)
+                cleaned_input.setdefault(CONF_GROUP_ID, "")
+                self._show_export_key = True
+                return self._show_export_form(
+                    errors,
+                    {
+                        **current_values,
+                        **cleaned_input,
+                    },
+                )
+
+            try:
+                cleaned_input = dict(user_input)
+                cleaned_input.pop(_CONF_CHANGE_EXPORT_KEY, None)
+                cleaned_input.setdefault(CONF_GROUP_ID, "")
+                merged_input = {
+                    **current_values,
+                    **cleaned_input,
+                }
+                prepared_input = _prepare_user_input(merged_input)
+                _validate_push_settings(prepared_input)
+                if self._is_duplicate_export_config(prepared_input):
+                    errors["base"] = "already_configured"
+                    raise ValueError("already_configured")
+                await _validate_input(self.hass, prepared_input)
+            except TimeoutError:
+                errors["base"] = "timeout"
+            except ClientError:
+                errors["base"] = "cannot_connect"
+            except ContentTypeError:
+                errors["base"] = "invalid_json"
+            except ValueError as err:
+                if str(err) == "already_configured":
+                    pass
+                elif str(err) == "import_key_required":
+                    errors["base"] = "import_key_required"
+                else:
+                    _set_value_error(errors, err)
+            except Exception:
+                errors["base"] = "unknown"
+            else:
+                self._export_input = prepared_input
+                return await self.async_step_import()
+
+        return self._show_export_form(errors, current_values)
+
+    async def async_step_import(self, user_input=None):
+        """Manage Import API options."""
+        current_values = self._export_input or self._current_values()
+        has_import_key = bool(_normalize_api_key(current_values[CONF_IMPORT_KEY]))
+
+        if user_input is not None:
+            if (
+                has_import_key
+                and not self._show_import_key
+                and user_input.get(_CONF_CHANGE_IMPORT_KEY)
+            ):
+                cleaned_input = dict(user_input)
+                cleaned_input.pop(_CONF_CHANGE_IMPORT_KEY, None)
+                cleaned_input.setdefault(CONF_PREFIX, "")
+                self._show_import_key = True
+                return self._show_import_form(
+                    {},
+                    {
+                        **current_values,
+                        **cleaned_input,
+                    },
+                )
+
+            cleaned_input = dict(user_input)
+            cleaned_input.pop(_CONF_CHANGE_IMPORT_KEY, None)
+            cleaned_input.setdefault(CONF_PREFIX, "")
+            prepared_input = _prepare_user_input(
+                {
+                    **current_values,
+                    **cleaned_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            prepared_input[CONF_PREFIX_OVERRIDE] = True
+            self._update_unique_id(prepared_input)
+            return self.async_create_entry(title="", data=prepared_input)
+
+        return self._show_import_form({}, current_values)
