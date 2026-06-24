@@ -325,10 +325,6 @@
           "name": "Poznámka",
           "description": "Poznámka zariadenia. Prázdna hodnota poznámku vymaže."
         },
-        "ota": {
-          "name": "OTA aktualizácie firmvéru",
-          "description": "Zapne alebo vypne OTA aktualizácie firmvéru."
-        },
         "pin_key": {
           "name": "PIN key",
           "description": "PIN key zariadenia. Prázdna hodnota PIN vymaže."
@@ -337,6 +333,14 @@
           "name": "Invertovať displej",
           "description": "Invertuje farby displeja."
         },
+        "ota": {
+          "name": "OTA aktualizácie firmvéru",
+          "description": "Zapne alebo vypne OTA aktualizácie firmvéru."
+        },
+        "refresh_screen": {
+          "name": "Obnovovanie displeja",
+          "description": "Zapne alebo vypne obnovovanie displeja."
+        },
         "rotate_180": {
           "name": "Otočiť o 180 stupňov",
           "description": "Otočí displej o 180 stupňov."
@@ -344,10 +348,6 @@
         "show_ap_connect_screen": {
           "name": "Zobraziť AP obrazovku",
           "description": "Zobrazí obrazovku na pripojenie k AP."
-        },
-        "refresh_screen": {
-          "name": "Obnovovanie displeja",
-          "description": "Zapne alebo vypne obnovovanie displeja."
         },
         "sleep_forced": {
           "name": "Vynútený spánok",

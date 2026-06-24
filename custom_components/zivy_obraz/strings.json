@@ -331,10 +331,6 @@
           "name": "Note",
           "description": "Device note. Empty value clears the note."
         },
-        "ota": {
-          "name": "OTA firmware updates",
-          "description": "Enable or disable OTA firmware updates."
-        },
         "pin_key": {
           "name": "PIN key",
           "description": "Device PIN key. Empty value clears the PIN."
@@ -343,6 +339,14 @@
           "name": "Invert screen",
           "description": "Invert screen colors."
         },
+        "ota": {
+          "name": "OTA firmware updates",
+          "description": "Enable or disable OTA firmware updates."
+        },
+        "refresh_screen": {
+          "name": "Refresh display",
+          "description": "Enable or disable display refresh."
+        },
         "rotate_180": {
           "name": "Rotate 180 degrees",
           "description": "Rotate the display 180 degrees."
@@ -350,10 +354,6 @@
         "show_ap_connect_screen": {
           "name": "Show AP connect screen",
           "description": "Show the AP connection screen."
-        },
-        "refresh_screen": {
-          "name": "Refresh display",
-          "description": "Enable or disable display refresh."
         },
         "sleep_forced": {
           "name": "Forced sleep",

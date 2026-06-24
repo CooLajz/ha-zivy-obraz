@@ -131,12 +131,12 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_TARGET, default="all"): cv.string,
         vol.Optional(ATTR_CAPTION): cv.string,
         vol.Optional(ATTR_NOTE): cv.string,
-        vol.Optional(ATTR_OTA): cv.boolean,
         vol.Optional(ATTR_PIN_KEY): cv.string,
         vol.Optional(ATTR_INVERT_SCREEN): cv.boolean,
+        vol.Optional(ATTR_OTA): cv.boolean,
+        vol.Optional(ATTR_REFRESH_SCREEN): cv.boolean,
         vol.Optional(ATTR_ROTATE_180): cv.boolean,
         vol.Optional(ATTR_SHOW_AP_CONNECT_SCREEN): cv.boolean,
-        vol.Optional(ATTR_REFRESH_SCREEN): cv.boolean,
         vol.Optional(ATTR_SLEEP_FORCED): vol.All(
             vol.Coerce(int),
             vol.Range(min=5, max=240),
@@ -147,12 +147,12 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
 COMMAND_PROPERTY_KEYS = (
     ATTR_CAPTION,
     ATTR_NOTE,
-    ATTR_OTA,
     ATTR_PIN_KEY,
     ATTR_INVERT_SCREEN,
+    ATTR_OTA,
+    ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
     ATTR_SHOW_AP_CONNECT_SCREEN,
-    ATTR_REFRESH_SCREEN,
     ATTR_SLEEP_FORCED,
 )
 
