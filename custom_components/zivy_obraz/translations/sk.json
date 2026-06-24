@@ -309,7 +309,7 @@
         },
         "target": {
           "name": "Cieľ",
-          "description": "Cieľ príkazu: all, group:<id>, device:<id> alebo device:<mac>."
+          "description": "Cieľ príkazu: all, group:id, device:id alebo device:mac."
         },
         "caption": {
           "name": "Názov zariadenia",

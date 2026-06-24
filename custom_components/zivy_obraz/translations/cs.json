@@ -315,7 +315,7 @@
         },
         "target": {
           "name": "Cíl",
-          "description": "Cíl příkazu: all, group:<id>, device:<id> nebo device:<mac>."
+          "description": "Cíl příkazu: all, group:id, device:id nebo device:mac."
         },
         "caption": {
           "name": "Název zařízení",

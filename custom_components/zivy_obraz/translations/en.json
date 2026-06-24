@@ -309,7 +309,7 @@
         },
         "target": {
           "name": "Target",
-          "description": "Command target: all, group:<id>, device:<id>, or device:<mac>."
+          "description": "Command target: all, group:id, device:id, or device:mac."
         },
         "caption": {
           "name": "Caption",

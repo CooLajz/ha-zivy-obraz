@@ -88,7 +88,7 @@ command:
         text:
     target:
       name: Target
-      description: "Command target: all, group:<id>, device:<id>, or device:<mac>."
+      description: "Command target: all, group:id, device:id, or device:mac."
       default: "all"
       example: "device:AA:BB:CC:DD:EE:FF"
       selector:
