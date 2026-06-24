@@ -20,6 +20,13 @@
           "prefix": "Prefix názvu proměnných",
           "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
+      },
+      "command": {
+        "title": "Ovládání zařízení / Command API",
+        "description": "Command key bude použitý pro ovládání zařízení Živého obrazu. Integrace zatím příkazy simuluje lokálně, dokud nebude veřejné Command API dostupné.",
+        "data": {
+          "command_key": "Command key"
+        }
       }
     },
     "error": {
@@ -62,6 +69,14 @@
           "prefix": "Prefix názvu proměnných",
           "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
+      },
+      "command": {
+        "title": "Ovládání zařízení / Command API",
+        "description": "Command key bude použitý pro ovládání zařízení Živého obrazu. Integrace zatím příkazy simuluje lokálně, dokud nebude veřejné Command API dostupné.",
+        "data": {
+          "command_key": "Command key",
+          "change_command_key": "Změnit nebo odebrat Command key"
+        }
       }
     },
     "error": {
@@ -103,6 +118,12 @@
       },
       "replace_invalid_states_with_na": {
         "name": "Odesílat náhradní hodnotu pro neplatné stavy entit"
+      },
+      "ota": {
+        "name": "OTA aktualizace firmwaru"
+      },
+      "refresh_display": {
+        "name": "Obnovování displeje"
       }
     },
     "button": {
@@ -279,6 +300,60 @@
           "description": "Seznam názvů proměnných Živého obrazu a jejich hodnot."
         }
       }
+    },
+    "command": {
+      "name": "Simulovat příkaz zařízení",
+      "description": "Lokálně simuluje požadavek na Command API Živého obrazu. Dokud veřejné Command API není dostupné, neodesílá se žádný HTTP požadavek.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfigurační položky",
+          "description": "Volitelné ID konfigurační položky. Pokud zůstane prázdné, zacílí se všechny nakonfigurované instance s Command key."
+        },
+        "name": {
+          "name": "Název instance",
+          "description": "Volitelný název instance. Pokud zůstane prázdný, zacílí se všechny nakonfigurované instance s Command key."
+        },
+        "target": {
+          "name": "Cíl",
+          "description": "Cíl příkazu: all, group:<id>, device:<id> nebo device:<mac>."
+        },
+        "caption": {
+          "name": "Název zařízení",
+          "description": "Zobrazovaný název zařízení."
+        },
+        "note": {
+          "name": "Poznámka",
+          "description": "Poznámka zařízení. Prázdná hodnota poznámku smaže."
+        },
+        "ota": {
+          "name": "OTA aktualizace firmwaru",
+          "description": "Zapne nebo vypne OTA aktualizace firmwaru."
+        },
+        "pin_key": {
+          "name": "PIN key",
+          "description": "PIN key zařízení. Prázdná hodnota PIN smaže."
+        },
+        "invert_screen": {
+          "name": "Invertovat displej",
+          "description": "Invertuje barvy displeje."
+        },
+        "rotate_180": {
+          "name": "Otočit o 180 stupňů",
+          "description": "Otočí displej o 180 stupňů."
+        },
+        "show_ap_connect_screen": {
+          "name": "Zobrazit AP obrazovku",
+          "description": "Zobrazí obrazovku pro připojení k AP."
+        },
+        "refresh_screen": {
+          "name": "Obnovování displeje",
+          "description": "Zapne nebo vypne obnovování displeje."
+        },
+        "sleep_forced": {
+          "name": "Vynucený spánek",
+          "description": "Doba spánku při vypnutém obnovování v minutách."
+        }
+      }
     }
   },
   "exceptions": {
@@ -302,6 +377,33 @@
     },
     "push_values_empty": {
       "message": "Nejsou zadané žádné vlastní hodnoty k odeslání."
+    },
+    "command_entry_id_and_name": {
+      "message": "Použijte buď ID konfigurační položky, nebo název instance, ne obojí."
+    },
+    "command_entry_not_loaded": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není načtená."
+    },
+    "command_name_not_found": {
+      "message": "Instance Živého obrazu s názvem \"{name}\" nebyla nalezena."
+    },
+    "command_name_not_unique": {
+      "message": "Název instance Živého obrazu \"{name}\" není jedinečný. Použijte ID konfigurační položky."
+    },
+    "command_no_entries_ready": {
+      "message": "Žádná načtená instance Živého obrazu nemá nastavený Command key."
+    },
+    "command_entry_not_ready": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není připravená na příkazy. Nejdřív nastavte Command key."
+    },
+    "command_no_properties": {
+      "message": "Nejsou zadané žádné vlastnosti příkazu."
+    },
+    "command_invalid_target": {
+      "message": "Cíl příkazu \"{target}\" není platný."
+    },
+    "command_target_not_found": {
+      "message": "Cíl příkazu \"{target}\" neodpovídá žádnému lokálně známému zařízení."
     }
   }
 }

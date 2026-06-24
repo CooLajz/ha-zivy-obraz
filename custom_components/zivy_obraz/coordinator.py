@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import normalize_export_payload
 from .battery import BatteryChargeTracker, BatterySensorValueTracker
+from .command import command_properties_for_local_data, command_target_macs
 from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
 from .device import build_device_name, build_device_registry_metadata
 
@@ -361,6 +362,38 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 mac,
                 ", ".join(f"{key}={value}" for key, value in updates.items()),
             )
+
+    async def async_apply_local_command(
+        self,
+        requested_target: str,
+        target: str,
+        properties: dict[str, Any],
+    ) -> set[str]:
+        """Apply a simulated Command API response to locally known devices."""
+        current_data = self.data or {}
+        affected_macs = command_target_macs(
+            current_data,
+            target,
+            requested_target=requested_target,
+        )
+        local_properties = command_properties_for_local_data(properties)
+
+        if not affected_macs or not local_properties:
+            return affected_macs
+
+        updated_data = dict(current_data)
+        updated_devices: dict[str, dict[str, Any]] = {}
+
+        for mac in affected_macs:
+            device_data = dict(updated_data.get(mac, {}))
+            device_data.update(local_properties)
+            updated_data[mac] = device_data
+            updated_devices[mac] = device_data
+
+        self.data = updated_data
+        await self._async_sync_device_metadata(updated_devices)
+        self.async_update_listeners()
+        return affected_macs
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from remote JSON endpoint."""

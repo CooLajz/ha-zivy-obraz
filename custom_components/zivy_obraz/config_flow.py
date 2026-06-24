@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import build_export_url, normalize_export_payload
 from .const import (
+    CONF_COMMAND_KEY,
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
@@ -28,6 +29,7 @@ from .const import (
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
+    DEFAULT_COMMAND_KEY,
     DEFAULT_IMPORT_KEY,
     DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
@@ -66,6 +68,7 @@ _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
 
 _CONF_CHANGE_EXPORT_KEY = "change_export_key"
 _CONF_CHANGE_IMPORT_KEY = "change_import_key"
+_CONF_CHANGE_COMMAND_KEY = "change_command_key"
 
 
 async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
@@ -188,6 +191,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     )
     prepared[CONF_IMPORT_KEY] = _normalize_api_key(
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
+    )
+    prepared[CONF_COMMAND_KEY] = _normalize_api_key(
+        user_input.get(CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY)
     )
     prepared[CONF_PREFIX] = _normalize_prefix(user_input.get(CONF_PREFIX, DEFAULT_PREFIX))
     prepared[CONF_INVALID_STATE_FALLBACK] = _normalize_invalid_state_fallback(
@@ -347,6 +353,23 @@ def _build_import_schema(
     return vol.Schema(schema)
 
 
+def _build_command_schema(
+    *,
+    show_command_key: bool = True,
+    allow_command_key_change: bool = False,
+    command_key: str = DEFAULT_COMMAND_KEY,
+) -> vol.Schema:
+    """Build Command API config schema."""
+    schema: dict[Any, Any] = {}
+
+    if show_command_key:
+        schema[vol.Optional(CONF_COMMAND_KEY, default=command_key)] = str
+    elif allow_command_key_change:
+        schema[vol.Optional(_CONF_CHANGE_COMMAND_KEY, default=False)] = bool
+
+    return vol.Schema(schema)
+
+
 class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Zivy Obraz."""
 
@@ -420,10 +443,8 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             )
             _validate_push_settings(prepared_input)
-            return self.async_create_entry(
-                title=prepared_input[CONF_NAME],
-                data=prepared_input,
-            )
+            self._export_input = prepared_input
+            return await self.async_step_command()
 
         schema = _build_import_schema()
         schema = self.add_suggested_values_to_schema(
@@ -436,6 +457,33 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="import",
+            data_schema=schema,
+            errors={},
+            last_step=False,
+        )
+
+    async def async_step_command(self, user_input=None):
+        """Handle Command API setup."""
+        if self._export_input is None:
+            return await self.async_step_user()
+
+        if user_input is not None:
+            prepared_input = _prepare_user_input(
+                {
+                    **self._export_input,
+                    **user_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            return self.async_create_entry(
+                title=prepared_input[CONF_NAME],
+                data=prepared_input,
+            )
+
+        schema = _build_command_schema()
+
+        return self.async_show_form(
+            step_id="command",
             data_schema=schema,
             errors={},
             last_step=True,
@@ -456,6 +504,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         self._export_input: dict[str, Any] | None = None
         self._show_export_key = False
         self._show_import_key = False
+        self._show_command_key = False
 
     def _current_values(self) -> dict[str, Any]:
         """Return current options merged with stored entry data."""
@@ -500,6 +549,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             CONF_IMPORT_KEY: _normalize_api_key(
                 _get_config_value(
                     self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
+                )
+            ),
+            CONF_COMMAND_KEY: _normalize_api_key(
+                _get_config_value(
+                    self._config_entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY
                 )
             ),
             CONF_LABEL: _get_config_value(
@@ -609,6 +663,26 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             step_id="import",
             data_schema=schema,
             errors=errors,
+            last_step=False,
+        )
+
+    def _show_command_form(
+        self,
+        errors: dict[str, str],
+        current_values: dict[str, Any],
+    ):
+        """Show Command API options form."""
+        has_command_key = bool(_normalize_api_key(current_values[CONF_COMMAND_KEY]))
+        schema = _build_command_schema(
+            show_command_key=not has_command_key or self._show_command_key,
+            allow_command_key_change=has_command_key and not self._show_command_key,
+            command_key="" if self._show_command_key else current_values[CONF_COMMAND_KEY],
+        )
+
+        return self.async_show_form(
+            step_id="command",
+            data_schema=schema,
+            errors=errors,
             last_step=True,
         )
 
@@ -704,8 +778,44 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 }
             )
             _validate_push_settings(prepared_input)
+            self._export_input = prepared_input
+            return await self.async_step_command()
+
+        return self._show_import_form({}, current_values)
+
+    async def async_step_command(self, user_input=None):
+        """Manage Command API options."""
+        current_values = self._export_input or self._current_values()
+        has_command_key = bool(_normalize_api_key(current_values[CONF_COMMAND_KEY]))
+
+        if user_input is not None:
+            if (
+                has_command_key
+                and not self._show_command_key
+                and user_input.get(_CONF_CHANGE_COMMAND_KEY)
+            ):
+                cleaned_input = dict(user_input)
+                cleaned_input.pop(_CONF_CHANGE_COMMAND_KEY, None)
+                self._show_command_key = True
+                return self._show_command_form(
+                    {},
+                    {
+                        **current_values,
+                        **cleaned_input,
+                    },
+                )
+
+            cleaned_input = dict(user_input)
+            cleaned_input.pop(_CONF_CHANGE_COMMAND_KEY, None)
+            prepared_input = _prepare_user_input(
+                {
+                    **current_values,
+                    **cleaned_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
             prepared_input[CONF_PREFIX_OVERRIDE] = True
             self._update_unique_id(prepared_input)
             return self.async_create_entry(title="", data=prepared_input)
 
-        return self._show_import_form({}, current_values)
+        return self._show_command_form({}, current_values)

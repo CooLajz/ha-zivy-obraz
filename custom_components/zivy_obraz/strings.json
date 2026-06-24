@@ -20,6 +20,13 @@
           "prefix": "Variable name prefix",
           "invalid_state_fallback": "Invalid state fallback value"
         }
+      },
+      "command": {
+        "title": "Device control / Command API",
+        "description": "Command key will be used for controlling Živý Obraz devices. The integration currently simulates commands locally until the public Command API is available.",
+        "data": {
+          "command_key": "Command key"
+        }
       }
     },
     "error": {
@@ -62,6 +69,14 @@
           "prefix": "Variable name prefix",
           "invalid_state_fallback": "Invalid state fallback value"
         }
+      },
+      "command": {
+        "title": "Device control / Command API",
+        "description": "Command key will be used for controlling Živý Obraz devices. The integration currently simulates commands locally until the public Command API is available.",
+        "data": {
+          "command_key": "Command key",
+          "change_command_key": "Change or remove Command key"
+        }
       }
     },
     "error": {
@@ -103,6 +118,12 @@
       },
       "replace_invalid_states_with_na": {
         "name": "Send fallback for invalid entity states"
+      },
+      "ota": {
+        "name": "OTA firmware updates"
+      },
+      "refresh_display": {
+        "name": "Refresh display"
       }
     },
     "button": {
@@ -279,6 +300,60 @@
           "description": "List of Živý Obraz variable names and values."
         }
       }
+    },
+    "command": {
+      "name": "Simulate device command",
+      "description": "Simulate a Živý Obraz Command API request locally. No HTTP request is sent until the public Command API is available.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry ID",
+          "description": "Optional config entry ID. Leave empty to target all configured instances with Command key."
+        },
+        "name": {
+          "name": "Instance name",
+          "description": "Optional instance name. Leave empty to target all configured instances with Command key."
+        },
+        "target": {
+          "name": "Target",
+          "description": "Command target: all, group:<id>, device:<id>, or device:<mac>."
+        },
+        "caption": {
+          "name": "Caption",
+          "description": "Device display name."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Device note. Empty value clears the note."
+        },
+        "ota": {
+          "name": "OTA firmware updates",
+          "description": "Enable or disable OTA firmware updates."
+        },
+        "pin_key": {
+          "name": "PIN key",
+          "description": "Device PIN key. Empty value clears the PIN."
+        },
+        "invert_screen": {
+          "name": "Invert screen",
+          "description": "Invert screen colors."
+        },
+        "rotate_180": {
+          "name": "Rotate 180 degrees",
+          "description": "Rotate the display 180 degrees."
+        },
+        "show_ap_connect_screen": {
+          "name": "Show AP connect screen",
+          "description": "Show the AP connection screen."
+        },
+        "refresh_screen": {
+          "name": "Refresh display",
+          "description": "Enable or disable display refresh."
+        },
+        "sleep_forced": {
+          "name": "Forced sleep",
+          "description": "Sleep duration when refresh is disabled, in minutes."
+        }
+      }
     }
   },
   "exceptions": {
@@ -302,6 +377,33 @@
     },
     "push_values_empty": {
       "message": "No custom values were provided for push."
+    },
+    "command_entry_id_and_name": {
+      "message": "Use either config entry ID or instance name, not both."
+    },
+    "command_entry_not_loaded": {
+      "message": "Živý Obraz config entry \"{entry}\" is not loaded."
+    },
+    "command_name_not_found": {
+      "message": "Živý Obraz instance named \"{name}\" was not found."
+    },
+    "command_name_not_unique": {
+      "message": "Živý Obraz instance name \"{name}\" is not unique. Use the config entry ID."
+    },
+    "command_no_entries_ready": {
+      "message": "No loaded Živý Obraz config entries have Command key configured."
+    },
+    "command_entry_not_ready": {
+      "message": "Živý Obraz config entry \"{entry}\" is not ready for commands. Configure Command key first."
+    },
+    "command_no_properties": {
+      "message": "No command properties were provided."
+    },
+    "command_invalid_target": {
+      "message": "Command target \"{target}\" is invalid."
+    },
+    "command_target_not_found": {
+      "message": "Command target \"{target}\" does not match any locally known device."
     }
   }
 }
