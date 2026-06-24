@@ -124,6 +124,12 @@
       },
       "refresh_display": {
         "name": "Obnovovanie displeja"
+      },
+      "rotate_180": {
+        "name": "Otočenie displeja o 180 stupňov"
+      },
+      "show_ap_connect_screen": {
+        "name": "Zobraziť AP obrazovku"
       }
     },
     "button": {

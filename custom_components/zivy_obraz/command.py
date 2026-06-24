@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlencode
+
+from .const import ZIVY_OBRAZ_COMMAND_URL
 
 COMMAND_BOOLEAN_PROPERTIES = {
     "ota",
@@ -23,6 +26,7 @@ COMMAND_LOCAL_PROPERTY_MAP = {
 }
 
 DEVICE_ID_KEYS = ("id", "device_id", "epaper_id")
+MASKED_COMMAND_KEY = "********"
 
 
 def normalize_command_target(
@@ -128,3 +132,14 @@ def command_properties_for_response(properties: dict[str, Any]) -> dict[str, Any
             response_properties[property_name] = value
 
     return response_properties
+
+
+def build_masked_command_url(target: str, properties: dict[str, Any]) -> str:
+    """Build a diagnostic Command API URL without exposing the Command key."""
+    params = {
+        "command_key": MASKED_COMMAND_KEY,
+        "target": target,
+        **command_properties_for_response(properties),
+    }
+
+    return f"{ZIVY_OBRAZ_COMMAND_URL}?{urlencode(params, safe='*:')}"

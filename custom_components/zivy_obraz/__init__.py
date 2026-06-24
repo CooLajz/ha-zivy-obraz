@@ -73,7 +73,11 @@ from .const import (
 )
 from .coordinator import ZivyObrazCoordinator
 from .api import build_account_url, build_export_url
-from .command import command_properties_for_response, normalize_command_target
+from .command import (
+    build_masked_command_url,
+    command_properties_for_response,
+    normalize_command_target,
+)
 from .device import diagnostic_device_identifier
 from .i18n import async_preload_runtime_translations
 from .label_helper import async_ensure_label_exists, async_get_label_id
@@ -614,6 +618,7 @@ async def _async_command_entry(
         "simulated": True,
         "requested_target": requested_target,
         "target": target,
+        "command_url": build_masked_command_url(target, properties),
         "updated": len(affected_macs),
         "affected_devices": sorted(affected_macs),
         "properties": command_properties_for_response(properties),

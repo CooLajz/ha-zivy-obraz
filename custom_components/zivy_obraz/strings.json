@@ -124,6 +124,12 @@
       },
       "refresh_display": {
         "name": "Refresh display"
+      },
+      "rotate_180": {
+        "name": "Rotate display 180 degrees"
+      },
+      "show_ap_connect_screen": {
+        "name": "Show AP connect screen"
       }
     },
     "button": {

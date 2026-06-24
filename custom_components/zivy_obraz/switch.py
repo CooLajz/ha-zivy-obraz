@@ -18,6 +18,8 @@ from .config_helpers import async_update_option, get_config_value, options_updat
 from .const import (
     ATTR_OTA,
     ATTR_REFRESH_SCREEN,
+    ATTR_ROTATE_180,
+    ATTR_SHOW_AP_CONNECT_SCREEN,
     CONF_COMMAND_KEY,
     CONF_IMPORT_KEY,
     CONF_OVERDUE_NOTIFICATION,
@@ -114,6 +116,22 @@ COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
         command_property=ATTR_REFRESH_SCREEN,
         data_key="refresh_display",
         icon="mdi:monitor-screenshot",
+        entity_category=EntityCategory.CONFIG,
+    ),
+    ZivyObrazCommandSwitchDescription(
+        key="rotate_180",
+        translation_key="rotate_180",
+        command_property=ATTR_ROTATE_180,
+        data_key="rotate_180",
+        icon="mdi:rotate-3d-variant",
+        entity_category=EntityCategory.CONFIG,
+    ),
+    ZivyObrazCommandSwitchDescription(
+        key="show_ap_connect_screen",
+        translation_key="show_ap_connect_screen",
+        command_property=ATTR_SHOW_AP_CONNECT_SCREEN,
+        data_key="show_ap_connect_screen",
+        icon="mdi:wifi-cog",
         entity_category=EntityCategory.CONFIG,
     ),
 )
