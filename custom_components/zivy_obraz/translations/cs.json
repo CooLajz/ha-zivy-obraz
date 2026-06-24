@@ -321,7 +321,7 @@
         },
         "target": {
           "name": "Cíl",
-          "description": "Cíl příkazu: all, group:id, device:id nebo device:mac."
+          "description": "Volitelný cíl příkazu: group:id, device:id nebo device:mac. Pokud zůstane prázdný, zacílí se všechna zařízení spravovaná touto instancí."
         },
         "caption": {
           "name": "Název zařízení",

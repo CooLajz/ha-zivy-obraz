@@ -128,7 +128,7 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
-        vol.Optional(ATTR_TARGET, default="all"): cv.string,
+        vol.Optional(ATTR_TARGET): cv.string,
         vol.Optional(ATTR_CAPTION): cv.string,
         vol.Optional(ATTR_NOTE): cv.string,
         vol.Optional(ATTR_PIN_KEY): cv.string,

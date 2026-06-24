@@ -88,8 +88,7 @@ command:
         text:
     target:
       name: Target
-      description: "Command target: all, group:id, device:id, or device:mac."
-      default: "all"
+      description: "Optional command target: group:id, device:id, or device:mac. Leave empty to target all devices managed by this instance."
       example: "device:AA:BB:CC:DD:EE:FF"
       selector:
         text:

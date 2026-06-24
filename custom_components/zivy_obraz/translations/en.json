@@ -315,7 +315,7 @@
         },
         "target": {
           "name": "Target",
-          "description": "Command target: all, group:id, device:id, or device:mac."
+          "description": "Optional command target: group:id, device:id, or device:mac. Leave empty to target all devices managed by this instance."
         },
         "caption": {
           "name": "Caption",

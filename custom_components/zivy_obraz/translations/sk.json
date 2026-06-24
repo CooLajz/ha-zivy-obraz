@@ -315,7 +315,7 @@
         },
         "target": {
           "name": "Cieľ",
-          "description": "Cieľ príkazu: all, group:id, device:id alebo device:mac."
+          "description": "Voliteľný cieľ príkazu: group:id, device:id alebo device:mac. Ak zostane prázdny, zacielia sa všetky zariadenia spravované touto inštanciou."
         },
         "caption": {
           "name": "Názov zariadenia",
