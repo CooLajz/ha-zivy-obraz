@@ -119,6 +119,9 @@
       "replace_invalid_states_with_na": {
         "name": "Odosielať náhradnú hodnotu pre neplatné stavy entít"
       },
+      "invert_screen": {
+        "name": "Invertovať farby displeja"
+      },
       "ota": {
         "name": "OTA aktualizácie firmvéru"
       },

@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .config_helpers import async_update_option, get_config_value, options_update_signal
 from .const import (
+    ATTR_INVERT_SCREEN,
     ATTR_OTA,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
@@ -103,6 +104,14 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
 )
 
 COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
+    ZivyObrazCommandSwitchDescription(
+        key="invert_screen",
+        translation_key="invert_screen",
+        command_property=ATTR_INVERT_SCREEN,
+        data_key="invert_screen",
+        icon="mdi:invert-colors",
+        entity_category=EntityCategory.CONFIG,
+    ),
     ZivyObrazCommandSwitchDescription(
         key="ota",
         translation_key="ota",
@@ -312,10 +321,10 @@ class ZivyObrazConfigSwitch(SwitchEntity):
             self.schedule_update_ha_state()
 
 
-def _coerce_bool_state(value: Any) -> bool:
+def _coerce_bool_state(value: Any) -> bool | None:
     """Return a stable boolean state from common API bool representations."""
     if value is None:
-        return False
+        return None
     if isinstance(value, bool):
         return value
     if isinstance(value, (int, float)):

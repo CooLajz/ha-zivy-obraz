@@ -119,6 +119,9 @@
       "replace_invalid_states_with_na": {
         "name": "Send fallback for invalid entity states"
       },
+      "invert_screen": {
+        "name": "Invert display colors"
+      },
       "ota": {
         "name": "OTA firmware updates"
       },
