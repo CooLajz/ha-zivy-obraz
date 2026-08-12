@@ -17,7 +17,6 @@ COMMAND_LOCAL_PROPERTY_MAP = {
     "caption": "caption",
     "note": "note",
     "ota": "ota",
-    "pin_key": "pin_key",
     "invert_screen": "invert_screen",
     "rotate_180": "rotate_180",
     "show_ap_connect_screen": "show_ap_connect_screen",
@@ -27,6 +26,7 @@ COMMAND_LOCAL_PROPERTY_MAP = {
 
 DEVICE_ID_KEYS = ("id", "device_id", "epaper_id")
 MASKED_COMMAND_KEY = "********"
+MASKED_SECRET_VALUE = "********"
 
 
 class ZivyObrazCommandError(Exception):
@@ -150,12 +150,20 @@ def command_properties_for_response(properties: dict[str, Any]) -> dict[str, Any
     return response_properties
 
 
+def command_properties_for_diagnostics(properties: dict[str, Any]) -> dict[str, Any]:
+    """Return command properties without exposing write-only secrets."""
+    diagnostics = command_properties_for_response(properties)
+    if "pin_key" in diagnostics:
+        diagnostics["pin_key"] = MASKED_SECRET_VALUE
+    return diagnostics
+
+
 def build_masked_command_url(target: str, properties: dict[str, Any]) -> str:
     """Build a diagnostic Command API URL without exposing the Command key."""
     params = {
         "command_key": MASKED_COMMAND_KEY,
         "target": target,
-        **command_properties_for_response(properties),
+        **command_properties_for_diagnostics(properties),
     }
 
     return f"{ZIVY_OBRAZ_COMMAND_URL}?{urlencode(params, safe='*:')}"

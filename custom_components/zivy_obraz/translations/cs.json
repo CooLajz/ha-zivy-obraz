@@ -331,11 +331,11 @@
         },
         "caption": {
           "name": "Název zařízení",
-          "description": "Zobrazovaný název zařízení."
+          "description": "Zobrazovaný název zařízení musí obsahovat 1 až 255 znaků."
         },
         "note": {
           "name": "Poznámka",
-          "description": "Poznámka zařízení. Prázdná hodnota poznámku smaže."
+          "description": "Poznámka zařízení může obsahovat nejvýše 255 znaků. Prázdná hodnota poznámku smaže."
         },
         "pin_key": {
           "name": "PIN key",

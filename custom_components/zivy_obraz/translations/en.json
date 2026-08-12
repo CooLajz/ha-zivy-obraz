@@ -325,11 +325,11 @@
         },
         "caption": {
           "name": "Caption",
-          "description": "Device display name."
+          "description": "Device display name. Must contain 1 to 255 characters."
         },
         "note": {
           "name": "Note",
-          "description": "Device note. Empty value clears the note."
+          "description": "Device note with up to 255 characters. Empty value clears the note."
         },
         "pin_key": {
           "name": "PIN key",

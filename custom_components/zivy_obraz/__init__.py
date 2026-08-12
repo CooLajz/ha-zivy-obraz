@@ -76,6 +76,7 @@ from .api import build_account_url, build_export_url
 from .command import (
     ZivyObrazCommandError,
     build_masked_command_url,
+    command_properties_for_diagnostics,
     command_properties_for_response,
     command_target_macs,
     normalize_command_target,
@@ -131,8 +132,8 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_ENTRY_ID): cv.string,
         vol.Optional(ATTR_NAME): cv.string,
         vol.Optional(ATTR_TARGET): cv.string,
-        vol.Optional(ATTR_CAPTION): cv.string,
-        vol.Optional(ATTR_NOTE): cv.string,
+        vol.Optional(ATTR_CAPTION): vol.All(cv.string, vol.Length(min=1, max=255)),
+        vol.Optional(ATTR_NOTE): vol.All(cv.string, vol.Length(max=255)),
         vol.Optional(ATTR_PIN_KEY): cv.string,
         vol.Optional(ATTR_INVERT_SCREEN): cv.boolean,
         vol.Optional(ATTR_OTA): cv.boolean,
@@ -624,7 +625,7 @@ async def _async_command_entry(
             "updated": 0,
             "local_updated": 0,
             "affected_devices": [],
-            "properties": command_properties_for_response(properties),
+            "properties": command_properties_for_diagnostics(properties),
         }
 
     try:
@@ -656,9 +657,11 @@ async def _async_command_entry(
         "updated": command_response.get("updated", len(affected_macs)),
         "local_updated": len(affected_macs),
         "affected_devices": sorted(affected_macs),
-        "properties": command_response.get(
-            "properties",
-            command_properties_for_response(properties),
+        "properties": command_properties_for_diagnostics(
+            command_response.get(
+                "properties",
+                command_properties_for_response(properties),
+            )
         ),
     }
 

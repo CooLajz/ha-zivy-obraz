@@ -325,11 +325,11 @@
         },
         "caption": {
           "name": "Názov zariadenia",
-          "description": "Zobrazovaný názov zariadenia."
+          "description": "Zobrazovaný názov zariadenia musí obsahovať 1 až 255 znakov."
         },
         "note": {
           "name": "Poznámka",
-          "description": "Poznámka zariadenia. Prázdna hodnota poznámku vymaže."
+          "description": "Poznámka zariadenia môže obsahovať najviac 255 znakov. Prázdna hodnota poznámku vymaže."
         },
         "pin_key": {
           "name": "PIN key",
