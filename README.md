@@ -190,8 +190,8 @@ požadovanou hodnotu mají. Takový výsledek není chyba.
 Diagnostická URL v response datech obsahuje místo Command key a PINu pouze
 zástupné znaky. Senzory `Device ID` a `Content source` jsou diagnostické a ve
 výchozím stavu zakázané; lze je ručně povolit v detailu zařízení. Číselná
-entita `Interval kontroly při vypnutém obnovování displeje` je také ve výchozím
-stavu zakázaná. Po povolení načítá `sleep_forced` z Export API a umožňuje
+entita `Interval kontroly při vypnutém obnovování displeje` je při nastaveném
+Command key standardně viditelná. Načítá `sleep_forced` z Export API a umožňuje
 nastavit hodnotu 5 až 240 minut přes Command API. Hodnota se používá pouze
 tehdy, když je `Refresh display` vypnutý. Zařízení během intervalu neobnovuje
 displej a po jeho uplynutí znovu ověří aktuální nastavení.
@@ -807,11 +807,12 @@ already have the requested value. This is not an error.
 Diagnostic command URLs contain placeholders instead of the Command key and
 PIN. The `Device ID` and `Content source` sensors are diagnostic entities that
 are disabled by default and can be enabled manually on the device page. The
-`Display refresh-disabled check interval` number entity is also disabled by
-default. When enabled, it reads `sleep_forced` from the Export API and allows
-setting 5–240 minutes through the Command API. The value is used only while
-`Refresh display` is disabled. The device does not refresh the display during
-this interval and checks its current settings again when the interval expires.
+`Display refresh-disabled check interval` number entity is visible by default
+when a Command key is configured. It reads `sleep_forced` from the Export API
+and allows setting 5–240 minutes through the Command API. The value is used only
+while `Refresh display` is disabled. The device does not refresh the display
+during this interval and checks its current settings again when the interval
+expires.
 
 ---
 

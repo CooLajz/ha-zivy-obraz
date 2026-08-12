@@ -317,7 +317,6 @@ class ZivyObrazSleepForcedNumber(
     _attr_translation_key = "sleep_forced"
     _attr_icon = "mdi:sleep"
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
     _attr_native_min_value = 5
     _attr_native_max_value = 240
     _attr_native_step = 1
