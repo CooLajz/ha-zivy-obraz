@@ -137,8 +137,8 @@
         "name": "Invertovanie farieb displeja",
         "state": {
           "default": "Podľa nastavenia obrazovky",
-          "always": "Vždy invertovať",
-          "never": "Nikdy neinvertovať"
+          "invert": "Invertovať",
+          "do_not_invert": "Neinvertovať"
         }
       }
     },
@@ -196,6 +196,9 @@
       },
       "device_id": {
         "name": "ID zariadenia"
+      },
+      "content_source": {
+        "name": "Zdroj obsahu"
       },
       "fw_build": {
         "name": "Zostavenie FW"

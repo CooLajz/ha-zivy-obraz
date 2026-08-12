@@ -137,7 +137,7 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PIN_KEY): cv.string,
         vol.Optional(ATTR_INVERT_SCREEN): vol.Any(
             None,
-            vol.In({"default", "always", "never"}),
+            vol.In({"default", "invert", "do_not_invert"}),
             cv.boolean,
         ),
         vol.Optional(ATTR_OTA): cv.boolean,
@@ -572,8 +572,8 @@ def _command_properties_from_call(data) -> dict[str, object]:
     if ATTR_INVERT_SCREEN in properties:
         properties[ATTR_INVERT_SCREEN] = {
             "default": None,
-            "always": True,
-            "never": False,
+            "invert": True,
+            "do_not_invert": False,
         }.get(invert_screen, invert_screen)
     return properties
 

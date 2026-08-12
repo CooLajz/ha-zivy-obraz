@@ -204,6 +204,14 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
+        key="content_source",
+        value_key="content_source",
+        name="Content source",
+        icon="mdi:card-text-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
         key="fw_build",
         value_key="fw_build",
         name="FW build",

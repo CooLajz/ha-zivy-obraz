@@ -115,10 +115,10 @@ command:
           options:
             - label: Use display setting
               value: default
-            - label: Always invert
-              value: always
-            - label: Never invert
-              value: never
+            - label: Invert
+              value: invert
+            - label: Do not invert
+              value: do_not_invert
     ota:
       name: OTA firmware updates
       description: Enable or disable OTA firmware updates.

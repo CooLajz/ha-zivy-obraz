@@ -24,17 +24,17 @@ from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
 
 INVERT_SCREEN_DEFAULT = "default"
-INVERT_SCREEN_ALWAYS = "always"
-INVERT_SCREEN_NEVER = "never"
+INVERT_SCREEN_ENABLED = "invert"
+INVERT_SCREEN_DISABLED = "do_not_invert"
 INVERT_SCREEN_OPTIONS = [
     INVERT_SCREEN_DEFAULT,
-    INVERT_SCREEN_ALWAYS,
-    INVERT_SCREEN_NEVER,
+    INVERT_SCREEN_ENABLED,
+    INVERT_SCREEN_DISABLED,
 ]
 INVERT_SCREEN_VALUES = {
     INVERT_SCREEN_DEFAULT: None,
-    INVERT_SCREEN_ALWAYS: True,
-    INVERT_SCREEN_NEVER: False,
+    INVERT_SCREEN_ENABLED: True,
+    INVERT_SCREEN_DISABLED: False,
 }
 
 
@@ -148,9 +148,9 @@ class ZivyObrazInvertScreenSelect(
         if value is None:
             return INVERT_SCREEN_DEFAULT
         if value is True:
-            return INVERT_SCREEN_ALWAYS
+            return INVERT_SCREEN_ENABLED
         if value is False:
-            return INVERT_SCREEN_NEVER
+            return INVERT_SCREEN_DISABLED
         return None
 
     async def async_select_option(self, option: str) -> None:

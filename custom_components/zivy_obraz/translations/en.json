@@ -137,8 +137,8 @@
         "name": "Invert display colors",
         "state": {
           "default": "Use display setting",
-          "always": "Always invert",
-          "never": "Never invert"
+          "invert": "Invert",
+          "do_not_invert": "Do not invert"
         }
       }
     },
@@ -196,6 +196,9 @@
       },
       "device_id": {
         "name": "Device ID"
+      },
+      "content_source": {
+        "name": "Content source"
       },
       "fw_build": {
         "name": "FW build"
