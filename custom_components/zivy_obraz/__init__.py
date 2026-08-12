@@ -548,7 +548,7 @@ async def _async_handle_command(
         )
 
     results = await asyncio.gather(*command_tasks)
-    if not any(result["updated"] for result in results):
+    if not any(result["status"] != "no_matching_devices" for result in results):
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="command_target_not_found",
