@@ -538,7 +538,7 @@ async def _async_handle_command(
         )
         for entry in hass.config_entries.async_entries(DOMAIN)
         if (entry_data := hass.data.get(DOMAIN, {}).get(entry.entry_id)) is not None
-        and entry_data.get("command_key")
+        and str(entry_data.get("command_key") or "").strip()
     ]
 
     if not command_tasks:

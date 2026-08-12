@@ -166,7 +166,7 @@ def build_command_payload(
     target: str,
     properties: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build Command API POST payload."""
+    """Build Command API query parameters."""
     return {
         "command_key": command_key,
         "target": target,

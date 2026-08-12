@@ -282,7 +282,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             async with asyncio.timeout(self.timeout):
                 async with self.session.post(
                     ZIVY_OBRAZ_COMMAND_URL,
-                    data=payload,
+                    params=payload,
                     headers={"Accept": "application/json"},
                 ) as response:
                     status = response.status
