@@ -184,6 +184,9 @@
       "group_name": {
         "name": "Názov skupiny"
       },
+      "device_id": {
+        "name": "ID zariadenia"
+      },
       "fw_build": {
         "name": "Zostavenie FW"
       },

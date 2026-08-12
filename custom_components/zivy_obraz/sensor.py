@@ -196,6 +196,14 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     ZivyObrazSensorDescription(
+        key="device_id",
+        value_key="id",
+        name="Device ID",
+        icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
         key="fw_build",
         value_key="fw_build",
         name="FW build",

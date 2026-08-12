@@ -184,6 +184,9 @@
       "group_name": {
         "name": "Group name"
       },
+      "device_id": {
+        "name": "Device ID"
+      },
       "fw_build": {
         "name": "FW build"
       },
