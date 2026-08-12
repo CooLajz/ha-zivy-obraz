@@ -20,8 +20,18 @@ from homeassistant.util import dt as dt_util
 
 from .api import normalize_export_payload
 from .battery import BatteryChargeTracker, BatterySensorValueTracker
-from .command import command_properties_for_local_data, command_target_macs
-from .const import DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, DOMAIN
+from .command import (
+    ZivyObrazCommandError,
+    build_command_payload,
+    command_properties_for_local_data,
+    command_target_macs,
+)
+from .const import (
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_TIMEOUT,
+    DOMAIN,
+    ZIVY_OBRAZ_COMMAND_URL,
+)
 from .device import build_device_name, build_device_registry_metadata
 
 _LOGGER = logging.getLogger(__name__)
@@ -259,6 +269,71 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
         return data
 
+    async def async_send_command(
+        self,
+        command_key: str,
+        target: str,
+        properties: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Send one Command API request."""
+        payload = build_command_payload(command_key, target, properties)
+
+        try:
+            async with asyncio.timeout(self.timeout):
+                async with self.session.post(
+                    ZIVY_OBRAZ_COMMAND_URL,
+                    data=payload,
+                    headers={"Accept": "application/json"},
+                ) as response:
+                    status = response.status
+                    reason = response.reason
+                    raw_text = await response.text()
+        except TimeoutError as err:
+            raise ZivyObrazCommandError("Timeout sending command") from err
+        except ClientError as err:
+            raise ZivyObrazCommandError("Connection error sending command") from err
+
+        raw_text = raw_text.strip()
+        if not raw_text:
+            raise ZivyObrazCommandError(
+                f"Command API returned an empty response instead of JSON "
+                f"(HTTP {status})"
+            )
+
+        try:
+            data = json.loads(raw_text)
+        except json.JSONDecodeError as err:
+            preview = raw_text[:200].replace("\n", " ").replace("\r", " ")
+            if status >= 400:
+                raise ZivyObrazCommandError(
+                    f"HTTP error sending command: {status} {reason}. "
+                    f"First 200 chars: {preview}"
+                ) from err
+            raise ZivyObrazCommandError(
+                f"Command API did not return valid JSON. First 200 chars: {preview}"
+            ) from err
+
+        if not isinstance(data, dict):
+            raise ZivyObrazCommandError("Command API JSON must be an object/dict")
+
+        if status >= 400 and data.get("status") == "ok":
+            raise ZivyObrazCommandError(
+                f"HTTP error sending command: {status} {reason}"
+            )
+
+        if data.get("status") != "ok":
+            message = str(data.get("error") or "Command API returned an error")
+            code = data.get("code")
+            if code:
+                message = f"{message} ({code})"
+            raise ZivyObrazCommandError(
+                message,
+                code=str(code) if code else None,
+                response=data,
+            )
+
+        return data
+
     @callback
     def _async_registry_macs_for_entry(self) -> set[str]:
         """Return MACs of devices currently stored for this config entry."""
@@ -369,7 +444,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         target: str,
         properties: dict[str, Any],
     ) -> set[str]:
-        """Apply a simulated Command API response to locally known devices."""
+        """Apply a successful Command API response to locally known devices."""
         current_data = self.data or {}
         affected_macs = command_target_macs(
             current_data,

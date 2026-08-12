@@ -71,8 +71,8 @@ push_values:
                 text:
 
 command:
-  name: Simulate device command
-  description: Simulate a Živý Obraz Command API request locally. No HTTP request is sent until the public Command API is available.
+  name: Send device command
+  description: Send a Živý Obraz Command API request.
   fields:
     entry_id:
       name: Config entry ID

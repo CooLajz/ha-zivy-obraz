@@ -21,12 +21,28 @@ COMMAND_LOCAL_PROPERTY_MAP = {
     "invert_screen": "invert_screen",
     "rotate_180": "rotate_180",
     "show_ap_connect_screen": "show_ap_connect_screen",
-    "refresh_screen": "refresh_display",
+    "refresh_screen": "refresh_screen",
     "sleep_forced": "sleep_forced",
 }
 
 DEVICE_ID_KEYS = ("id", "device_id", "epaper_id")
 MASKED_COMMAND_KEY = "********"
+
+
+class ZivyObrazCommandError(Exception):
+    """Raised when Command API request fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        response: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize Command API error."""
+        super().__init__(message)
+        self.code = code
+        self.response = response
 
 
 def normalize_command_target(
@@ -143,3 +159,16 @@ def build_masked_command_url(target: str, properties: dict[str, Any]) -> str:
     }
 
     return f"{ZIVY_OBRAZ_COMMAND_URL}?{urlencode(params, safe='*:')}"
+
+
+def build_command_payload(
+    command_key: str,
+    target: str,
+    properties: dict[str, Any],
+) -> dict[str, Any]:
+    """Build Command API POST payload."""
+    return {
+        "command_key": command_key,
+        "target": target,
+        **command_properties_for_response(properties),
+    }

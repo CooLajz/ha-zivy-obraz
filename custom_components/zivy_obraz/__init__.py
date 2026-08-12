@@ -74,8 +74,10 @@ from .const import (
 from .coordinator import ZivyObrazCoordinator
 from .api import build_account_url, build_export_url
 from .command import (
+    ZivyObrazCommandError,
     build_masked_command_url,
     command_properties_for_response,
+    command_target_macs,
     normalize_command_target,
 )
 from .device import diagnostic_device_identifier
@@ -452,7 +454,7 @@ async def _async_handle_command(
     hass: HomeAssistant,
     call: ServiceCall,
 ) -> dict:
-    """Handle simulated Command API service calls."""
+    """Handle Command API service calls."""
     entry_id = call.data.get(ATTR_ENTRY_ID)
     name = call.data.get(ATTR_NAME)
     properties = _command_properties_from_call(call.data)
@@ -571,8 +573,9 @@ async def _async_command_entry(
     properties: dict[str, object],
     require_target_match: bool = True,
 ) -> dict:
-    """Apply one simulated Command API call to one loaded config entry."""
-    if not str(entry_data.get("command_key") or "").strip():
+    """Apply one Command API call to one loaded config entry."""
+    command_key = str(entry_data.get("command_key") or "").strip()
+    if not command_key:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="command_entry_not_ready",
@@ -599,10 +602,10 @@ async def _async_command_entry(
             translation_placeholders={"target": str(data.get(ATTR_TARGET) or "")},
         ) from err
 
-    affected_macs = await coordinator.async_apply_local_command(
-        requested_target,
+    affected_macs = command_target_macs(
+        coordinator.data or {},
         target,
-        properties,
+        requested_target=requested_target,
     )
     if not affected_macs and require_target_match:
         raise ServiceValidationError(
@@ -610,18 +613,53 @@ async def _async_command_entry(
             translation_key="command_target_not_found",
             translation_placeholders={"target": target},
         )
+    if not affected_macs:
+        return {
+            "entry_id": entry_id,
+            "name": entry_name,
+            "status": "no_matching_devices",
+            "requested_target": requested_target,
+            "target": target,
+            "command_url": build_masked_command_url(target, properties),
+            "updated": 0,
+            "local_updated": 0,
+            "affected_devices": [],
+            "properties": command_properties_for_response(properties),
+        }
+
+    try:
+        command_response = await coordinator.async_send_command(
+            command_key,
+            target,
+            properties,
+        )
+    except ZivyObrazCommandError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_request_failed",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    affected_macs = await coordinator.async_apply_local_command(
+        requested_target,
+        target,
+        properties,
+    )
 
     return {
         "entry_id": entry_id,
         "name": entry_name,
-        "status": "ok" if affected_macs else "no_matching_devices",
-        "simulated": True,
+        "status": str(command_response.get("status") or "ok"),
         "requested_target": requested_target,
         "target": target,
         "command_url": build_masked_command_url(target, properties),
-        "updated": len(affected_macs),
+        "updated": command_response.get("updated", len(affected_macs)),
+        "local_updated": len(affected_macs),
         "affected_devices": sorted(affected_macs),
-        "properties": command_properties_for_response(properties),
+        "properties": command_response.get(
+            "properties",
+            command_properties_for_response(properties),
+        ),
     }
 
 

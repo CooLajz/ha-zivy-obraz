@@ -23,7 +23,7 @@
       },
       "command": {
         "title": "Device control / Command API",
-        "description": "Command key will be used for controlling Živý Obraz devices. The integration currently simulates commands locally until the public Command API is available.",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
         "data": {
           "command_key": "Command key"
         }
@@ -72,7 +72,7 @@
       },
       "command": {
         "title": "Device control / Command API",
-        "description": "Command key will be used for controlling Živý Obraz devices. The integration currently simulates commands locally until the public Command API is available.",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
         "data": {
           "command_key": "Command key",
           "change_command_key": "Change or remove Command key"
@@ -122,7 +122,7 @@
       "ota": {
         "name": "OTA firmware updates"
       },
-      "refresh_display": {
+      "refresh_screen": {
         "name": "Refresh display"
       },
       "rotate_180": {
@@ -308,8 +308,8 @@
       }
     },
     "command": {
-      "name": "Simulate device command",
-      "description": "Simulate a Živý Obraz Command API request locally. No HTTP request is sent until the public Command API is available.",
+      "name": "Send device command",
+      "description": "Send a Živý Obraz Command API request.",
       "fields": {
         "entry_id": {
           "name": "Config entry ID",
@@ -410,6 +410,9 @@
     },
     "command_target_not_found": {
       "message": "Command target \"{target}\" does not match any locally known device."
+    },
+    "command_request_failed": {
+      "message": "Command API request failed: {error}"
     }
   }
 }

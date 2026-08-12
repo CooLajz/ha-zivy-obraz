@@ -34,6 +34,7 @@ from .const import (
     DEFAULT_SEND_ONLY_CHANGED,
     DOMAIN,
 )
+from .command import ZivyObrazCommandError
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
 
@@ -111,10 +112,10 @@ COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazCommandSwitchDescription(
-        key="refresh_display",
-        translation_key="refresh_display",
+        key="refresh_screen",
+        translation_key="refresh_screen",
         command_property=ATTR_REFRESH_SCREEN,
-        data_key="refresh_display",
+        data_key="refresh_screen",
         icon="mdi:monitor-screenshot",
         entity_category=EntityCategory.CONFIG,
     ),
@@ -149,9 +150,11 @@ async def async_setup_entry(
     has_import_key = bool(
         str(get_config_value(entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY) or "").strip()
     )
-    has_command_key = bool(
-        str(get_config_value(entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY) or "").strip()
+    command_key = str(
+        get_config_value(entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY) or ""
     )
+    command_key = command_key.strip()
+    has_command_key = bool(command_key)
     if not has_import_key:
         _remove_push_config_switches(hass, entry)
     if not has_command_key:
@@ -185,6 +188,7 @@ async def async_setup_entry(
                         coordinator,
                         mac,
                         description,
+                        command_key,
                     )
                 )
 
@@ -330,7 +334,7 @@ class ZivyObrazCommandSwitch(
     CoordinatorEntity[ZivyObrazCoordinator],
     SwitchEntity,
 ):
-    """Representation of one Živý Obraz simulated Command API switch."""
+    """Representation of one Živý Obraz Command API switch."""
 
     _attr_has_entity_name = True
 
@@ -339,11 +343,13 @@ class ZivyObrazCommandSwitch(
         coordinator: ZivyObrazCoordinator,
         mac: str,
         description: ZivyObrazCommandSwitchDescription,
+        command_key: str,
     ) -> None:
         """Initialize the command switch."""
         super().__init__(coordinator)
         self.entity_description = description
         self._mac = mac
+        self._command_key = command_key
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
         self._attr_unique_id = f"{mac}_{description.key}"
 
@@ -381,23 +387,36 @@ class ZivyObrazCommandSwitch(
         )
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn the simulated command property on."""
+        """Turn the command property on."""
         await self._async_set_command_value(True)
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn the simulated command property off."""
+        """Turn the command property off."""
         await self._async_set_command_value(False)
 
     async def _async_set_command_value(self, value: bool) -> None:
-        """Apply one simulated device command."""
+        """Apply one device command."""
         target = f"device:{self._mac}"
+        properties = {self.entity_description.command_property: value}
+
+        try:
+            await self.coordinator.async_send_command(
+                self._command_key,
+                target,
+                properties,
+            )
+        except ZivyObrazCommandError as err:
+            raise HomeAssistantError(
+                f"Živý Obraz command failed for {self._mac}: {err}"
+            ) from err
+
         affected_macs = await self.coordinator.async_apply_local_command(
             target,
             target,
-            {self.entity_description.command_property: value},
+            properties,
         )
 
         if self._mac not in affected_macs:
             raise HomeAssistantError(
-                f"Živý Obraz device {self._mac} is not available for command simulation"
+                f"Živý Obraz device {self._mac} is not available for command"
             )

@@ -23,7 +23,7 @@
       },
       "command": {
         "title": "Ovládanie zariadení / Command API",
-        "description": "Command key bude použitý na ovládanie zariadení Živého obrazu. Integrácia zatiaľ príkazy simuluje lokálne, kým nebude verejné Command API dostupné.",
+        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.",
         "data": {
           "command_key": "Command key"
         }
@@ -72,7 +72,7 @@
       },
       "command": {
         "title": "Ovládanie zariadení / Command API",
-        "description": "Command key bude použitý na ovládanie zariadení Živého obrazu. Integrácia zatiaľ príkazy simuluje lokálne, kým nebude verejné Command API dostupné.",
+        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.",
         "data": {
           "command_key": "Command key",
           "change_command_key": "Zmeniť alebo odobrať Command key"
@@ -122,7 +122,7 @@
       "ota": {
         "name": "OTA aktualizácie firmvéru"
       },
-      "refresh_display": {
+      "refresh_screen": {
         "name": "Obnovovanie displeja"
       },
       "rotate_180": {
@@ -302,8 +302,8 @@
       }
     },
     "command": {
-      "name": "Simulovať príkaz zariadenia",
-      "description": "Lokálne simuluje požiadavku na Command API Živého obrazu. Kým verejné Command API nie je dostupné, neposiela sa žiadna HTTP požiadavka.",
+      "name": "Odoslať príkaz zariadenia",
+      "description": "Odošle požiadavku na Command API Živého obrazu.",
       "fields": {
         "entry_id": {
           "name": "ID konfiguračnej položky",
@@ -404,6 +404,9 @@
     },
     "command_target_not_found": {
       "message": "Cieľ príkazu \"{target}\" nezodpovedá žiadnemu lokálne známemu zariadeniu."
+    },
+    "command_request_failed": {
+      "message": "Požiadavka na Command API zlyhala: {error}"
     }
   }
 }
