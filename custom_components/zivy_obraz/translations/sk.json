@@ -106,7 +106,7 @@
         "name": "Tolerancia oneskorenia"
       },
       "sleep_forced": {
-        "name": "Vynútený spánok"
+        "name": "Interval kontroly pri vypnutom obnovovaní displeja"
       }
     },
     "switch": {
@@ -369,8 +369,8 @@
           "description": "Zobrazí obrazovku na pripojenie k AP."
         },
         "sleep_forced": {
-          "name": "Vynútený spánok",
-          "description": "Doba spánku pri vypnutom obnovovaní v minútach."
+          "name": "Interval kontroly pri vypnutom obnovovaní displeja",
+          "description": "Počet minút, po ktorých zariadenie pri vypnutom obnovovaní displeja znova overí aktuálne nastavenie."
         }
       }
     }

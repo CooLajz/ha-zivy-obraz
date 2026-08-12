@@ -311,7 +311,7 @@ class ZivyObrazSleepForcedNumber(
     CoordinatorEntity[ZivyObrazCoordinator],
     NumberEntity,
 ):
-    """Forced sleep duration control for one Živý Obraz device."""
+    """Refresh-disabled check interval for one Živý Obraz device."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "sleep_forced"

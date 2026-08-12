@@ -140,8 +140,8 @@ command:
       selector:
         boolean:
     sleep_forced:
-      name: Forced sleep
-      description: Sleep duration when refresh is disabled, in minutes.
+      name: Display refresh-disabled check interval
+      description: Minutes before a device with display refresh disabled checks its current settings again.
       example: 120
       selector:
         number:

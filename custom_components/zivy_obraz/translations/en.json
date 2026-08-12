@@ -106,7 +106,7 @@
         "name": "Overdue tolerance"
       },
       "sleep_forced": {
-        "name": "Forced sleep"
+        "name": "Display refresh-disabled check interval"
       }
     },
     "switch": {
@@ -369,8 +369,8 @@
           "description": "Show the AP connection screen."
         },
         "sleep_forced": {
-          "name": "Forced sleep",
-          "description": "Sleep duration when refresh is disabled, in minutes."
+          "name": "Display refresh-disabled check interval",
+          "description": "Minutes before a device with display refresh disabled checks its current settings again."
         }
       }
     }
