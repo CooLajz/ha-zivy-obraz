@@ -16,7 +16,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .config_helpers import async_update_option, get_config_value, options_update_signal
 from .const import (
-    ATTR_INVERT_SCREEN,
     ATTR_OTA,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
@@ -105,14 +104,6 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
 
 COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
     ZivyObrazCommandSwitchDescription(
-        key="invert_screen",
-        translation_key="invert_screen",
-        command_property=ATTR_INVERT_SCREEN,
-        data_key="invert_screen",
-        icon="mdi:invert-colors",
-        entity_category=EntityCategory.CONFIG,
-    ),
-    ZivyObrazCommandSwitchDescription(
         key="ota",
         translation_key="ota",
         command_property=ATTR_OTA,
@@ -166,6 +157,7 @@ async def async_setup_entry(
     has_command_key = bool(command_key)
     if not has_import_key:
         _remove_push_config_switches(hass, entry)
+    _remove_obsolete_invert_screen_switches(hass, entry)
     if not has_command_key:
         _remove_command_device_switches(hass, entry)
 
@@ -218,6 +210,25 @@ async def async_setup_entry(
         entry.async_on_unload(
             coordinator.async_add_new_device_listener(_handle_new_devices)
         )
+
+
+@callback
+def _remove_obsolete_invert_screen_switches(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Remove invert screen switches replaced by select entities."""
+    entity_registry = er.async_get(hass)
+
+    for entity_entry in er.async_entries_for_config_entry(
+        entity_registry,
+        entry.entry_id,
+    ):
+        if entity_entry.domain != "switch":
+            continue
+        if not entity_entry.unique_id.endswith("_invert_screen"):
+            continue
+        entity_registry.async_remove(entity_entry.entity_id)
 
 
 @callback

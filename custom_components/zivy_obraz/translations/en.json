@@ -119,9 +119,6 @@
       "replace_invalid_states_with_na": {
         "name": "Send fallback for invalid entity states"
       },
-      "invert_screen": {
-        "name": "Invert display colors"
-      },
       "ota": {
         "name": "OTA firmware updates"
       },
@@ -133,6 +130,16 @@
       },
       "show_ap_connect_screen": {
         "name": "Show AP connect screen"
+      }
+    },
+    "select": {
+      "invert_screen": {
+        "name": "Invert display colors",
+        "state": {
+          "default": "Use display setting",
+          "always": "Always invert",
+          "never": "Never invert"
+        }
       }
     },
     "button": {
@@ -321,7 +328,7 @@
         },
         "target": {
           "name": "Target",
-          "description": "Optional command target: group:id, device:id, or device:mac. Leave empty to target all devices managed by this instance."
+          "description": "Optional command target: group:id, group:0 or default for the default group, device:id, or device:mac. Leave empty to target all devices managed by this instance."
         },
         "caption": {
           "name": "Caption",
@@ -337,7 +344,7 @@
         },
         "invert_screen": {
           "name": "Invert screen",
-          "description": "Invert screen colors."
+          "description": "Display color inversion behavior."
         },
         "ota": {
           "name": "OTA firmware updates",

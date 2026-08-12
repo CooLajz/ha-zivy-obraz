@@ -135,7 +135,11 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_CAPTION): vol.All(cv.string, vol.Length(min=1, max=255)),
         vol.Optional(ATTR_NOTE): vol.All(cv.string, vol.Length(max=255)),
         vol.Optional(ATTR_PIN_KEY): cv.string,
-        vol.Optional(ATTR_INVERT_SCREEN): cv.boolean,
+        vol.Optional(ATTR_INVERT_SCREEN): vol.Any(
+            None,
+            vol.In({"default", "always", "never"}),
+            cv.boolean,
+        ),
         vol.Optional(ATTR_OTA): cv.boolean,
         vol.Optional(ATTR_REFRESH_SCREEN): cv.boolean,
         vol.Optional(ATTR_ROTATE_180): cv.boolean,
@@ -563,7 +567,15 @@ async def _async_handle_command(
 
 def _command_properties_from_call(data) -> dict[str, object]:
     """Return Command API settable properties from service data."""
-    return {key: data[key] for key in COMMAND_PROPERTY_KEYS if key in data}
+    properties = {key: data[key] for key in COMMAND_PROPERTY_KEYS if key in data}
+    invert_screen = properties.get(ATTR_INVERT_SCREEN)
+    if ATTR_INVERT_SCREEN in properties:
+        properties[ATTR_INVERT_SCREEN] = {
+            "default": None,
+            "always": True,
+            "never": False,
+        }.get(invert_screen, invert_screen)
+    return properties
 
 
 async def _async_command_entry(

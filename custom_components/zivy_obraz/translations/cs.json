@@ -119,9 +119,6 @@
       "replace_invalid_states_with_na": {
         "name": "Odesílat náhradní hodnotu pro neplatné stavy entit"
       },
-      "invert_screen": {
-        "name": "Invertovat barvy displeje"
-      },
       "ota": {
         "name": "OTA aktualizace firmwaru"
       },
@@ -133,6 +130,16 @@
       },
       "show_ap_connect_screen": {
         "name": "Zobrazit AP obrazovku"
+      }
+    },
+    "select": {
+      "invert_screen": {
+        "name": "Invertování barev displeje",
+        "state": {
+          "default": "Podle nastavení obrazovky",
+          "always": "Vždy invertovat",
+          "never": "Nikdy neinvertovat"
+        }
       }
     },
     "button": {
@@ -327,7 +334,7 @@
         },
         "target": {
           "name": "Cíl",
-          "description": "Volitelný cíl příkazu: group:id, device:id nebo device:mac. Pokud zůstane prázdný, zacílí se všechna zařízení spravovaná touto instancí."
+          "description": "Volitelný cíl příkazu: group:id, group:0 nebo default pro výchozí skupinu, device:id či device:mac. Pokud zůstane prázdný, zacílí se všechna zařízení spravovaná touto instancí."
         },
         "caption": {
           "name": "Název zařízení",
@@ -343,7 +350,7 @@
         },
         "invert_screen": {
           "name": "Invertovat displej",
-          "description": "Invertuje barvy displeje."
+          "description": "Nastavení chování invertování barev displeje."
         },
         "ota": {
           "name": "OTA aktualizace firmwaru",

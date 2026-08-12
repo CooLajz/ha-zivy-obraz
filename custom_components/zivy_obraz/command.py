@@ -58,6 +58,9 @@ def normalize_command_target(
             return "all", f"group:{configured_group_id}"
         return "all", "all"
 
+    if target_lower in {"default", "group:default"}:
+        return requested_target, "group:0"
+
     if target_lower.startswith("group:"):
         group_id = requested_target.split(":", 1)[1].strip()
         if not group_id:
@@ -95,6 +98,12 @@ def command_target_macs(
 
     if normalized_target_lower.startswith("group:"):
         group_id = normalized_target.split(":", 1)[1].strip()
+        if group_id == "0":
+            return {
+                mac
+                for mac, device_data in devices.items()
+                if device_data.get("group_id") is None
+            }
         return {
             mac
             for mac, device_data in devices.items()
@@ -129,7 +138,9 @@ def command_properties_for_local_data(
         local_key = COMMAND_LOCAL_PROPERTY_MAP.get(property_name)
         if local_key is None:
             continue
-        if property_name in COMMAND_BOOLEAN_PROPERTIES:
+        if property_name == "invert_screen" and value is None:
+            local_properties[local_key] = None
+        elif property_name in COMMAND_BOOLEAN_PROPERTIES:
             local_properties[local_key] = bool(value)
         else:
             local_properties[local_key] = value
@@ -138,11 +149,13 @@ def command_properties_for_local_data(
 
 
 def command_properties_for_response(properties: dict[str, Any]) -> dict[str, Any]:
-    """Return properties in the shape expected from the future Command API."""
+    """Return properties in the shape expected from Command API."""
     response_properties: dict[str, Any] = {}
 
     for property_name, value in properties.items():
-        if property_name in COMMAND_BOOLEAN_PROPERTIES:
+        if property_name == "invert_screen" and value is None:
+            response_properties[property_name] = None
+        elif property_name in COMMAND_BOOLEAN_PROPERTIES:
             response_properties[property_name] = 1 if bool(value) else 0
         else:
             response_properties[property_name] = value
@@ -160,10 +173,16 @@ def command_properties_for_diagnostics(properties: dict[str, Any]) -> dict[str, 
 
 def build_masked_command_url(target: str, properties: dict[str, Any]) -> str:
     """Build a diagnostic Command API URL without exposing the Command key."""
+    diagnostic_properties = command_properties_for_diagnostics(properties)
+    if (
+        "invert_screen" in diagnostic_properties
+        and diagnostic_properties["invert_screen"] is None
+    ):
+        diagnostic_properties["invert_screen"] = "null"
     params = {
         "command_key": MASKED_COMMAND_KEY,
         "target": target,
-        **command_properties_for_diagnostics(properties),
+        **diagnostic_properties,
     }
 
     return f"{ZIVY_OBRAZ_COMMAND_URL}?{urlencode(params, safe='*:')}"
@@ -175,8 +194,11 @@ def build_command_payload(
     properties: dict[str, Any],
 ) -> dict[str, Any]:
     """Build Command API query parameters."""
-    return {
+    payload = {
         "command_key": command_key,
         "target": target,
         **command_properties_for_response(properties),
     }
+    if payload.get("invert_screen") is None and "invert_screen" in payload:
+        payload["invert_screen"] = "null"
+    return payload

@@ -61,7 +61,7 @@ ZIVY_OBRAZ_COMMAND_URL = "https://cmd.zivyobraz.eu/"
 
 MAX_PUSH_URL_LENGTH = 1800
 
-PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "button"]
 
 SERVICE_PUSH = "push"
 SERVICE_PUSH_VALUES = "push_values"

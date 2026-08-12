@@ -88,7 +88,7 @@ command:
         text:
     target:
       name: Target
-      description: "Optional command target: group:id, device:id, or device:mac. Leave empty to target all devices managed by this instance."
+      description: "Optional command target: group:id, group:0 or default for the default group, device:id, or device:mac. Leave empty to target all devices managed by this instance."
       example: "device:AA:BB:CC:DD:EE:FF"
       selector:
         text:
@@ -109,9 +109,16 @@ command:
         text:
     invert_screen:
       name: Invert screen
-      description: Invert screen colors.
+      description: Display color inversion behavior.
       selector:
-        boolean:
+        select:
+          options:
+            - label: Use display setting
+              value: default
+            - label: Always invert
+              value: always
+            - label: Never invert
+              value: never
     ota:
       name: OTA firmware updates
       description: Enable or disable OTA firmware updates.
