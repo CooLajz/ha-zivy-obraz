@@ -104,6 +104,9 @@
       },
       "overdue_tolerance": {
         "name": "Tolerancia oneskorenia"
+      },
+      "sleep_forced": {
+        "name": "Vynútený spánok"
       }
     },
     "switch": {

@@ -104,6 +104,9 @@
       },
       "overdue_tolerance": {
         "name": "Overdue tolerance"
+      },
+      "sleep_forced": {
+        "name": "Forced sleep"
       }
     },
     "switch": {

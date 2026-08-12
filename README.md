@@ -117,6 +117,7 @@ Po zadání `Command key` integrace vytvoří u každého panelu ovládací enti
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
 - `Invert display colors`
+- `Forced sleep` - vynucená délka spánku v minutách
 
 Invertování barev má tři stavy:
 
@@ -187,7 +188,10 @@ požadovanou hodnotu mají. Takový výsledek není chyba.
 
 Diagnostická URL v response datech obsahuje místo Command key a PINu pouze
 zástupné znaky. Senzory `Device ID` a `Content source` jsou diagnostické a ve
-výchozím stavu zakázané; lze je ručně povolit v detailu zařízení.
+výchozím stavu zakázané; lze je ručně povolit v detailu zařízení. Číselná
+entita `Forced sleep` je také ve výchozím stavu zakázaná. Po povolení načítá
+`sleep_forced` z Export API a umožňuje nastavit hodnotu 5 až 240 minut přes
+Command API.
 
 ---
 
@@ -726,6 +730,7 @@ for every panel:
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
 - `Invert display colors`
+- `Forced sleep` - forced sleep duration in minutes
 
 Display color inversion has three states:
 
@@ -797,7 +802,10 @@ already have the requested value. This is not an error.
 
 Diagnostic command URLs contain placeholders instead of the Command key and
 PIN. The `Device ID` and `Content source` sensors are diagnostic entities that
-are disabled by default and can be enabled manually on the device page.
+are disabled by default and can be enabled manually on the device page. The
+`Forced sleep` number entity is also disabled by default. When enabled, it reads
+`sleep_forced` from the Export API and allows setting 5–240 minutes through the
+Command API.
 
 ---
 

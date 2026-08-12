@@ -104,6 +104,9 @@
       },
       "overdue_tolerance": {
         "name": "Tolerance zpoždění"
+      },
+      "sleep_forced": {
+        "name": "Vynucený spánek"
       }
     },
     "switch": {
