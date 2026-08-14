@@ -122,6 +122,9 @@
       "replace_invalid_states_with_na": {
         "name": "Send fallback for invalid entity states"
       },
+      "force_wifi_full_scan": {
+        "name": "Force one-time Wi-Fi update"
+      },
       "ota": {
         "name": "OTA firmware updates"
       },
@@ -351,6 +354,10 @@
         "invert_screen": {
           "name": "Invert screen",
           "description": "Display color inversion behavior."
+        },
+        "force_wifi_full_scan": {
+          "name": "Force one-time Wi-Fi update",
+          "description": "Request one full Wi-Fi scan at the next wake-up and reconnect to the strongest access point with the same SSID."
         },
         "ota": {
           "name": "OTA firmware updates",

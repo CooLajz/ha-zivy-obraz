@@ -24,6 +24,7 @@ from .const import (
     ATTR_CAPTION,
     ATTR_DRY_RUN,
     ATTR_ENTRY_ID,
+    ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_INVERT_SCREEN,
     ATTR_NAME,
     ATTR_NOTE,
@@ -135,6 +136,7 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_CAPTION): vol.All(cv.string, vol.Length(min=1, max=255)),
         vol.Optional(ATTR_NOTE): vol.All(cv.string, vol.Length(max=255)),
         vol.Optional(ATTR_PIN_KEY): cv.string,
+        vol.Optional(ATTR_FORCE_WIFI_FULL_SCAN): cv.boolean,
         vol.Optional(ATTR_INVERT_SCREEN): vol.Any(
             None,
             vol.In({"default", "invert", "do_not_invert"}),
@@ -155,6 +157,7 @@ COMMAND_PROPERTY_KEYS = (
     ATTR_CAPTION,
     ATTR_NOTE,
     ATTR_PIN_KEY,
+    ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_INVERT_SCREEN,
     ATTR_OTA,
     ATTR_REFRESH_SCREEN,

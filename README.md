@@ -116,6 +116,7 @@ Po zadání `Command key` integrace vytvoří u každého panelu ovládací enti
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
+- `Jednorázově vynutit aktualizaci Wi-Fi`
 - `Invert display colors`
 - `Interval kontroly při vypnutém obnovování displeje` - doba v minutách, po které
   zařízení při vypnutém obnovování displeje znovu ověří aktuální nastavení
@@ -131,6 +132,13 @@ Po úspěšné odpovědi Command API se stav entity v Home Assistant aktualizuje
 okamžitě. Následující načtení Export API stav znovu autoritativně synchronizuje.
 Aktualizace z API ani programová změna entity neposílá stejný příkaz podruhé.
 
+Přepínač `Jednorázově vynutit aktualizaci Wi-Fi` nastaví požadavek pro příští
+probuzení zařízení. Zařízení provede úplný Wi-Fi scan a znovu se připojí k
+nejsilnějšímu přístupovému bodu se stejným SSID. Jde o jednorázovou akci;
+po jejím zpracování se hodnota `force_wifi_full_scan` v Export API vrátí na
+`false` a přepínač se v Home Assistant znovu vypne. Čekající požadavek nelze
+přepínačem ručně zrušit ani vypnout.
+
 Pro hromadné změny a textové hodnoty slouží služba `zivy_obraz.command`:
 
 ```yaml
@@ -142,8 +150,8 @@ data:
 ```
 
 Služba podporuje vlastnosti `caption`, `note`, `pin_key`, `invert_screen`,
-`ota`, `refresh_screen`, `rotate_180`, `show_ap_connect_screen` a
-`sleep_forced`.
+`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`show_ap_connect_screen` a `sleep_forced`.
 
 Možné cíle:
 
@@ -732,6 +740,7 @@ for every panel:
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
+- `Force one-time Wi-Fi update`
 - `Invert display colors`
 - `Display refresh-disabled check interval` - number of minutes before a device with
   display refresh disabled checks its current settings again
@@ -748,6 +757,13 @@ updated immediately. A later Export API refresh synchronizes the authoritative
 state again. API updates and programmatic entity state updates do not send the
 same command a second time.
 
+The `Force one-time Wi-Fi update` switch schedules a request for the device's
+next wake-up. The device performs a full Wi-Fi scan and reconnects to the
+strongest access point with the same SSID. This is a one-time action. After it
+is processed, `force_wifi_full_scan` returns to `false` in the Export API and
+the Home Assistant switch turns off again. A pending request cannot be manually
+cancelled or turned off through the switch.
+
 Use the `zivy_obraz.command` service for bulk changes and text properties:
 
 ```yaml
@@ -758,8 +774,9 @@ data:
   refresh_screen: true
 ```
 
-The service supports `caption`, `note`, `pin_key`, `invert_screen`, `ota`,
-`refresh_screen`, `rotate_180`, `show_ap_connect_screen`, and `sleep_forced`.
+The service supports `caption`, `note`, `pin_key`, `invert_screen`,
+`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`show_ap_connect_screen`, and `sleep_forced`.
 
 Supported targets:
 

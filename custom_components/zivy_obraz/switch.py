@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .config_helpers import async_update_option, get_config_value, options_update_signal
 from .const import (
+    ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_OTA,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
@@ -103,6 +104,14 @@ SWITCH_DESCRIPTIONS: tuple[ZivyObrazSwitchDescription, ...] = (
 )
 
 COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
+    ZivyObrazCommandSwitchDescription(
+        key="force_wifi_full_scan",
+        translation_key="force_wifi_full_scan",
+        command_property=ATTR_FORCE_WIFI_FULL_SCAN,
+        data_key="force_wifi_full_scan",
+        icon="mdi:wifi-sync",
+        entity_category=EntityCategory.CONFIG,
+    ),
     ZivyObrazCommandSwitchDescription(
         key="ota",
         translation_key="ota",
@@ -412,6 +421,14 @@ class ZivyObrazCommandSwitch(
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the command property off."""
+        if (
+            self.entity_description.command_property == ATTR_FORCE_WIFI_FULL_SCAN
+            and self.is_on
+        ):
+            raise HomeAssistantError(
+                "A pending one-time Wi-Fi update cannot be cancelled. "
+                "The switch will turn off after the device processes it."
+            )
         await self._async_set_command_value(False)
 
     async def _async_set_command_value(self, value: bool) -> None:

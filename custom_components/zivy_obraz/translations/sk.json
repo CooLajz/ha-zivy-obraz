@@ -122,6 +122,9 @@
       "replace_invalid_states_with_na": {
         "name": "Odosielať náhradnú hodnotu pre neplatné stavy entít"
       },
+      "force_wifi_full_scan": {
+        "name": "Jednorazovo vynútiť aktualizáciu Wi-Fi"
+      },
       "ota": {
         "name": "OTA aktualizácie firmvéru"
       },
@@ -351,6 +354,10 @@
         "invert_screen": {
           "name": "Invertovať displej",
           "description": "Nastavenie správania invertovania farieb displeja."
+        },
+        "force_wifi_full_scan": {
+          "name": "Jednorazovo vynútiť aktualizáciu Wi-Fi",
+          "description": "Pri nasledujúcom prebudení jednorazovo vykoná úplný Wi-Fi scan a znova sa pripojí k najsilnejšiemu prístupovému bodu s rovnakým SSID."
         },
         "ota": {
           "name": "OTA aktualizácie firmvéru",

@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 from .const import ZIVY_OBRAZ_COMMAND_URL
 
 COMMAND_BOOLEAN_PROPERTIES = {
+    "force_wifi_full_scan",
     "ota",
     "invert_screen",
     "rotate_180",
@@ -15,6 +16,7 @@ COMMAND_BOOLEAN_PROPERTIES = {
 
 COMMAND_LOCAL_PROPERTY_MAP = {
     "caption": "caption",
+    "force_wifi_full_scan": "force_wifi_full_scan",
     "note": "note",
     "ota": "ota",
     "invert_screen": "invert_screen",

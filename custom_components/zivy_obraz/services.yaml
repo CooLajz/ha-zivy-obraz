@@ -119,6 +119,11 @@ command:
               value: invert
             - label: Do not invert
               value: do_not_invert
+    force_wifi_full_scan:
+      name: Force one-time Wi-Fi update
+      description: Request one full Wi-Fi scan at the next wake-up and reconnect to the strongest access point with the same SSID.
+      selector:
+        boolean:
     ota:
       name: OTA firmware updates
       description: Enable or disable OTA firmware updates.
