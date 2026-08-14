@@ -439,6 +439,9 @@
     },
     "command_request_failed": {
       "message": "Požadavek na Command API selhal: {error}"
+    },
+    "force_wifi_full_scan_pending": {
+      "message": "Čekající jednorázovou aktualizaci Wi-Fi nelze zrušit. Přepínač se vypne, jakmile ji zařízení zpracuje."
     }
   }
 }

@@ -426,8 +426,8 @@ class ZivyObrazCommandSwitch(
             and self.is_on
         ):
             raise HomeAssistantError(
-                "A pending one-time Wi-Fi update cannot be cancelled. "
-                "The switch will turn off after the device processes it."
+                translation_domain=DOMAIN,
+                translation_key="force_wifi_full_scan_pending",
             )
         await self._async_set_command_value(False)
 

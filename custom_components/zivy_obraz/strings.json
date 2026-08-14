@@ -439,6 +439,9 @@
     },
     "command_request_failed": {
       "message": "Command API request failed: {error}"
+    },
+    "force_wifi_full_scan_pending": {
+      "message": "A pending one-time Wi-Fi update cannot be cancelled. The switch will turn off after the device processes it."
     }
   }
 }

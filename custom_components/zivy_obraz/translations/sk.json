@@ -433,6 +433,9 @@
     },
     "command_request_failed": {
       "message": "Požiadavka na Command API zlyhala: {error}"
+    },
+    "force_wifi_full_scan_pending": {
+      "message": "Čakajúcu jednorazovú aktualizáciu Wi-Fi nemožno zrušiť. Prepínač sa vypne, keď ju zariadenie spracuje."
     }
   }
 }
