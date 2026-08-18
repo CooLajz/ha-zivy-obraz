@@ -31,6 +31,7 @@
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
+      "invalid_command_key": "Ověření Command key selhalo. Zkontroluj klíč a zkus to znovu.",
       "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",
@@ -81,6 +82,7 @@
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
+      "invalid_command_key": "Ověření Command key selhalo. Zkontroluj klíč a zkus to znovu.",
       "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",

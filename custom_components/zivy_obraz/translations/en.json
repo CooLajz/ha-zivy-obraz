@@ -31,6 +31,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect",
+      "invalid_command_key": "Command key validation failed. Check the key and try again.",
       "invalid_json": "Endpoint does not return valid JSON",
       "timeout": "Request timed out",
       "unknown": "Unexpected error",
@@ -81,6 +82,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect",
+      "invalid_command_key": "Command key validation failed. Check the key and try again.",
       "invalid_json": "Endpoint does not return valid JSON",
       "timeout": "Request timed out",
       "unknown": "Unexpected error",

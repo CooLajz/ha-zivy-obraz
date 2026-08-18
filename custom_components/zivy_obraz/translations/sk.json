@@ -31,6 +31,7 @@
     },
     "error": {
       "cannot_connect": "Nepodarilo sa pripojiť",
+      "invalid_command_key": "Overenie Command key zlyhalo. Skontroluj kľúč a skús to znova.",
       "invalid_json": "Endpoint nevracia platný JSON",
       "timeout": "Vypršal časový limit",
       "unknown": "Neočakávaná chyba",
@@ -81,6 +82,7 @@
     },
     "error": {
       "cannot_connect": "Nepodarilo sa pripojiť",
+      "invalid_command_key": "Overenie Command key zlyhalo. Skontroluj kľúč a skús to znova.",
       "invalid_json": "Endpoint nevracia platný JSON",
       "timeout": "Vypršal časový limit",
       "unknown": "Neočakávaná chyba",
