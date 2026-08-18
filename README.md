@@ -204,6 +204,10 @@ nastavit hodnotu 5 až 240 minut přes Command API. Hodnota se používá pouze
 tehdy, když je `Refresh display` vypnutý. Zařízení během intervalu neobnovuje
 displej a po jeho uplynutí znovu ověří aktuální nastavení.
 
+Diagnostický senzor `Lokální IP adresa` je ve výchozím stavu viditelný. Jeho
+stav obsahuje `local_ip` a v atributech jsou dostupné veřejná IP z `last_ip` a
+MAC adresa zařízení.
+
 ---
 
 ## Odesílání dat do Živého obrazu
@@ -830,6 +834,10 @@ and allows setting 5–240 minutes through the Command API. The value is used on
 while `Refresh display` is disabled. The device does not refresh the display
 during this interval and checks its current settings again when the interval
 expires.
+
+The `Local IP address` diagnostic sensor is enabled by default. Its state
+contains `local_ip`, while the public IP from `last_ip` and the device MAC
+address are available as attributes.
 
 ---
 

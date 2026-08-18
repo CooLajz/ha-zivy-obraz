@@ -191,6 +191,9 @@
       "ssid": {
         "name": "WiFi SSID"
       },
+      "local_ip": {
+        "name": "Lokální IP adresa"
+      },
       "last_contact": {
         "name": "Poslední kontakt"
       },
