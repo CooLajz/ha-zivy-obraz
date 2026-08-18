@@ -30,6 +30,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
     DOMAIN,
+    ZIVY_OBRAZ_CLIENT_HEADERS,
     ZIVY_OBRAZ_COMMAND_URL,
 )
 from .device import build_device_name, build_device_registry_metadata
@@ -220,7 +221,10 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             async with asyncio.timeout(self.timeout):
                 async with self.session.get(
                     url,
-                    headers={"Accept": "application/json"},
+                    headers={
+                        **ZIVY_OBRAZ_CLIENT_HEADERS,
+                        "Accept": "application/json",
+                    },
                 ) as response:
                     response.raise_for_status()
                     raw_text = await response.text()
@@ -283,7 +287,10 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 async with self.session.post(
                     ZIVY_OBRAZ_COMMAND_URL,
                     params=payload,
-                    headers={"Accept": "application/json"},
+                    headers={
+                        **ZIVY_OBRAZ_CLIENT_HEADERS,
+                        "Accept": "application/json",
+                    },
                 ) as response:
                     status = response.status
                     reason = response.reason

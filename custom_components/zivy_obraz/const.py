@@ -59,6 +59,11 @@ ZIVY_OBRAZ_EXPORT_URL = "https://out.zivyobraz.eu/"
 ZIVY_OBRAZ_PUSH_URL = "https://in.zivyobraz.eu/"
 ZIVY_OBRAZ_COMMAND_URL = "https://cmd.zivyobraz.eu/"
 
+ZIVY_OBRAZ_CLIENT_HEADERS = {
+    "X-ZivyObraz-Client": "home-assistant",
+    "X-ZivyObraz-Client-Version": "2.0.0",
+}
+
 MAX_PUSH_URL_LENGTH = 1800
 
 PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "button"]

@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     DEFAULT_INVALID_STATE_FALLBACK,
     MAX_PUSH_URL_LENGTH,
+    ZIVY_OBRAZ_CLIENT_HEADERS,
     ZIVY_OBRAZ_PUSH_URL,
 )
 from .label_helper import get_label_id
@@ -608,6 +609,7 @@ class ZivyObrazPushManager:
                 async with self.session.get(
                     ZIVY_OBRAZ_PUSH_URL,
                     params=params,
+                    headers=ZIVY_OBRAZ_CLIENT_HEADERS,
                 ) as response:
                     response.raise_for_status()
                     _LOGGER.debug(

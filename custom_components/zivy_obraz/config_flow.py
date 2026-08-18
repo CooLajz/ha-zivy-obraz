@@ -52,6 +52,7 @@ from .const import (
     MIN_PUSH_INTERVAL,
     MIN_SCAN_INTERVAL,
     MIN_TIMEOUT,
+    ZIVY_OBRAZ_CLIENT_HEADERS,
     ZIVY_OBRAZ_COMMAND_URL,
 )
 
@@ -92,7 +93,13 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     )
 
     async with asyncio.timeout(timeout):
-        async with session.get(url, headers={"Accept": "application/json"}) as response:
+        async with session.get(
+            url,
+            headers={
+                **ZIVY_OBRAZ_CLIENT_HEADERS,
+                "Accept": "application/json",
+            },
+        ) as response:
             response.raise_for_status()
             payload = await response.json(content_type=None)
 
@@ -115,7 +122,10 @@ async def _validate_command_key(hass, command_key: str, timeout: int) -> None:
         async with session.post(
             ZIVY_OBRAZ_COMMAND_URL,
             params=params,
-            headers={"Accept": "application/json"},
+            headers={
+                **ZIVY_OBRAZ_CLIENT_HEADERS,
+                "Accept": "application/json",
+            },
         ) as response:
             if 400 <= response.status < 500:
                 raise InvalidCommandKeyError
