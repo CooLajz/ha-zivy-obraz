@@ -130,14 +130,11 @@ Invertování barev má tři stavy:
 
 Po úspěšné odpovědi Command API se stav entity v Home Assistant aktualizuje
 okamžitě. Následující načtení Export API stav znovu autoritativně synchronizuje.
-Aktualizace z API ani programová změna entity neposílá stejný příkaz podruhé.
 
 Přepínač `Jednorázově vynutit aktualizaci Wi-Fi` nastaví požadavek pro příští
 probuzení zařízení. Zařízení provede úplný Wi-Fi scan a znovu se připojí k
-nejsilnějšímu přístupovému bodu se stejným SSID. Jde o jednorázovou akci;
-po jejím zpracování se hodnota `force_wifi_full_scan` v Export API vrátí na
-`false` a přepínač se v Home Assistant znovu vypne. Čekající požadavek nelze
-přepínačem ručně zrušit ani vypnout.
+nejsilnějšímu přístupovému bodu se stejným SSID. Po zpracování se přepínač
+automaticky vypne. Čekající požadavek nelze ručně zrušit.
 
 Pro hromadné změny a textové hodnoty slouží služba `zivy_obraz.command`:
 
@@ -155,7 +152,8 @@ Služba podporuje vlastnosti `caption`, `note`, `pin_key`, `invert_screen`,
 
 Možné cíle:
 
-- bez `target` - všechna zařízení spravovaná vybranou instancí
+- bez `target` nebo `target: "all"` - všechna zařízení spravovaná vybranou
+  instancí
 - `group:<id>` - skupina s číselným ID
 - `group:0`, `group:default` nebo `default` - výchozí skupina zařízení bez
   `group_id`
@@ -186,23 +184,29 @@ nastavený Command key. Instance bez Command key se přeskočí. Pokud použív�
 instanci filtrovanou pomocí `Group ID`, prázdný `target` se automaticky přeloží
 na tuto skupinu.
 
+Pokud má více instancí stejný název, použijte `entry_id`; parametry `entry_id`
+a `name` nelze použít současně.
+
 Hodnota `invert_screen` ve službě přijímá `default`, `invert` nebo
 `do_not_invert`. Kvůli kompatibilitě jsou podporované také booleovské hodnoty.
 `caption` může mít 1 až 255 znaků, `note` nejvýše 255 znaků a `sleep_forced`
 hodnotu 5 až 240 minut. `pin_key` je pouze zapisovací tajná hodnota: integrace
 ho neukládá do dat zařízení a maskuje ho v návratových a diagnostických datech.
 
+Prázdná hodnota `note` poznámku smaže a prázdná hodnota `pin_key` odstraní PIN.
+
 Úspěšná odpověď může obsahovat `updated: 0`, pokud už všechna cílová zařízení
 požadovanou hodnotu mají. Takový výsledek není chyba.
 
-Diagnostická URL v response datech obsahuje místo Command key a PINu pouze
-zástupné znaky. Senzory `Device ID` a `Content source` jsou diagnostické a ve
+Služba vrací response data s použitým cílem, počtem aktualizací a seznamem
+ovlivněných zařízení. Při zpracování více instancí jsou výsledky v seznamu
+`entries`. Command key a PIN jsou v návratových datech maskované.
+
+Senzory `Device ID` a `Content source` jsou diagnostické a ve
 výchozím stavu zakázané; lze je ručně povolit v detailu zařízení. Číselná
 entita `Interval kontroly při vypnutém obnovování displeje` je při nastaveném
-Command key standardně viditelná. Načítá `sleep_forced` z Export API a umožňuje
-nastavit hodnotu 5 až 240 minut přes Command API. Hodnota se používá pouze
-tehdy, když je `Refresh display` vypnutý. Zařízení během intervalu neobnovuje
-displej a po jeho uplynutí znovu ověří aktuální nastavení.
+Command key standardně viditelná a umožňuje nastavit hodnotu 5 až 240 minut.
+Používá se pouze tehdy, když je `Refresh display` vypnutý.
 
 Diagnostický senzor `Lokální IP adresa` je ve výchozím stavu viditelný. Jeho
 stav obsahuje `local_ip` a v atributech jsou dostupné veřejná IP z `last_ip` a
@@ -395,24 +399,16 @@ odeslání:
 - `Push problem`
 - `Next push`
 
-Senzor `Push status` obsahuje v atributech poslední pokus, poslední úspěšné
-odeslání a poslední chybu. Během běhu odesílání přejde krátce do stavu
-`sending`. Senzor
-`Pushed entities` obsahuje omezený náhled odesílaných proměnných a senzor
-`Skipped entities` obsahuje omezený náhled proměnných přeskočených kvůli
-nezměněné hodnotě. Senzor `Failed entities` obsahuje omezený náhled proměnných,
-které se nepodařilo odeslat, včetně důvodů jako `invalid_state` nebo
-`url_too_long`. Pokud je zapnutá volba `Send N/A for invalid entity states`,
-neplatné stavy se odešlou jako `N/A` a do `Failed entities` se nedostanou.
-Pokud je zapnuté odesílání jen změněných stavů, po restartu se odešlou všechny
-vybrané entity a následně už pouze entity se změněným stavem.
-U senzorů se při odesílání použije stejná prezentační přesnost hodnoty, jakou
-Home Assistant používá pro `Přesnost zobrazení`, pokud ji daná verze Home
-Assistantu poskytuje.
-Když není co odeslat, `Push status` bude `no_new_data` a `Last successful push`
-se aktualizuje na čas úspěšně dokončeného běhu. Náhledy jsou
-omezené na prvních 50 položek, aby zbytečně nezvětšovaly stavové atributy Home
-Assistantu. Pokud je automatické odesílání vypnuté, `Next push` bude `Unknown`.
+`Push status` obsahuje poslední pokus, poslední úspěšné odeslání a poslední
+chybu. Senzory `Pushed entities`, `Skipped entities` a `Failed entities`
+nabízejí náhled zpracovaných proměnných včetně důvodů selhání, například
+`invalid_state` nebo `url_too_long`. Při zapnutém `Send N/A for invalid entity
+states` se neplatné stavy odešlou s náhradní hodnotou a mezi chyby se nezařadí.
+Při odesílání pouze změněných stavů se po restartu jednou odešlou všechny
+vybrané entity a poté už jen změny. Hodnoty senzorů respektují nastavení
+`Přesnost zobrazení`, pokud ho daná verze Home Assistantu podporuje.
+Pokud není co odeslat, stav je `no_new_data`; při vypnutém automatickém
+odesílání je `Next push` neznámý.
 
 Stejné zařízení obsahuje také diagnostické entity pro načítání dat z Export API:
 
@@ -422,9 +418,8 @@ Stejné zařízení obsahuje také diagnostické entity pro načítání dat z E
 - `Device count`
 - `Sync problem`
 
-Senzor `Sync status` obsahuje v atributech poslední pokus, poslední úspěšnou
-synchronizaci a poslední chybu. Během načítání dat přejde krátce do stavu
-`syncing`.
+`Sync status` obsahuje poslední pokus, poslední úspěšnou synchronizaci a
+poslední chybu.
 
 U panelů, které posílají `battery_volts`, integrace navíc vytváří bateriovou
 diagnostiku:
@@ -432,26 +427,13 @@ diagnostiku:
 - `Battery days since last charge`
 - `Battery charge detection status`
 
-Detekce posledního nabití je konzervativní odhad z denních průměrů napětí.
-Integrace nejdřív nasbírá tři validní dny jako baseline. Další validní den se
-nabití zapíše až při nárůstu denního průměru alespoň o `0.15 V` proti průměru
-předchozích tří validních dní. Stačí jeden validní vzorek za den, takže detekce
-funguje i pro displeje, které se refreshují jen jednou denně. Historie detekce
-se ukládá do Home Assistant storage a přežije restart. Hodnoty nad `4.20 V` se
-do detekce ani do celkového minima/maxima nezahrnují, aby případné nabíjecí
-špičky nezkreslovaly baseline. Integrace záměrně nevytváří senzor aktuálního
-nabíjení, protože napětí baterie se u různých desek, baterek a intervalů refresh
-chová příliš rozdílně.
-Po detekci nabití se pro další detekci začnou sbírat nové tři baseline dny až z
-pozdějších vzorků, aby se staré přednabíjecí hodnoty nepoužily k opakované
-detekci stejného nabití.
-Senzory `Battery` a `Battery voltage` zobrazují průměr z posledních až deseti
-validních měření. Poslední načtená surová hodnota je dostupná jako atribut
-`raw_value`.
-Celkové minimum a maximum validního napětí baterie jsou dostupné jako atributy
-senzoru `Battery voltage`.
-Datum posledního nabití je dostupné jako atribut senzoru
-`Battery days since last charge`.
+Poslední nabití se odhaduje z denních průměrů napětí po vytvoření třídenní
+baseline. Nárůst alespoň o `0.15 V` se vyhodnotí jako nabití; historie se ukládá
+a přežije restart Home Assistantu. Stačí jeden validní vzorek za den, takže
+detekce funguje i u panelů obnovovaných jednou denně. Senzory `Battery` a
+`Battery voltage` zobrazují vyhlazenou hodnotu, zatímco surová hodnota a celkové
+minimum a maximum jsou dostupné v atributech. Datum posledního nabití je
+atributem senzoru `Battery days since last charge`.
 
 Hlavní provozní entity jsou ve výchozím stavu zapnuté. Detailní diagnostické
 entity jako `Push status`, `Sync status`, počítadla a náhledy proměnných jsou
@@ -525,12 +507,6 @@ nastaveného času. Ruční tlačítka naopak časovače neposouvají.
 
 ---
 
-## Automatické dělení dlouhých URL
-
-Pokud URL obsahuje příliš mnoho parametrů, integrace ji automaticky rozdělí do více requestů.
-
----
-
 # Konfigurace
 
 Nastavení integrace je rozdělené na stránky pro Export API, Import API a
@@ -576,6 +552,9 @@ Import key se odebere a automatické odesílání se vypne.
 
 `Command key` je volitelný a slouží k ovládání panelů. Najdete ho po přihlášení
 do služby Živý obraz v sekci **Účet**.
+
+Při zadání nebo výměně se Command key před uložením ověří, aniž by se změnilo
+nastavení zařízení. Neplatný klíč se neuloží a formulář zobrazí chybu.
 
 Bez Command key se ovládací entity panelů nevytvoří a daná instance se při
 hromadném volání služby `zivy_obraz.command` přeskočí. U existující konfigurace
@@ -675,8 +654,6 @@ device settings → Export API state synchronization
 
 ---
 
----
-
 # 🇬🇧 Documentation (English)
 
 ## Installation
@@ -758,15 +735,12 @@ Display color inversion has three states:
 
 After a successful Command API response, the Home Assistant entity state is
 updated immediately. A later Export API refresh synchronizes the authoritative
-state again. API updates and programmatic entity state updates do not send the
-same command a second time.
+state again.
 
 The `Force one-time Wi-Fi update` switch schedules a request for the device's
 next wake-up. The device performs a full Wi-Fi scan and reconnects to the
-strongest access point with the same SSID. This is a one-time action. After it
-is processed, `force_wifi_full_scan` returns to `false` in the Export API and
-the Home Assistant switch turns off again. A pending request cannot be manually
-cancelled or turned off through the switch.
+strongest access point with the same SSID. The switch turns off automatically
+after the request is processed. A pending request cannot be cancelled manually.
 
 Use the `zivy_obraz.command` service for bulk changes and text properties:
 
@@ -784,7 +758,8 @@ The service supports `caption`, `note`, `pin_key`, `invert_screen`,
 
 Supported targets:
 
-- no `target` - all devices managed by the selected integration instance
+- no `target` or `target: "all"` - all devices managed by the selected
+  integration instance
 - `group:<id>` - a group with a numeric ID
 - `group:0`, `group:default`, or `default` - the default group containing
   devices without a `group_id`
@@ -815,6 +790,9 @@ key are processed. Instances without a Command key are skipped. For an instance
 filtered by `Group ID`, an empty `target` is automatically translated to that
 group.
 
+If multiple instances share the same name, use `entry_id`; `entry_id` and
+`name` cannot be used together.
+
 The `invert_screen` service field accepts `default`, `invert`, or
 `do_not_invert`. Boolean values remain supported for compatibility. `caption`
 accepts 1–255 characters, `note` accepts up to 255 characters, and
@@ -822,18 +800,20 @@ accepts 1–255 characters, `note` accepts up to 255 characters, and
 integration does not store it in device data and masks it in response and
 diagnostic data.
 
+An empty `note` clears the note, and an empty `pin_key` removes the PIN.
+
 A successful response may contain `updated: 0` when all targeted devices
 already have the requested value. This is not an error.
 
-Diagnostic command URLs contain placeholders instead of the Command key and
-PIN. The `Device ID` and `Content source` sensors are diagnostic entities that
+The service returns response data containing the effective target, update count,
+and affected devices. When multiple instances are processed, results are in the
+`entries` list. The Command key and PIN are masked in response data.
+
+The `Device ID` and `Content source` sensors are diagnostic entities that
 are disabled by default and can be enabled manually on the device page. The
 `Display refresh-disabled check interval` number entity is visible by default
-when a Command key is configured. It reads `sleep_forced` from the Export API
-and allows setting 5–240 minutes through the Command API. The value is used only
-while `Refresh display` is disabled. The device does not refresh the display
-during this interval and checks its current settings again when the interval
-expires.
+when a Command key is configured and allows setting 5–240 minutes. The value is
+used only while `Refresh display` is disabled.
 
 The `Local IP address` diagnostic sensor is enabled by default. Its state
 contains `local_ip`, while the public IP from `last_ip` and the device MAC
@@ -1024,23 +1004,16 @@ The device also exposes diagnostic entities for the last push attempt:
 - `Push problem`
 - `Next push`
 
-The `Push status` sensor exposes the last attempt, last successful push, and
-last error as attributes. While a push is running, it briefly changes to
-`sending`. The
-`Pushed entities` sensor exposes a bounded preview of pushed variables and the
-`Skipped entities` sensor exposes a bounded preview of variables skipped because
-their value did not change. The `Failed entities` sensor exposes a bounded
-preview of variables that could not be sent, including reasons such as
-`invalid_state` or `url_too_long`. When `Send N/A for invalid entity states` is
-enabled, invalid states are sent as `N/A` and do not appear in
-`Failed entities`. When sending only changed states is enabled, all selected
-entities are sent after restart and then only entities with changed states are
-sent. For sensors, pushed values use the same presentation precision Home
-Assistant uses for `Display precision`, when the installed Home Assistant
-version provides it. When there is nothing new to send, `Push status` is
-`no_new_data` and `Last successful push` is updated to the successful run time.
-Previews are limited to the first 50 items to avoid oversized Home Assistant
-state attributes. When scheduled push is disabled, `Next push` is `Unknown`.
+`Push status` exposes the last attempt, last successful push, and last error.
+The `Pushed entities`, `Skipped entities`, and `Failed entities` sensors provide
+previews of processed variables, including failure reasons such as
+`invalid_state` or `url_too_long`. With `Send N/A for invalid entity states`
+enabled, invalid states are sent with the configured fallback and are not
+reported as failed. With send-only-changed enabled, the first push after a
+restart sends all selected entities and later pushes send only changes. Sensor
+values respect Home Assistant `Display precision` when supported. When there is
+nothing to send, the status is `no_new_data`; when scheduled push is disabled,
+`Next push` is unknown.
 
 The same device also exposes Export API synchronization diagnostic entities:
 
@@ -1050,35 +1023,20 @@ The same device also exposes Export API synchronization diagnostic entities:
 - `Device count`
 - `Sync problem`
 
-The `Sync status` sensor exposes the last attempt, last successful sync, and
-last error as attributes. While data is being fetched, it briefly changes to
-`syncing`.
+`Sync status` exposes the last attempt, last successful sync, and last error.
 
 Panels that report `battery_volts` also get battery diagnostics:
 
 - `Battery days since last charge`
 - `Battery charge detection status`
 
-Last charge detection is a conservative estimate based on daily voltage
-averages. The integration first collects three valid days as a baseline. A later
-valid day is marked as charged only when its daily average increases by at least
-`0.15 V` compared with the average of the previous three valid days. One valid
-sample per day is enough, so detection works for displays that refresh only once
-per day. Detection history is stored in Home Assistant storage and survives
-restarts. Values above `4.20 V` are excluded from charge detection and from the
-overall minimum/maximum sensors so charging spikes do not distort the baseline.
-The integration intentionally does not expose a current charging binary sensor
-because voltage behavior differs too much between boards, batteries, and refresh
-intervals.
-After a charge is detected, the next detection baseline is rebuilt from later
-valid days only, so older pre-charge values cannot trigger the same charge again.
-The `Battery` and `Battery voltage` sensors show the average of up to the last
-ten valid readings. The latest raw reading is available as the `raw_value`
-attribute.
-The overall minimum and maximum valid battery voltage are available as
-attributes on the `Battery voltage` sensor.
-The last charge timestamp is available as an attribute on the
-`Battery days since last charge` sensor.
+The last charge is estimated from daily voltage averages after a three-day
+baseline is established. An increase of at least `0.15 V` is treated as a
+charge, and the history is stored across Home Assistant restarts. One valid
+sample per day is enough, so detection also works for panels refreshed once per
+day. The `Battery` and `Battery voltage` sensors show a smoothed value, while the
+raw value and overall minimum and maximum are available as attributes. The last
+charge date is an attribute of `Battery days since last charge`.
 
 Main operational entities are enabled by default. Detailed diagnostic entities
 such as `Push status`, `Sync status`, counters, and variable previews are hidden
@@ -1144,12 +1102,6 @@ scheduled timers.
 
 ---
 
-## Automatic splitting of long URLs
-
-If a request becomes too long, the integration automatically splits it into multiple requests.
-
----
-
 # Configuration
 
 The integration setup contains separate pages for the Export API, Import API,
@@ -1194,6 +1146,10 @@ removes the Import key and disables automatic push.
 
 `Command key` is optional and is used to control panels. It is available on the
 Živý Obraz website in **Account**.
+
+When a Command key is entered or replaced, the integration validates it before
+saving without changing any device settings. Invalid keys are not saved and the
+form displays an error.
 
 Without a Command key, panel control entities are not created and the instance
 is skipped by account-wide `zivy_obraz.command` service calls. For an existing
