@@ -80,6 +80,7 @@ from .command import (
     command_properties_for_diagnostics,
     command_properties_for_response,
     command_target_macs,
+    normalize_configured_group_id,
     normalize_command_target,
 )
 from .device import diagnostic_device_identifier
@@ -763,7 +764,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     else:
         raw_group_id = entry.data.get(CONF_GROUP_ID)
 
-    group_id = raw_group_id if str(raw_group_id or "").strip() else None
+    group_id = normalize_configured_group_id(raw_group_id)
 
     timeout = _get_config_value(entry, CONF_TIMEOUT, DEFAULT_TIMEOUT)
     scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)

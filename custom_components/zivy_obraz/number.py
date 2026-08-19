@@ -15,11 +15,12 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .command import ZivyObrazCommandError
+from .command import ZivyObrazCommandError, command_entity_unique_id
 from .config_helpers import (
     async_update_option,
     async_update_options,
     get_config_value,
+    migrate_entry_entity_unique_ids,
     options_update_signal,
 )
 from .const import (
@@ -114,6 +115,13 @@ async def async_setup_entry(
     ).strip()
     if not command_key:
         _remove_command_device_numbers(hass, entry)
+    else:
+        migrate_entry_entity_unique_ids(
+            hass,
+            entry,
+            "number",
+            {"_sleep_forced"},
+        )
 
     entities: list[NumberEntity] = [
         ZivyObrazConfigNumber(hass, entry, description)
@@ -131,12 +139,21 @@ async def async_setup_entry(
             return command_numbers
 
         for mac in macs:
-            unique_id = f"{mac}_sleep_forced"
+            unique_id = command_entity_unique_id(
+                entry.entry_id,
+                mac,
+                ATTR_SLEEP_FORCED,
+            )
             if unique_id in known_command_entity_ids:
                 continue
             known_command_entity_ids.add(unique_id)
             command_numbers.append(
-                ZivyObrazSleepForcedNumber(coordinator, mac, command_key)
+                ZivyObrazSleepForcedNumber(
+                    coordinator,
+                    mac,
+                    command_key,
+                    entry.entry_id,
+                )
             )
         return command_numbers
 
@@ -327,13 +344,18 @@ class ZivyObrazSleepForcedNumber(
         coordinator: ZivyObrazCoordinator,
         mac: str,
         command_key: str,
+        entry_id: str,
     ) -> None:
         """Initialize the forced sleep number."""
         super().__init__(coordinator)
         self._mac = mac
         self._command_key = command_key
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
-        self._attr_unique_id = f"{mac}_sleep_forced"
+        self._attr_unique_id = command_entity_unique_id(
+            entry_id,
+            mac,
+            ATTR_SLEEP_FORCED,
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:

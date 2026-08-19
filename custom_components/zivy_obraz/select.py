@@ -12,8 +12,12 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .command import ZivyObrazCommandError
-from .config_helpers import get_config_value
+from .command import (
+    ZivyObrazCommandError,
+    coerce_bool_state,
+    command_entity_unique_id,
+)
+from .config_helpers import get_config_value, migrate_entry_entity_unique_ids
 from .const import (
     ATTR_INVERT_SCREEN,
     CONF_COMMAND_KEY,
@@ -53,17 +57,33 @@ async def async_setup_entry(
         _remove_invert_screen_selects(hass, entry)
         return
 
+    migrate_entry_entity_unique_ids(
+        hass,
+        entry,
+        "select",
+        {"_invert_screen"},
+    )
+
     known_entity_ids: set[str] = set()
 
     def _build_entities(macs: set[str]) -> list[ZivyObrazInvertScreenSelect]:
         entities: list[ZivyObrazInvertScreenSelect] = []
         for mac in macs:
-            unique_id = f"{mac}_invert_screen"
+            unique_id = command_entity_unique_id(
+                entry.entry_id,
+                mac,
+                ATTR_INVERT_SCREEN,
+            )
             if unique_id in known_entity_ids:
                 continue
             known_entity_ids.add(unique_id)
             entities.append(
-                ZivyObrazInvertScreenSelect(coordinator, mac, command_key)
+                ZivyObrazInvertScreenSelect(
+                    coordinator,
+                    mac,
+                    command_key,
+                    entry.entry_id,
+                )
             )
         return entities
 
@@ -112,13 +132,18 @@ class ZivyObrazInvertScreenSelect(
         coordinator: ZivyObrazCoordinator,
         mac: str,
         command_key: str,
+        entry_id: str,
     ) -> None:
         """Initialize the invert screen select."""
         super().__init__(coordinator)
         self._mac = mac
         self._command_key = command_key
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
-        self._attr_unique_id = f"{mac}_invert_screen"
+        self._attr_unique_id = command_entity_unique_id(
+            entry_id,
+            mac,
+            ATTR_INVERT_SCREEN,
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -147,11 +172,9 @@ class ZivyObrazInvertScreenSelect(
         value = self._device_data_cache.get(ATTR_INVERT_SCREEN)
         if value is None:
             return INVERT_SCREEN_DEFAULT
-        if value is True:
+        if coerce_bool_state(value):
             return INVERT_SCREEN_ENABLED
-        if value is False:
-            return INVERT_SCREEN_DISABLED
-        return None
+        return INVERT_SCREEN_DISABLED
 
     async def async_select_option(self, option: str) -> None:
         """Set the inversion behavior through Command API."""

@@ -14,7 +14,17 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .config_helpers import async_update_option, get_config_value, options_update_signal
+from .command import (
+    ZivyObrazCommandError,
+    coerce_bool_state,
+    command_entity_unique_id,
+)
+from .config_helpers import (
+    async_update_option,
+    get_config_value,
+    migrate_entry_entity_unique_ids,
+    options_update_signal,
+)
 from .const import (
     ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_OTA,
@@ -35,7 +45,6 @@ from .const import (
     DEFAULT_SEND_ONLY_CHANGED,
     DOMAIN,
 )
-from .command import ZivyObrazCommandError
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info, diagnostic_device_identifier
 
@@ -169,6 +178,13 @@ async def async_setup_entry(
     _remove_obsolete_invert_screen_switches(hass, entry)
     if not has_command_key:
         _remove_command_device_switches(hass, entry)
+    else:
+        migrate_entry_entity_unique_ids(
+            hass,
+            entry,
+            "switch",
+            {f"_{key}" for key in COMMAND_SWITCH_KEYS},
+        )
 
     entities: list[SwitchEntity] = [
         ZivyObrazConfigSwitch(hass, entry, description)
@@ -188,7 +204,11 @@ async def async_setup_entry(
 
         for mac in macs:
             for description in COMMAND_SWITCH_DESCRIPTIONS:
-                unique_id = f"{mac}_{description.key}"
+                unique_id = command_entity_unique_id(
+                    entry.entry_id,
+                    mac,
+                    description.key,
+                )
                 if unique_id in known_command_entity_ids:
                     continue
 
@@ -199,6 +219,7 @@ async def async_setup_entry(
                         mac,
                         description,
                         command_key,
+                        entry.entry_id,
                     )
                 )
 
@@ -341,24 +362,6 @@ class ZivyObrazConfigSwitch(SwitchEntity):
             self.schedule_update_ha_state()
 
 
-def _coerce_bool_state(value: Any) -> bool | None:
-    """Return a stable boolean state from common API bool representations."""
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return value != 0
-
-    normalized = str(value).strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"", "0", "false", "no", "off"}:
-        return False
-
-    return bool(value)
-
-
 class ZivyObrazCommandSwitch(
     CoordinatorEntity[ZivyObrazCoordinator],
     SwitchEntity,
@@ -373,6 +376,7 @@ class ZivyObrazCommandSwitch(
         mac: str,
         description: ZivyObrazCommandSwitchDescription,
         command_key: str,
+        entry_id: str,
     ) -> None:
         """Initialize the command switch."""
         super().__init__(coordinator)
@@ -380,7 +384,11 @@ class ZivyObrazCommandSwitch(
         self._mac = mac
         self._command_key = command_key
         self._device_data_cache: dict[str, Any] = coordinator.data.get(mac, {})
-        self._attr_unique_id = f"{mac}_{description.key}"
+        self._attr_unique_id = command_entity_unique_id(
+            entry_id,
+            mac,
+            description.key,
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -411,7 +419,7 @@ class ZivyObrazCommandSwitch(
     @property
     def is_on(self) -> bool:
         """Return current command state."""
-        return _coerce_bool_state(
+        return coerce_bool_state(
             self._device_data.get(self.entity_description.data_key)
         )
 

@@ -47,6 +47,36 @@ class ZivyObrazCommandError(Exception):
         self.response = response
 
 
+def command_entity_unique_id(entry_id: str, mac: str, key: str) -> str:
+    """Return a command entity unique ID scoped to one config entry."""
+    return f"{entry_id}_{mac}_{key}"
+
+
+def coerce_bool_state(value: Any) -> bool | None:
+    """Return a stable boolean state from common API representations."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"", "0", "false", "no", "off"}:
+        return False
+
+    return bool(value)
+
+
+def normalize_configured_group_id(value: Any | None) -> Any | None:
+    """Normalize an optional configured group ID while preserving zero."""
+    if value is None:
+        return None
+    return value if str(value).strip() else None
+
+
 def normalize_command_target(
     target: str | None,
     configured_group_id: Any | None,
