@@ -21,13 +21,25 @@ from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .const import (
+    ATTR_CAPTION,
     ATTR_DRY_RUN,
     ATTR_ENTRY_ID,
+    ATTR_FORCE_WIFI_FULL_SCAN,
+    ATTR_INVERT_SCREEN,
     ATTR_NAME,
+    ATTR_NOTE,
+    ATTR_OTA,
+    ATTR_PIN_KEY,
+    ATTR_REFRESH_SCREEN,
+    ATTR_ROTATE_180,
     ATTR_SEND_ALL,
+    ATTR_SHOW_AP_CONNECT_SCREEN,
+    ATTR_SLEEP_FORCED,
+    ATTR_TARGET,
     ATTR_VALUE,
     ATTR_VALUES,
     ATTR_VARIABLE,
+    CONF_COMMAND_KEY,
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
@@ -42,6 +54,7 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
+    DEFAULT_COMMAND_KEY,
     DEFAULT_IMPORT_KEY,
     DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
@@ -55,11 +68,21 @@ from .const import (
     DEFAULT_TIMEOUT,
     DOMAIN,
     PLATFORMS,
+    SERVICE_COMMAND,
     SERVICE_PUSH,
     SERVICE_PUSH_VALUES,
 )
 from .coordinator import ZivyObrazCoordinator
 from .api import build_account_url, build_export_url
+from .command import (
+    ZivyObrazCommandError,
+    build_masked_command_url,
+    command_properties_for_diagnostics,
+    command_properties_for_response,
+    command_target_macs,
+    normalize_configured_group_id,
+    normalize_command_target,
+)
 from .device import diagnostic_device_identifier
 from .i18n import async_preload_runtime_translations
 from .label_helper import async_ensure_label_exists, async_get_label_id
@@ -106,6 +129,44 @@ PUSH_VALUES_SERVICE_SCHEMA = vol.Schema(
     }
 )
 
+COMMAND_SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTRY_ID): cv.string,
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_TARGET): cv.string,
+        vol.Optional(ATTR_CAPTION): vol.All(cv.string, vol.Length(min=1, max=255)),
+        vol.Optional(ATTR_NOTE): vol.All(cv.string, vol.Length(max=255)),
+        vol.Optional(ATTR_PIN_KEY): cv.string,
+        vol.Optional(ATTR_FORCE_WIFI_FULL_SCAN): cv.boolean,
+        vol.Optional(ATTR_INVERT_SCREEN): vol.Any(
+            None,
+            vol.In({"default", "invert", "do_not_invert"}),
+            cv.boolean,
+        ),
+        vol.Optional(ATTR_OTA): cv.boolean,
+        vol.Optional(ATTR_REFRESH_SCREEN): cv.boolean,
+        vol.Optional(ATTR_ROTATE_180): cv.boolean,
+        vol.Optional(ATTR_SHOW_AP_CONNECT_SCREEN): cv.boolean,
+        vol.Optional(ATTR_SLEEP_FORCED): vol.All(
+            vol.Coerce(int),
+            vol.Range(min=5, max=240),
+        ),
+    }
+)
+
+COMMAND_PROPERTY_KEYS = (
+    ATTR_CAPTION,
+    ATTR_NOTE,
+    ATTR_PIN_KEY,
+    ATTR_FORCE_WIFI_FULL_SCAN,
+    ATTR_INVERT_SCREEN,
+    ATTR_OTA,
+    ATTR_REFRESH_SCREEN,
+    ATTR_ROTATE_180,
+    ATTR_SHOW_AP_CONNECT_SCREEN,
+    ATTR_SLEEP_FORCED,
+)
+
 
 def _get_config_value(entry: ConfigEntry, key: str, default):
     """Return options value when present, otherwise fallback to entry data/default."""
@@ -146,6 +207,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             _normalize_custom_values(call.data[ATTR_VALUES]),
         )
 
+    async def _async_handle_command_service(call: ServiceCall) -> dict:
+        return await _async_handle_command(hass, call)
+
     if not hass.services.has_service(DOMAIN, SERVICE_PUSH):
         hass.services.async_register(
             DOMAIN,
@@ -161,6 +225,15 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             SERVICE_PUSH_VALUES,
             _async_handle_push_values_service,
             schema=PUSH_VALUES_SERVICE_SCHEMA,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_COMMAND):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_COMMAND,
+            _async_handle_command_service,
+            schema=COMMAND_SERVICE_SCHEMA,
+            supports_response=SupportsResponse.OPTIONAL,
         )
 
     return True
@@ -386,6 +459,229 @@ async def _async_handle_custom_push(
     await asyncio.gather(*push_tasks)
 
 
+async def _async_handle_command(
+    hass: HomeAssistant,
+    call: ServiceCall,
+) -> dict:
+    """Handle Command API service calls."""
+    entry_id = call.data.get(ATTR_ENTRY_ID)
+    name = call.data.get(ATTR_NAME)
+    properties = _command_properties_from_call(call.data)
+
+    if entry_id and name:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_entry_id_and_name",
+        )
+
+    if not properties:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_no_properties",
+        )
+
+    if entry_id:
+        entry_data = hass.data.get(DOMAIN, {}).get(entry_id)
+        if entry_data is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="command_entry_not_loaded",
+                translation_placeholders={"entry": str(entry_id)},
+            )
+
+        entry = hass.config_entries.async_get_entry(entry_id)
+        return await _async_command_entry(
+            entry_id,
+            _entry_name(entry) if entry is not None else str(entry_id),
+            entry_data,
+            call.data,
+            properties,
+        )
+
+    if name:
+        matches = [
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if _entry_name(entry) == name
+        ]
+
+        if not matches:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="command_name_not_found",
+                translation_placeholders={"name": str(name)},
+            )
+
+        if len(matches) > 1:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="command_name_not_unique",
+                translation_placeholders={"name": str(name)},
+            )
+
+        selected_entry = matches[0]
+        entry_data = hass.data.get(DOMAIN, {}).get(selected_entry.entry_id)
+        if entry_data is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="command_entry_not_loaded",
+                translation_placeholders={"entry": str(name)},
+            )
+
+        return await _async_command_entry(
+            selected_entry.entry_id,
+            _entry_name(selected_entry),
+            entry_data,
+            call.data,
+            properties,
+        )
+
+    command_tasks = [
+        _async_command_entry(
+            entry.entry_id,
+            _entry_name(entry),
+            entry_data,
+            call.data,
+            properties,
+            require_target_match=False,
+        )
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if (entry_data := hass.data.get(DOMAIN, {}).get(entry.entry_id)) is not None
+        and str(entry_data.get("command_key") or "").strip()
+    ]
+
+    if not command_tasks:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_no_entries_ready",
+        )
+
+    results = await asyncio.gather(*command_tasks)
+    if not any(result["status"] != "no_matching_devices" for result in results):
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_target_not_found",
+            translation_placeholders={
+                "target": str(call.data.get(ATTR_TARGET) or "all")
+            },
+        )
+
+    return {"entries": results}
+
+
+def _command_properties_from_call(data) -> dict[str, object]:
+    """Return Command API settable properties from service data."""
+    properties = {key: data[key] for key in COMMAND_PROPERTY_KEYS if key in data}
+    invert_screen = properties.get(ATTR_INVERT_SCREEN)
+    if ATTR_INVERT_SCREEN in properties:
+        properties[ATTR_INVERT_SCREEN] = {
+            "default": None,
+            "invert": True,
+            "do_not_invert": False,
+        }.get(invert_screen, invert_screen)
+    return properties
+
+
+async def _async_command_entry(
+    entry_id: str,
+    entry_name: str,
+    entry_data: dict,
+    data,
+    properties: dict[str, object],
+    require_target_match: bool = True,
+) -> dict:
+    """Apply one Command API call to one loaded config entry."""
+    command_key = str(entry_data.get("command_key") or "").strip()
+    if not command_key:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_entry_not_ready",
+            translation_placeholders={"entry": str(entry_id)},
+        )
+
+    coordinator: ZivyObrazCoordinator | None = entry_data.get("coordinator")
+    if coordinator is None:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_entry_not_loaded",
+            translation_placeholders={"entry": str(entry_id)},
+        )
+
+    try:
+        requested_target, target = normalize_command_target(
+            data.get(ATTR_TARGET),
+            entry_data.get("group_id"),
+        )
+    except ValueError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_invalid_target",
+            translation_placeholders={"target": str(data.get(ATTR_TARGET) or "")},
+        ) from err
+
+    affected_macs = command_target_macs(
+        coordinator.data or {},
+        target,
+        requested_target=requested_target,
+    )
+    if not affected_macs and require_target_match:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_target_not_found",
+            translation_placeholders={"target": target},
+        )
+    if not affected_macs:
+        return {
+            "entry_id": entry_id,
+            "name": entry_name,
+            "status": "no_matching_devices",
+            "requested_target": requested_target,
+            "target": target,
+            "command_url": build_masked_command_url(target, properties),
+            "updated": 0,
+            "local_updated": 0,
+            "affected_devices": [],
+            "properties": command_properties_for_diagnostics(properties),
+        }
+
+    try:
+        command_response = await coordinator.async_send_command(
+            command_key,
+            target,
+            properties,
+        )
+    except ZivyObrazCommandError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="command_request_failed",
+            translation_placeholders={"error": str(err)},
+        ) from err
+
+    affected_macs = await coordinator.async_apply_local_command(
+        requested_target,
+        target,
+        properties,
+    )
+
+    return {
+        "entry_id": entry_id,
+        "name": entry_name,
+        "status": str(command_response.get("status") or "ok"),
+        "requested_target": requested_target,
+        "target": target,
+        "command_url": build_masked_command_url(target, properties),
+        "updated": command_response.get("updated", len(affected_macs)),
+        "local_updated": len(affected_macs),
+        "affected_devices": sorted(affected_macs),
+        "properties": command_properties_for_diagnostics(
+            command_response.get(
+                "properties",
+                command_properties_for_response(properties),
+            )
+        ),
+    }
+
+
 def _normalize_custom_values(
     values: (
         dict[str, str | int | float | bool]
@@ -468,7 +764,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
     else:
         raw_group_id = entry.data.get(CONF_GROUP_ID)
 
-    group_id = raw_group_id if str(raw_group_id or "").strip() else None
+    group_id = normalize_configured_group_id(raw_group_id)
 
     timeout = _get_config_value(entry, CONF_TIMEOUT, DEFAULT_TIMEOUT)
     scan_interval = _get_config_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -488,6 +784,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
             entry,
             CONF_IMPORT_KEY,
             DEFAULT_IMPORT_KEY,
+        )
+        or ""
+    ).strip()
+    command_key = str(
+        _get_config_value(
+            entry,
+            CONF_COMMAND_KEY,
+            DEFAULT_COMMAND_KEY,
         )
         or ""
     ).strip()
@@ -596,6 +900,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZivyObrazConfigEntry) ->
 
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
+        "command_key": command_key,
+        "group_id": group_id,
         "push_manager": push_manager,
         "push_unsub": push_unsub,
         "push_label_id": push_label_id,

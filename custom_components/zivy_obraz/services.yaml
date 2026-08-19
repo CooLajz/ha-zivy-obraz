@@ -69,3 +69,88 @@ push_values:
               required: true
               selector:
                 text:
+
+command:
+  name: Send device command
+  description: Send a Živý Obraz Command API request.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional config entry ID. Leave empty to target all configured instances with Command key.
+      selector:
+        config_entry:
+          integration: zivy_obraz
+    name:
+      name: Instance name
+      description: Optional instance name. Leave empty to target all configured instances with Command key.
+      example: "Cottage"
+      selector:
+        text:
+    target:
+      name: Target
+      description: "Optional command target: group:id, group:0 or default for the default group, device:id, or device:mac. Leave empty to target all devices managed by this instance."
+      example: "device:AA:BB:CC:DD:EE:FF"
+      selector:
+        text:
+    caption:
+      name: Caption
+      description: Device display name. Must contain 1 to 255 characters.
+      selector:
+        text:
+    note:
+      name: Note
+      description: Device note with up to 255 characters. Empty value clears the note.
+      selector:
+        text:
+    pin_key:
+      name: PIN key
+      description: Device PIN key. Empty value clears the PIN.
+      selector:
+        text:
+    invert_screen:
+      name: Invert screen
+      description: Display color inversion behavior.
+      selector:
+        select:
+          options:
+            - label: Use display setting
+              value: default
+            - label: Invert
+              value: invert
+            - label: Do not invert
+              value: do_not_invert
+    force_wifi_full_scan:
+      name: Force one-time Wi-Fi update
+      description: Request one full Wi-Fi scan at the next wake-up and reconnect to the strongest access point with the same SSID.
+      selector:
+        boolean:
+    ota:
+      name: OTA firmware updates
+      description: Enable or disable OTA firmware updates.
+      selector:
+        boolean:
+    refresh_screen:
+      name: Refresh display
+      description: Enable or disable display refresh.
+      selector:
+        boolean:
+    rotate_180:
+      name: Rotate 180 degrees
+      description: Rotate the display 180 degrees.
+      selector:
+        boolean:
+    show_ap_connect_screen:
+      name: Show AP connect screen
+      description: Show the AP connection screen.
+      selector:
+        boolean:
+    sleep_forced:
+      name: Display refresh-disabled check interval
+      description: Minutes before a device with display refresh disabled checks its current settings again.
+      example: 120
+      selector:
+        number:
+          min: 5
+          max: 240
+          step: 1
+          mode: box

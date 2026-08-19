@@ -20,10 +20,18 @@
           "prefix": "Variable name prefix",
           "invalid_state_fallback": "Invalid state fallback value"
         }
+      },
+      "command": {
+        "title": "Device control / Command API",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
+        "data": {
+          "command_key": "Command key"
+        }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect",
+      "invalid_command_key": "Command key validation failed. Check the key and try again.",
       "invalid_json": "Endpoint does not return valid JSON",
       "timeout": "Request timed out",
       "unknown": "Unexpected error",
@@ -62,10 +70,19 @@
           "prefix": "Variable name prefix",
           "invalid_state_fallback": "Invalid state fallback value"
         }
+      },
+      "command": {
+        "title": "Device control / Command API",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
+        "data": {
+          "command_key": "Command key",
+          "change_command_key": "Change or remove Command key"
+        }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect",
+      "invalid_command_key": "Command key validation failed. Check the key and try again.",
       "invalid_json": "Endpoint does not return valid JSON",
       "timeout": "Request timed out",
       "unknown": "Unexpected error",
@@ -89,6 +106,9 @@
       },
       "overdue_tolerance": {
         "name": "Overdue tolerance"
+      },
+      "sleep_forced": {
+        "name": "Display refresh-disabled check interval"
       }
     },
     "switch": {
@@ -103,6 +123,31 @@
       },
       "replace_invalid_states_with_na": {
         "name": "Send fallback for invalid entity states"
+      },
+      "force_wifi_full_scan": {
+        "name": "Force one-time Wi-Fi update"
+      },
+      "ota": {
+        "name": "OTA firmware updates"
+      },
+      "refresh_screen": {
+        "name": "Refresh display"
+      },
+      "rotate_180": {
+        "name": "Rotate display 180 degrees"
+      },
+      "show_ap_connect_screen": {
+        "name": "Show AP connect screen"
+      }
+    },
+    "select": {
+      "invert_screen": {
+        "name": "Invert display colors",
+        "state": {
+          "default": "Use display setting",
+          "invert": "Invert",
+          "do_not_invert": "Do not invert"
+        }
       }
     },
     "button": {
@@ -148,6 +193,9 @@
       "ssid": {
         "name": "WiFi SSID"
       },
+      "local_ip": {
+        "name": "Local IP address"
+      },
       "last_contact": {
         "name": "Last contact"
       },
@@ -156,6 +204,12 @@
       },
       "group_name": {
         "name": "Group name"
+      },
+      "device_id": {
+        "name": "Device ID"
+      },
+      "content_source": {
+        "name": "Content source"
       },
       "fw_build": {
         "name": "FW build"
@@ -273,6 +327,64 @@
           "description": "List of Živý Obraz variable names and values."
         }
       }
+    },
+    "command": {
+      "name": "Send device command",
+      "description": "Send a Živý Obraz Command API request.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry ID",
+          "description": "Optional config entry ID. Leave empty to target all configured instances with Command key."
+        },
+        "name": {
+          "name": "Instance name",
+          "description": "Optional instance name. Leave empty to target all configured instances with Command key."
+        },
+        "target": {
+          "name": "Target",
+          "description": "Optional command target: group:id, group:0 or default for the default group, device:id, or device:mac. Leave empty to target all devices managed by this instance."
+        },
+        "caption": {
+          "name": "Caption",
+          "description": "Device display name. Must contain 1 to 255 characters."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Device note with up to 255 characters. Empty value clears the note."
+        },
+        "pin_key": {
+          "name": "PIN key",
+          "description": "Device PIN key. Empty value clears the PIN."
+        },
+        "invert_screen": {
+          "name": "Invert screen",
+          "description": "Display color inversion behavior."
+        },
+        "force_wifi_full_scan": {
+          "name": "Force one-time Wi-Fi update",
+          "description": "Request one full Wi-Fi scan at the next wake-up and reconnect to the strongest access point with the same SSID."
+        },
+        "ota": {
+          "name": "OTA firmware updates",
+          "description": "Enable or disable OTA firmware updates."
+        },
+        "refresh_screen": {
+          "name": "Refresh display",
+          "description": "Enable or disable display refresh."
+        },
+        "rotate_180": {
+          "name": "Rotate 180 degrees",
+          "description": "Rotate the display 180 degrees."
+        },
+        "show_ap_connect_screen": {
+          "name": "Show AP connect screen",
+          "description": "Show the AP connection screen."
+        },
+        "sleep_forced": {
+          "name": "Display refresh-disabled check interval",
+          "description": "Minutes before a device with display refresh disabled checks its current settings again."
+        }
+      }
     }
   },
   "exceptions": {
@@ -296,6 +408,39 @@
     },
     "push_values_empty": {
       "message": "No custom values were provided for push."
+    },
+    "command_entry_id_and_name": {
+      "message": "Use either config entry ID or instance name, not both."
+    },
+    "command_entry_not_loaded": {
+      "message": "Živý Obraz config entry \"{entry}\" is not loaded."
+    },
+    "command_name_not_found": {
+      "message": "Živý Obraz instance named \"{name}\" was not found."
+    },
+    "command_name_not_unique": {
+      "message": "Živý Obraz instance name \"{name}\" is not unique. Use the config entry ID."
+    },
+    "command_no_entries_ready": {
+      "message": "No loaded Živý Obraz config entries have Command key configured."
+    },
+    "command_entry_not_ready": {
+      "message": "Živý Obraz config entry \"{entry}\" is not ready for commands. Configure Command key first."
+    },
+    "command_no_properties": {
+      "message": "No command properties were provided."
+    },
+    "command_invalid_target": {
+      "message": "Command target \"{target}\" is invalid."
+    },
+    "command_target_not_found": {
+      "message": "Command target \"{target}\" does not match any locally known device."
+    },
+    "command_request_failed": {
+      "message": "Command API request failed: {error}"
+    },
+    "force_wifi_full_scan_pending": {
+      "message": "A pending one-time Wi-Fi update cannot be cancelled. The switch will turn off after the device processes it."
     }
   }
 }

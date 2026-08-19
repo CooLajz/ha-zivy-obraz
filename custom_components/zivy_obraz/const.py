@@ -3,6 +3,7 @@ from __future__ import annotations
 DOMAIN = "zivy_obraz"
 
 CONF_EXPORT_KEY = "export_key"
+CONF_COMMAND_KEY = "command_key"
 CONF_NAME = "name"
 CONF_USE_GROUP_FILTER = "use_group_filter"
 CONF_GROUP_ID = "group_id"
@@ -29,6 +30,7 @@ DEFAULT_OVERDUE_NOTIFICATION = True
 
 DEFAULT_PUSH_ENABLED = False
 DEFAULT_IMPORT_KEY = ""
+DEFAULT_COMMAND_KEY = ""
 DEFAULT_LABEL = "ZivyObraz"
 DEFAULT_PREFIX = ""
 DEFAULT_PUSH_INTERVAL = 300
@@ -55,13 +57,20 @@ MAX_OVERDUE_TOLERANCE = 10080
 
 ZIVY_OBRAZ_EXPORT_URL = "https://out.zivyobraz.eu/"
 ZIVY_OBRAZ_PUSH_URL = "https://in.zivyobraz.eu/"
+ZIVY_OBRAZ_COMMAND_URL = "https://cmd.zivyobraz.eu/"
+
+ZIVY_OBRAZ_CLIENT_HEADERS = {
+    "X-ZivyObraz-Client": "home-assistant",
+    "X-ZivyObraz-Client-Version": "2.0.0",
+}
 
 MAX_PUSH_URL_LENGTH = 1800
 
-PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "button"]
 
 SERVICE_PUSH = "push"
 SERVICE_PUSH_VALUES = "push_values"
+SERVICE_COMMAND = "command"
 
 ATTR_ENTRY_ID = "entry_id"
 ATTR_NAME = "name"
@@ -70,3 +79,14 @@ ATTR_DRY_RUN = "dry_run"
 ATTR_VARIABLE = "variable"
 ATTR_VALUE = "value"
 ATTR_VALUES = "values"
+ATTR_TARGET = "target"
+ATTR_CAPTION = "caption"
+ATTR_NOTE = "note"
+ATTR_OTA = "ota"
+ATTR_PIN_KEY = "pin_key"
+ATTR_FORCE_WIFI_FULL_SCAN = "force_wifi_full_scan"
+ATTR_INVERT_SCREEN = "invert_screen"
+ATTR_ROTATE_180 = "rotate_180"
+ATTR_SHOW_AP_CONNECT_SCREEN = "show_ap_connect_screen"
+ATTR_REFRESH_SCREEN = "refresh_screen"
+ATTR_SLEEP_FORCED = "sleep_forced"

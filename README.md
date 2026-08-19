@@ -12,6 +12,7 @@ Integrace umožňuje **obousměrnou komunikaci** mezi Home Assistant a službou 
 
 - čtení dat z panelů Živého obrazu (Export API)
 - odesílání hodnot z Home Assistant (Import API)
+- ovládání zařízení Živého obrazu (Command API)
 
 Díky tomu lze zobrazovat data z Home Assistant na e-paper displejích napojených na službu Živého obrazu a v Home Assistant zobrazovat stavy e-paper displejů ze služby Živý obraz.
 
@@ -104,6 +105,108 @@ Z těchto dat se automaticky vytvoří entity:
 
 - `sensor`
 - `binary_sensor`
+
+---
+
+## Ovládání zařízení přes Command API
+
+Po zadání `Command key` integrace vytvoří u každého panelu ovládací entity:
+
+- `OTA firmware updates`
+- `Refresh display`
+- `Rotate display 180 degrees`
+- `Show AP connect screen`
+- `Jednorázově vynutit aktualizaci Wi-Fi`
+- `Invert display colors`
+- `Interval kontroly při vypnutém obnovování displeje` - doba v minutách, po které
+  zařízení při vypnutém obnovování displeje znovu ověří aktuální nastavení
+
+Invertování barev má tři stavy:
+
+- `Podle nastavení obrazovky` odstraní individuální přepsání a použije
+  nastavení obrazovky ve službě Živý obraz
+- `Invertovat` zapne dodatečnou negaci barev vůči nastavení obrazovky
+- `Neinvertovat` dodatečnou negaci vypne
+
+Po úspěšné odpovědi Command API se stav entity v Home Assistant aktualizuje
+okamžitě. Následující načtení Export API stav znovu autoritativně synchronizuje.
+Aktualizace z API ani programová změna entity neposílá stejný příkaz podruhé.
+
+Přepínač `Jednorázově vynutit aktualizaci Wi-Fi` nastaví požadavek pro příští
+probuzení zařízení. Zařízení provede úplný Wi-Fi scan a znovu se připojí k
+nejsilnějšímu přístupovému bodu se stejným SSID. Jde o jednorázovou akci;
+po jejím zpracování se hodnota `force_wifi_full_scan` v Export API vrátí na
+`false` a přepínač se v Home Assistant znovu vypne. Čekající požadavek nelze
+přepínačem ručně zrušit ani vypnout.
+
+Pro hromadné změny a textové hodnoty slouží služba `zivy_obraz.command`:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "group:6"
+  ota: true
+  refresh_screen: true
+```
+
+Služba podporuje vlastnosti `caption`, `note`, `pin_key`, `invert_screen`,
+`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`show_ap_connect_screen` a `sleep_forced`.
+
+Možné cíle:
+
+- bez `target` - všechna zařízení spravovaná vybranou instancí
+- `group:<id>` - skupina s číselným ID
+- `group:0`, `group:default` nebo `default` - výchozí skupina zařízení bez
+  `group_id`
+- `device:<id>` - zařízení podle unikátního Device ID
+- `device:<mac>` - zařízení podle MAC adresy
+
+Příklad výchozí skupiny:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "default"
+  ota: false
+```
+
+Příklad konkrétního zařízení:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "device:80:b5:4e:df:f8:78"
+  note: "Test"
+```
+
+Instanci lze volitelně vybrat pomocí `entry_id` nebo `name`. Pokud instance
+není vybraná, příkaz se zpracuje ve všech načtených instancích, které mají
+nastavený Command key. Instance bez Command key se přeskočí. Pokud používáte
+instanci filtrovanou pomocí `Group ID`, prázdný `target` se automaticky přeloží
+na tuto skupinu.
+
+Hodnota `invert_screen` ve službě přijímá `default`, `invert` nebo
+`do_not_invert`. Kvůli kompatibilitě jsou podporované také booleovské hodnoty.
+`caption` může mít 1 až 255 znaků, `note` nejvýše 255 znaků a `sleep_forced`
+hodnotu 5 až 240 minut. `pin_key` je pouze zapisovací tajná hodnota: integrace
+ho neukládá do dat zařízení a maskuje ho v návratových a diagnostických datech.
+
+Úspěšná odpověď může obsahovat `updated: 0`, pokud už všechna cílová zařízení
+požadovanou hodnotu mají. Takový výsledek není chyba.
+
+Diagnostická URL v response datech obsahuje místo Command key a PINu pouze
+zástupné znaky. Senzory `Device ID` a `Content source` jsou diagnostické a ve
+výchozím stavu zakázané; lze je ručně povolit v detailu zařízení. Číselná
+entita `Interval kontroly při vypnutém obnovování displeje` je při nastaveném
+Command key standardně viditelná. Načítá `sleep_forced` z Export API a umožňuje
+nastavit hodnotu 5 až 240 minut přes Command API. Hodnota se používá pouze
+tehdy, když je `Refresh display` vypnutý. Zařízení během intervalu neobnovuje
+displej a po jeho uplynutí znovu ověří aktuální nastavení.
+
+Diagnostický senzor `Lokální IP adresa` je ve výchozím stavu viditelný. Jeho
+stav obsahuje `local_ip` a v atributech jsou dostupné veřejná IP z `last_ip` a
+MAC adresa zařízení.
 
 ---
 
@@ -430,7 +533,8 @@ Pokud URL obsahuje příliš mnoho parametrů, integrace ji automaticky rozděl�
 
 # Konfigurace
 
-Nastavení integrace je rozdělené na dvě stránky.
+Nastavení integrace je rozdělené na stránky pro Export API, Import API a
+Command API.
 
 ## Načítání dat / Export API
 
@@ -465,6 +569,18 @@ konfigurační entity se nevytvoří.
 U existující konfigurace je uložený `Import key` v nastavení skrytý. Volba
 `Změnit nebo odebrat Import key` zobrazí prázdné pole; pokud ho necháte prázdné,
 Import key se odebere a automatické odesílání se vypne.
+
+---
+
+## Ovládání zařízení / Command API
+
+`Command key` je volitelný a slouží k ovládání panelů. Najdete ho po přihlášení
+do služby Živý obraz v sekci **Účet**.
+
+Bez Command key se ovládací entity panelů nevytvoří a daná instance se při
+hromadném volání služby `zivy_obraz.command` přeskočí. U existující konfigurace
+je klíč skrytý; volba `Změnit nebo odebrat Command key` zobrazí prázdné pole pro
+jeho výměnu nebo odebrání.
 
 ---
 
@@ -504,11 +620,12 @@ garaz
 
 # Použití
 
-1️⃣ Nainstalujte integraci  
-2️⃣ Zadejte **Export key**  
-3️⃣ (volitelně) zadejte **Import key**  
-4️⃣ Přidejte label `ZivyObraz` k entitám  
-5️⃣ Hotovo
+1. Nainstalujte integraci.
+2. Zadejte **Export key**.
+3. Volitelně zadejte **Import key**.
+4. Volitelně zadejte **Command key**.
+5. Přidejte label `ZivyObraz` k entitám odesílaným přes Import API.
+6. Hotovo.
 
 Pokud je vyplněný Import key a zapnuté automatické odesílání, integrace začne
 automaticky odesílat hodnoty. Provozní nastavení lze následně měnit přes entity
@@ -518,7 +635,7 @@ na zařízení instance.
 
 # Architektura
 
-Integrace používá dvě API služby Živý obraz.
+Integrace používá tři API služby Živý obraz.
 
 ### Export API (čtení dat)
 
@@ -542,6 +659,18 @@ in.zivyobraz.eu
       │
       ▼
 Živý obraz displays
+```
+
+### Command API (ovládání zařízení)
+
+```
+Home Assistant controls and services
+      │
+      ▼
+cmd.zivyobraz.eu
+      │
+      ▼
+device settings → Export API state synchronization
 ```
 
 ---
@@ -603,6 +732,112 @@ Entities created automatically:
 
 - `sensor`
 - `binary_sensor`
+
+---
+
+## Controlling devices through the Command API
+
+After a `Command key` is configured, the integration creates control entities
+for every panel:
+
+- `OTA firmware updates`
+- `Refresh display`
+- `Rotate display 180 degrees`
+- `Show AP connect screen`
+- `Force one-time Wi-Fi update`
+- `Invert display colors`
+- `Display refresh-disabled check interval` - number of minutes before a device with
+  display refresh disabled checks its current settings again
+
+Display color inversion has three states:
+
+- `Use display setting` removes the device-specific override and uses the
+  display setting configured in the Živý Obraz service
+- `Invert` enables an additional color negation against the display setting
+- `Do not invert` disables the additional color negation
+
+After a successful Command API response, the Home Assistant entity state is
+updated immediately. A later Export API refresh synchronizes the authoritative
+state again. API updates and programmatic entity state updates do not send the
+same command a second time.
+
+The `Force one-time Wi-Fi update` switch schedules a request for the device's
+next wake-up. The device performs a full Wi-Fi scan and reconnects to the
+strongest access point with the same SSID. This is a one-time action. After it
+is processed, `force_wifi_full_scan` returns to `false` in the Export API and
+the Home Assistant switch turns off again. A pending request cannot be manually
+cancelled or turned off through the switch.
+
+Use the `zivy_obraz.command` service for bulk changes and text properties:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "group:6"
+  ota: true
+  refresh_screen: true
+```
+
+The service supports `caption`, `note`, `pin_key`, `invert_screen`,
+`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`show_ap_connect_screen`, and `sleep_forced`.
+
+Supported targets:
+
+- no `target` - all devices managed by the selected integration instance
+- `group:<id>` - a group with a numeric ID
+- `group:0`, `group:default`, or `default` - the default group containing
+  devices without a `group_id`
+- `device:<id>` - a device selected by its unique Device ID
+- `device:<mac>` - a device selected by its MAC address
+
+Default group example:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "default"
+  ota: false
+```
+
+Single-device example:
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "device:80:b5:4e:df:f8:78"
+  note: "Test"
+```
+
+An integration instance can optionally be selected using `entry_id` or `name`.
+When no instance is selected, all loaded instances with a configured Command
+key are processed. Instances without a Command key are skipped. For an instance
+filtered by `Group ID`, an empty `target` is automatically translated to that
+group.
+
+The `invert_screen` service field accepts `default`, `invert`, or
+`do_not_invert`. Boolean values remain supported for compatibility. `caption`
+accepts 1–255 characters, `note` accepts up to 255 characters, and
+`sleep_forced` accepts 5–240 minutes. `pin_key` is a write-only secret: the
+integration does not store it in device data and masks it in response and
+diagnostic data.
+
+A successful response may contain `updated: 0` when all targeted devices
+already have the requested value. This is not an error.
+
+Diagnostic command URLs contain placeholders instead of the Command key and
+PIN. The `Device ID` and `Content source` sensors are diagnostic entities that
+are disabled by default and can be enabled manually on the device page. The
+`Display refresh-disabled check interval` number entity is visible by default
+when a Command key is configured. It reads `sleep_forced` from the Export API
+and allows setting 5–240 minutes through the Command API. The value is used only
+while `Refresh display` is disabled. The device does not refresh the display
+during this interval and checks its current settings again when the interval
+expires.
+
+The `Local IP address` diagnostic sensor is enabled by default. Its state
+contains `local_ip`, while the public IP from `last_ip` and the device MAC
+address are available as attributes.
 
 ---
 
@@ -917,7 +1152,8 @@ If a request becomes too long, the integration automatically splits it into mult
 
 # Configuration
 
-The integration setup is split into two pages.
+The integration setup contains separate pages for the Export API, Import API,
+and Command API.
 
 ## Data download / Export API
 
@@ -954,6 +1190,18 @@ removes the Import key and disables automatic push.
 
 ---
 
+## Device control / Command API
+
+`Command key` is optional and is used to control panels. It is available on the
+Živý Obraz website in **Account**.
+
+Without a Command key, panel control entities are not created and the instance
+is skipped by account-wide `zivy_obraz.command` service calls. For an existing
+configuration, the key is hidden in options. Enable `Change or remove Command
+key` to reveal an empty field for replacing or removing it.
+
+---
+
 ## Send N/A for invalid entity states
 
 Optional Import API config switch. When enabled, entity values with state
@@ -987,11 +1235,12 @@ garaz
 
 # Usage
 
-1️⃣ Install integration  
-2️⃣ Enter **Export key**  
-3️⃣ (Optional) enter **Import key**  
-4️⃣ Add label `ZivyObraz` to entities  
-5️⃣ Done
+1. Install the integration.
+2. Enter the **Export key**.
+3. Optionally enter the **Import key**.
+4. Optionally enter the **Command key**.
+5. Add the `ZivyObraz` label to entities sent through the Import API.
+6. Done.
 
 If an Import key is configured and automatic push is enabled, the integration
 will automatically start sending values. Runtime settings can then be changed
@@ -1011,4 +1260,10 @@ Home Assistant → out.zivyobraz.eu → panel data → sensors
 
 ```
 Home Assistant entities → in.zivyobraz.eu → displays
+```
+
+### Command API
+
+```
+Home Assistant controls → cmd.zivyobraz.eu → device settings → Export API sync
 ```

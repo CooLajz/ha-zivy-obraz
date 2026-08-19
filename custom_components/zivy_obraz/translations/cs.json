@@ -20,10 +20,18 @@
           "prefix": "Prefix názvu proměnných",
           "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
+      },
+      "command": {
+        "title": "Ovládání zařízení / Command API",
+        "description": "Command key se používá pro ovládání zařízení Živého obrazu přes Command API.",
+        "data": {
+          "command_key": "Command key"
+        }
       }
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
+      "invalid_command_key": "Ověření Command key selhalo. Zkontroluj klíč a zkus to znovu.",
       "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",
@@ -62,10 +70,19 @@
           "prefix": "Prefix názvu proměnných",
           "invalid_state_fallback": "Náhradní hodnota pro neplatné stavy"
         }
+      },
+      "command": {
+        "title": "Ovládání zařízení / Command API",
+        "description": "Command key se používá pro ovládání zařízení Živého obrazu přes Command API.",
+        "data": {
+          "command_key": "Command key",
+          "change_command_key": "Změnit nebo odebrat Command key"
+        }
       }
     },
     "error": {
       "cannot_connect": "Nepodařilo se připojit",
+      "invalid_command_key": "Ověření Command key selhalo. Zkontroluj klíč a zkus to znovu.",
       "invalid_json": "Endpoint nevrací validní JSON",
       "timeout": "Vypršel časový limit",
       "unknown": "Neočekávaná chyba",
@@ -89,6 +106,9 @@
       },
       "overdue_tolerance": {
         "name": "Tolerance zpoždění"
+      },
+      "sleep_forced": {
+        "name": "Interval kontroly při vypnutém obnovování displeje"
       }
     },
     "switch": {
@@ -103,6 +123,31 @@
       },
       "replace_invalid_states_with_na": {
         "name": "Odesílat náhradní hodnotu pro neplatné stavy entit"
+      },
+      "force_wifi_full_scan": {
+        "name": "Jednorázově vynutit aktualizaci Wi-Fi"
+      },
+      "ota": {
+        "name": "OTA aktualizace firmwaru"
+      },
+      "refresh_screen": {
+        "name": "Obnovování displeje"
+      },
+      "rotate_180": {
+        "name": "Otočení displeje o 180 stupňů"
+      },
+      "show_ap_connect_screen": {
+        "name": "Zobrazit AP obrazovku"
+      }
+    },
+    "select": {
+      "invert_screen": {
+        "name": "Invertování barev displeje",
+        "state": {
+          "default": "Podle nastavení obrazovky",
+          "invert": "Invertovat",
+          "do_not_invert": "Neinvertovat"
+        }
       }
     },
     "button": {
@@ -148,6 +193,9 @@
       "ssid": {
         "name": "WiFi SSID"
       },
+      "local_ip": {
+        "name": "Lokální IP adresa"
+      },
       "last_contact": {
         "name": "Poslední kontakt"
       },
@@ -156,6 +204,12 @@
       },
       "group_name": {
         "name": "Název skupiny"
+      },
+      "device_id": {
+        "name": "ID zařízení"
+      },
+      "content_source": {
+        "name": "Zdroj obsahu"
       },
       "fw_build": {
         "name": "Sestavení FW"
@@ -279,6 +333,64 @@
           "description": "Seznam názvů proměnných Živého obrazu a jejich hodnot."
         }
       }
+    },
+    "command": {
+      "name": "Odeslat příkaz zařízení",
+      "description": "Odešle požadavek na Command API Živého obrazu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID konfigurační položky",
+          "description": "Volitelné ID konfigurační položky. Pokud zůstane prázdné, zacílí se všechny nakonfigurované instance s Command key."
+        },
+        "name": {
+          "name": "Název instance",
+          "description": "Volitelný název instance. Pokud zůstane prázdný, zacílí se všechny nakonfigurované instance s Command key."
+        },
+        "target": {
+          "name": "Cíl",
+          "description": "Volitelný cíl příkazu: group:id, group:0 nebo default pro výchozí skupinu, device:id či device:mac. Pokud zůstane prázdný, zacílí se všechna zařízení spravovaná touto instancí."
+        },
+        "caption": {
+          "name": "Název zařízení",
+          "description": "Zobrazovaný název zařízení musí obsahovat 1 až 255 znaků."
+        },
+        "note": {
+          "name": "Poznámka",
+          "description": "Poznámka zařízení může obsahovat nejvýše 255 znaků. Prázdná hodnota poznámku smaže."
+        },
+        "pin_key": {
+          "name": "PIN key",
+          "description": "PIN key zařízení. Prázdná hodnota PIN smaže."
+        },
+        "invert_screen": {
+          "name": "Invertovat displej",
+          "description": "Nastavení chování invertování barev displeje."
+        },
+        "force_wifi_full_scan": {
+          "name": "Jednorázově vynutit aktualizaci Wi-Fi",
+          "description": "Při příštím probuzení jednorázově provede úplný Wi-Fi scan a znovu se připojí k nejsilnějšímu přístupovému bodu se stejným SSID."
+        },
+        "ota": {
+          "name": "OTA aktualizace firmwaru",
+          "description": "Zapne nebo vypne OTA aktualizace firmwaru."
+        },
+        "refresh_screen": {
+          "name": "Obnovování displeje",
+          "description": "Zapne nebo vypne obnovování displeje."
+        },
+        "rotate_180": {
+          "name": "Otočit o 180 stupňů",
+          "description": "Otočí displej o 180 stupňů."
+        },
+        "show_ap_connect_screen": {
+          "name": "Zobrazit AP obrazovku",
+          "description": "Zobrazí obrazovku pro připojení k AP."
+        },
+        "sleep_forced": {
+          "name": "Interval kontroly při vypnutém obnovování displeje",
+          "description": "Počet minut, po kterých zařízení při vypnutém obnovování displeje znovu ověří aktuální nastavení."
+        }
+      }
     }
   },
   "exceptions": {
@@ -302,6 +414,39 @@
     },
     "push_values_empty": {
       "message": "Nejsou zadané žádné vlastní hodnoty k odeslání."
+    },
+    "command_entry_id_and_name": {
+      "message": "Použijte buď ID konfigurační položky, nebo název instance, ne obojí."
+    },
+    "command_entry_not_loaded": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není načtená."
+    },
+    "command_name_not_found": {
+      "message": "Instance Živého obrazu s názvem \"{name}\" nebyla nalezena."
+    },
+    "command_name_not_unique": {
+      "message": "Název instance Živého obrazu \"{name}\" není jedinečný. Použijte ID konfigurační položky."
+    },
+    "command_no_entries_ready": {
+      "message": "Žádná načtená instance Živého obrazu nemá nastavený Command key."
+    },
+    "command_entry_not_ready": {
+      "message": "Konfigurační položka Živého obrazu \"{entry}\" není připravená na příkazy. Nejdřív nastavte Command key."
+    },
+    "command_no_properties": {
+      "message": "Nejsou zadané žádné vlastnosti příkazu."
+    },
+    "command_invalid_target": {
+      "message": "Cíl příkazu \"{target}\" není platný."
+    },
+    "command_target_not_found": {
+      "message": "Cíl příkazu \"{target}\" neodpovídá žádnému lokálně známému zařízení."
+    },
+    "command_request_failed": {
+      "message": "Požadavek na Command API selhal: {error}"
+    },
+    "force_wifi_full_scan_pending": {
+      "message": "Čekající jednorázovou aktualizaci Wi-Fi nelze zrušit. Přepínač se vypne, jakmile ji zařízení zpracuje."
     }
   }
 }

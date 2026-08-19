@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import build_export_url, normalize_export_payload
 from .const import (
+    CONF_COMMAND_KEY,
     CONF_EXPORT_KEY,
     CONF_GROUP_ID,
     CONF_IMPORT_KEY,
@@ -28,6 +29,7 @@ from .const import (
     CONF_SEND_ONLY_CHANGED,
     CONF_TIMEOUT,
     CONF_USE_GROUP_FILTER,
+    DEFAULT_COMMAND_KEY,
     DEFAULT_IMPORT_KEY,
     DEFAULT_INVALID_STATE_FALLBACK,
     DEFAULT_LABEL,
@@ -50,6 +52,8 @@ from .const import (
     MIN_PUSH_INTERVAL,
     MIN_SCAN_INTERVAL,
     MIN_TIMEOUT,
+    ZIVY_OBRAZ_CLIENT_HEADERS,
+    ZIVY_OBRAZ_COMMAND_URL,
 )
 
 _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
@@ -66,6 +70,15 @@ _VALUE_ERROR_TO_FIELD: dict[str, tuple[str, str]] = {
 
 _CONF_CHANGE_EXPORT_KEY = "change_export_key"
 _CONF_CHANGE_IMPORT_KEY = "change_import_key"
+_CONF_CHANGE_COMMAND_KEY = "change_command_key"
+
+
+class InvalidCommandKeyError(Exception):
+    """Raised when Command API rejects a key or its dry-run validation."""
+
+
+class InvalidCommandResponseError(Exception):
+    """Raised when Command API returns an invalid validation response."""
 
 
 async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
@@ -80,13 +93,54 @@ async def _validate_input(hass, data: dict[str, Any]) -> dict[str, str]:
     )
 
     async with asyncio.timeout(timeout):
-        async with session.get(url, headers={"Accept": "application/json"}) as response:
+        async with session.get(
+            url,
+            headers={
+                **ZIVY_OBRAZ_CLIENT_HEADERS,
+                "Accept": "application/json",
+            },
+        ) as response:
             response.raise_for_status()
             payload = await response.json(content_type=None)
 
     normalize_export_payload(payload)
 
     return {"title": "Živý Obraz"}
+
+
+async def _validate_command_key(hass, command_key: str, timeout: int) -> None:
+    """Validate a Command key using the Command API dry-run mode."""
+    session = async_get_clientsession(hass)
+    params = {
+        "command_key": command_key,
+        "target": "all",
+        "refresh_screen": "1",
+        "test": "1",
+    }
+
+    async with asyncio.timeout(timeout):
+        async with session.post(
+            ZIVY_OBRAZ_COMMAND_URL,
+            params=params,
+            headers={
+                **ZIVY_OBRAZ_CLIENT_HEADERS,
+                "Accept": "application/json",
+            },
+        ) as response:
+            if 400 <= response.status < 500:
+                raise InvalidCommandKeyError
+            response.raise_for_status()
+            try:
+                payload = await response.json(content_type=None)
+            except (ContentTypeError, ValueError) as err:
+                raise InvalidCommandResponseError from err
+
+    if (
+        not isinstance(payload, dict)
+        or payload.get("status") != "ok"
+        or payload.get("test") is not True
+    ):
+        raise InvalidCommandKeyError
 
 
 def _validate_push_settings(data: dict[str, Any]) -> None:
@@ -188,6 +242,9 @@ def _prepare_user_input(user_input: dict[str, Any]) -> dict[str, Any]:
     )
     prepared[CONF_IMPORT_KEY] = _normalize_api_key(
         user_input.get(CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY)
+    )
+    prepared[CONF_COMMAND_KEY] = _normalize_api_key(
+        user_input.get(CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY)
     )
     prepared[CONF_PREFIX] = _normalize_prefix(user_input.get(CONF_PREFIX, DEFAULT_PREFIX))
     prepared[CONF_INVALID_STATE_FALLBACK] = _normalize_invalid_state_fallback(
@@ -347,6 +404,23 @@ def _build_import_schema(
     return vol.Schema(schema)
 
 
+def _build_command_schema(
+    *,
+    show_command_key: bool = True,
+    allow_command_key_change: bool = False,
+    command_key: str = DEFAULT_COMMAND_KEY,
+) -> vol.Schema:
+    """Build Command API config schema."""
+    schema: dict[Any, Any] = {}
+
+    if show_command_key:
+        schema[vol.Optional(CONF_COMMAND_KEY, default=command_key)] = str
+    elif allow_command_key_change:
+        schema[vol.Optional(_CONF_CHANGE_COMMAND_KEY, default=False)] = bool
+
+    return vol.Schema(schema)
+
+
 class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Zivy Obraz."""
 
@@ -420,10 +494,8 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             )
             _validate_push_settings(prepared_input)
-            return self.async_create_entry(
-                title=prepared_input[CONF_NAME],
-                data=prepared_input,
-            )
+            self._export_input = prepared_input
+            return await self.async_step_command()
 
         schema = _build_import_schema()
         schema = self.add_suggested_values_to_schema(
@@ -438,6 +510,54 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="import",
             data_schema=schema,
             errors={},
+            last_step=False,
+        )
+
+    async def async_step_command(self, user_input=None):
+        """Handle Command API setup."""
+        if self._export_input is None:
+            return await self.async_step_user()
+
+        errors: dict[str, str] = {}
+        command_key = DEFAULT_COMMAND_KEY
+        if user_input is not None:
+            prepared_input = _prepare_user_input(
+                {
+                    **self._export_input,
+                    **user_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            command_key = prepared_input[CONF_COMMAND_KEY]
+            try:
+                if command_key:
+                    await _validate_command_key(
+                        self.hass,
+                        command_key,
+                        prepared_input[CONF_TIMEOUT],
+                    )
+            except TimeoutError:
+                errors["base"] = "timeout"
+            except InvalidCommandKeyError:
+                errors[CONF_COMMAND_KEY] = "invalid_command_key"
+            except InvalidCommandResponseError:
+                errors["base"] = "invalid_json"
+            except ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                errors["base"] = "unknown"
+            else:
+                return self.async_create_entry(
+                    title=prepared_input[CONF_NAME],
+                    data=prepared_input,
+                )
+
+        schema = _build_command_schema(command_key=command_key)
+
+        return self.async_show_form(
+            step_id="command",
+            data_schema=schema,
+            errors=errors,
             last_step=True,
         )
 
@@ -456,6 +576,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         self._export_input: dict[str, Any] | None = None
         self._show_export_key = False
         self._show_import_key = False
+        self._show_command_key = False
 
     def _current_values(self) -> dict[str, Any]:
         """Return current options merged with stored entry data."""
@@ -500,6 +621,11 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             CONF_IMPORT_KEY: _normalize_api_key(
                 _get_config_value(
                     self._config_entry, CONF_IMPORT_KEY, DEFAULT_IMPORT_KEY
+                )
+            ),
+            CONF_COMMAND_KEY: _normalize_api_key(
+                _get_config_value(
+                    self._config_entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY
                 )
             ),
             CONF_LABEL: _get_config_value(
@@ -609,6 +735,26 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
             step_id="import",
             data_schema=schema,
             errors=errors,
+            last_step=False,
+        )
+
+    def _show_command_form(
+        self,
+        errors: dict[str, str],
+        current_values: dict[str, Any],
+    ):
+        """Show Command API options form."""
+        has_command_key = bool(_normalize_api_key(current_values[CONF_COMMAND_KEY]))
+        schema = _build_command_schema(
+            show_command_key=not has_command_key or self._show_command_key,
+            allow_command_key_change=has_command_key and not self._show_command_key,
+            command_key="" if self._show_command_key else current_values[CONF_COMMAND_KEY],
+        )
+
+        return self.async_show_form(
+            step_id="command",
+            data_schema=schema,
+            errors=errors,
             last_step=True,
         )
 
@@ -704,8 +850,67 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 }
             )
             _validate_push_settings(prepared_input)
-            prepared_input[CONF_PREFIX_OVERRIDE] = True
-            self._update_unique_id(prepared_input)
-            return self.async_create_entry(title="", data=prepared_input)
+            self._export_input = prepared_input
+            return await self.async_step_command()
 
         return self._show_import_form({}, current_values)
+
+    async def async_step_command(self, user_input=None):
+        """Manage Command API options."""
+        current_values = self._export_input or self._current_values()
+        has_command_key = bool(_normalize_api_key(current_values[CONF_COMMAND_KEY]))
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            if (
+                has_command_key
+                and not self._show_command_key
+                and user_input.get(_CONF_CHANGE_COMMAND_KEY)
+            ):
+                cleaned_input = dict(user_input)
+                cleaned_input.pop(_CONF_CHANGE_COMMAND_KEY, None)
+                self._show_command_key = True
+                return self._show_command_form(
+                    {},
+                    {
+                        **current_values,
+                        **cleaned_input,
+                    },
+                )
+
+            cleaned_input = dict(user_input)
+            cleaned_input.pop(_CONF_CHANGE_COMMAND_KEY, None)
+            prepared_input = _prepare_user_input(
+                {
+                    **current_values,
+                    **cleaned_input,
+                }
+            )
+            _validate_push_settings(prepared_input)
+            current_values = prepared_input
+            validate_command_key = self._show_command_key or not has_command_key
+            if validate_command_key:
+                self._show_command_key = True
+            try:
+                if validate_command_key and prepared_input[CONF_COMMAND_KEY]:
+                    await _validate_command_key(
+                        self.hass,
+                        prepared_input[CONF_COMMAND_KEY],
+                        prepared_input[CONF_TIMEOUT],
+                    )
+            except TimeoutError:
+                errors["base"] = "timeout"
+            except InvalidCommandKeyError:
+                errors[CONF_COMMAND_KEY] = "invalid_command_key"
+            except InvalidCommandResponseError:
+                errors["base"] = "invalid_json"
+            except ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                errors["base"] = "unknown"
+            else:
+                prepared_input[CONF_PREFIX_OVERRIDE] = True
+                self._update_unique_id(prepared_input)
+                return self.async_create_entry(title="", data=prepared_input)
+
+        return self._show_command_form(errors, current_values)

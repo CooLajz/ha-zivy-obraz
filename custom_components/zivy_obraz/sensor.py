@@ -175,6 +175,13 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
+        key="local_ip",
+        value_key="local_ip",
+        name="Local IP address",
+        icon="mdi:ip-network-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
         key="last_contact",
         value_key="last_contact",
         name="Last contact",
@@ -194,6 +201,22 @@ SENSOR_DESCRIPTIONS: tuple[ZivyObrazSensorDescription, ...] = (
         name="Group name",
         icon="mdi:account-group",
         entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ZivyObrazSensorDescription(
+        key="device_id",
+        value_key="id",
+        name="Device ID",
+        icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    ZivyObrazSensorDescription(
+        key="content_source",
+        value_key="content_source",
+        name="Content source",
+        icon="mdi:card-text-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     ZivyObrazSensorDescription(
         key="fw_build",
@@ -690,6 +713,12 @@ class ZivyObrazSensor(
             group_id = self._device_data.get("group_id")
             if group_id is not None:
                 return {"group_id": group_id}
+        if self.entity_description.key == "local_ip":
+            attributes: dict[str, Any] = {"mac_address": self._mac}
+            last_ip = self._device_data.get("last_ip")
+            if last_ip is not None:
+                attributes["last_ip"] = str(last_ip)
+            return attributes
         if self.entity_description.key == "fw_build":
             fw = self._device_data.get("fw")
             if fw is not None:
