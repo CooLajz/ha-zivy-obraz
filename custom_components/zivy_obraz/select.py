@@ -95,9 +95,17 @@ async def async_setup_entry(
         if new_entities:
             async_add_entities(new_entities)
 
+    @callback
+    def _handle_coordinator_update() -> None:
+        """Add command selects after data recovers from a failed startup."""
+        new_entities = _build_entities(set(coordinator.data))
+        if new_entities:
+            async_add_entities(new_entities)
+
     entry.async_on_unload(
         coordinator.async_add_new_device_listener(_handle_new_devices)
     )
+    entry.async_on_unload(coordinator.async_add_listener(_handle_coordinator_update))
 
 
 @callback
