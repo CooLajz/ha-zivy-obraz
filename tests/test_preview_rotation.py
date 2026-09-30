@@ -2,7 +2,7 @@
 
 from io import BytesIO
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from PIL import Image
@@ -80,11 +80,6 @@ async def test_select_visibility_and_saved_angle(tmp_path, monkeypatch):
     select.hass = hass
     select.entity_id = "select.panel_rotation"
     select.async_write_ha_state = Mock()
-    item = SimpleNamespace(hidden_by=None)
-    registry = Mock()
-    registry.async_get.return_value = item
-    monkeypatch.setattr(er, "async_get", lambda _: registry)
-
     def update_entry(config_entry, *, options):
         config_entry.options = options
 
@@ -96,38 +91,90 @@ async def test_select_visibility_and_saved_angle(tmp_path, monkeypatch):
     recreated = ZivyObrazPreviewRotationSelect(coordinator, entry, "panel")
     assert recreated.current_option == "270"
 
-    data["panel"]["preview_url"] = None
-    select._handle_coordinator_update()
-    assert not select.available
-    registry.async_update_entity.assert_called_with(
-        select.entity_id, hidden_by=er.RegistryEntryHider.INTEGRATION
-    )
-    item.hidden_by = er.RegistryEntryHider.INTEGRATION
-    data["panel"]["preview_url"] = "https://example.test/image"
-    select._handle_coordinator_update()
-    registry.async_update_entity.assert_called_with(select.entity_id, hidden_by=None)
-    assert select.available and select.current_option == "270"
-    item.hidden_by = er.RegistryEntryHider.USER
-    registry.async_update_entity.reset_mock()
-    select._handle_coordinator_update()
-    registry.async_update_entity.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_select_only_created_when_preview_enabled(monkeypatch):
-    registry = Mock(entities={})
+async def test_select_removed_and_recreated_with_saved_angle(tmp_path, monkeypatch):
+    hass = HomeAssistant(str(tmp_path))
+    items = {}
+    registry = Mock()
+    registry.async_remove.side_effect = items.pop
     monkeypatch.setattr(er, "async_get", lambda _: registry)
-    monkeypatch.setattr(er, "async_entries_for_config_entry", lambda *a: [])
-    coordinator = SimpleNamespace(data={"panel": {}}, async_add_listener=Mock())
-    entry = SimpleNamespace(
-        runtime_data=coordinator, entry_id="entry", options={}, async_on_unload=Mock()
+    monkeypatch.setattr(er, "async_entries_for_config_entry", lambda *a: list(items.values()))
+    coordinator = SimpleNamespace(
+        data={"panel": {}}, last_update_success=True, async_add_listener=Mock()
     )
-    add = Mock()
-    _setup_preview_rotation(Mock(), entry, add)
-    add.assert_not_called()
-    coordinator.data["panel"]["preview_url"] = "https://example.test/image"
+    entry = SimpleNamespace(
+        runtime_data=coordinator, entry_id="entry",
+        options={CONF_PREVIEW_ROTATIONS: {"panel": "270"}}, async_on_unload=Mock()
+    )
+    platform = SimpleNamespace(entities={})
+    created = []
+
+    async def add(entities):
+        for entity in entities:
+            entity.entity_id = "select.panel_rotation"
+            assert entity.entity_id not in platform.entities
+            platform.entities[entity.entity_id] = entity
+            items[entity.entity_id] = SimpleNamespace(
+                domain="select", unique_id=entity.unique_id,
+                entity_id=entity.entity_id, hidden_by=None,
+            )
+            async def remove(*, force_remove):
+                assert force_remove
+                platform.entities.pop(entity.entity_id)
+            entity.async_remove = AsyncMock(side_effect=remove)
+            created.append(entity)
+
+    platform.async_add_entities = AsyncMock(side_effect=add)
+    await _setup_preview_rotation(hass, entry, platform)
+    assert not created and not items
     listener = coordinator.async_add_listener.call_args.args[0]
+    coordinator.data["panel"]["preview_url"] = "https://example.test/image"
     listener()
-    add.assert_called_once()
+    await hass.async_block_till_done()
+    assert len(created) == 1 and len(items) == 1
+    assert created[-1].current_option == "270"
     listener()
-    add.assert_called_once()
+    await hass.async_block_till_done()
+    assert len(created) == 1
+
+    # Failed polling is not equivalent to turning sharing off.
+    coordinator.last_update_success = False
+    coordinator.data["panel"]["preview_url"] = None
+    listener()
+    await hass.async_block_till_done()
+    assert len(items) == 1
+    coordinator.last_update_success = True
+    listener()
+    await hass.async_block_till_done()
+    assert not items and not platform.entities
+    created[0].async_remove.assert_awaited_once_with(force_remove=True)
+
+    coordinator.data["panel"]["preview_url"] = "https://example.test/image"
+    listener()
+    await hass.async_block_till_done()
+    assert len(created) == 2 and len(items) == 1
+    assert created[-1].current_option == "270"
+
+
+@pytest.mark.asyncio
+async def test_startup_removes_old_hidden_rotation_select(tmp_path, monkeypatch):
+    hass = HomeAssistant(str(tmp_path))
+    item = SimpleNamespace(
+        domain="select", unique_id="entry_panel_preview_rotation",
+        entity_id="select.panel_rotation", hidden_by=er.RegistryEntryHider.INTEGRATION,
+    )
+    registry = Mock()
+    monkeypatch.setattr(er, "async_get", lambda _: registry)
+    monkeypatch.setattr(er, "async_entries_for_config_entry", lambda *a: [item])
+    coordinator = SimpleNamespace(
+        data={"panel": {"preview_url": None}}, last_update_success=True,
+        async_add_listener=Mock(),
+    )
+    entry = SimpleNamespace(runtime_data=coordinator, entry_id="entry", async_on_unload=Mock())
+    platform = SimpleNamespace(entities={}, async_add_entities=AsyncMock())
+    await _setup_preview_rotation(hass, entry, platform)
+    registry.async_update_entity.assert_called_once_with(item.entity_id, hidden_by=None)
+    registry.async_remove.assert_called_once_with(item.entity_id)
+    platform.async_add_entities.assert_not_awaited()

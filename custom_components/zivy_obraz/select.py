@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from homeassistant.components.select import SelectEntity
@@ -9,7 +10,11 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddEntitiesCallback,
+    EntityPlatform,
+    async_get_current_platform,
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .command import (
@@ -54,7 +59,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Živý Obraz command select entities."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
-    _setup_preview_rotation(hass, entry, async_add_entities)
+    await _setup_preview_rotation(hass, entry, async_get_current_platform())
     command_key = str(
         get_config_value(entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY) or ""
     ).strip()
@@ -114,44 +119,76 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(_handle_coordinator_update))
 
 
-@callback
-def _setup_preview_rotation(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+async def _setup_preview_rotation(
+    hass: HomeAssistant, entry: ConfigEntry, platform: EntityPlatform
 ) -> None:
-    """Add local rotation controls once preview sharing has been enabled."""
+    """Keep rotation controls registered only while preview sharing is enabled."""
     coordinator = entry.runtime_data
     registry = er.async_get(hass)
     prefix = f"{entry.entry_id}_"
     suffix = "_preview_rotation"
-    registered = {
-        item.unique_id[len(prefix):-len(suffix)]
-        for item in er.async_entries_for_config_entry(registry, entry.entry_id)
-        if item.domain == "select"
-        and item.unique_id.startswith(prefix)
-        and item.unique_id.endswith(suffix)
-    }
-    known: set[str] = set()
+    entities: dict[str, ZivyObrazPreviewRotationSelect] = {}
+    lock = asyncio.Lock()
+    tasks: set[asyncio.Task] = set()
+    unloaded = False
+
+    async def reconcile() -> None:
+        async with lock:
+            if unloaded or not coordinator.last_update_success:
+                return
+            eligible = {
+                mac for mac, data in (coordinator.data or {}).items()
+                if data.get("preview_url")
+            }
+            for mac in set(entities) - eligible:
+                entity = entities.pop(mac)
+                if platform.entities.get(entity.entity_id) is entity:
+                    # Await removal before permitting a new entity with this ID.
+                    await entity.async_remove(force_remove=True)
+            for item in list(er.async_entries_for_config_entry(registry, entry.entry_id)):
+                if (item.domain != "select"
+                    or not item.unique_id.startswith(prefix)
+                    or not item.unique_id.endswith(suffix)):
+                    continue
+                mac = item.unique_id[len(prefix):-len(suffix)]
+                # Clear the previous version's integration-hidden flag, including
+                # before deletion (HA retains registry settings for recreation).
+                if item.hidden_by == er.RegistryEntryHider.INTEGRATION:
+                    registry.async_update_entity(item.entity_id, hidden_by=None)
+                if mac not in eligible:
+                    registry.async_remove(item.entity_id)
+            if unloaded:
+                return
+            new = eligible - entities.keys()
+            if new:
+                added = [
+                    ZivyObrazPreviewRotationSelect(coordinator, entry, mac)
+                    for mac in sorted(new)
+                ]
+                await platform.async_add_entities(added)
+                entities.update((entity._mac, entity) for entity in added)
 
     @callback
-    def add_rotations() -> None:
-        eligible = {
-            mac for mac, data in (coordinator.data or {}).items()
-            if data.get("preview_url")
-        } | registered
-        new = eligible - known
-        if new:
-            known.update(new)
-            async_add_entities([
-                ZivyObrazPreviewRotationSelect(coordinator, entry, mac)
-                for mac in sorted(new)
-            ])
+    def schedule_reconcile() -> None:
+        if not unloaded:
+            task = hass.async_create_task(reconcile())
+            tasks.add(task)
+            task.add_done_callback(tasks.discard)
 
-    add_rotations()
-    entry.async_on_unload(coordinator.async_add_listener(add_rotations))
+    @callback
+    def stop() -> None:
+        nonlocal unloaded
+        unloaded = True
+        for task in tasks:
+            task.cancel()
+
+    entry.async_on_unload(stop)
+    entry.async_on_unload(coordinator.async_add_listener(schedule_reconcile))
+    await reconcile()
 
 
 class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
-    """Persist a local preview angle and hide the control while sharing is off."""
+    """Persist a local preview angle independently of the entity lifecycle."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "preview_rotation"
@@ -164,7 +201,6 @@ class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
         self._entry = entry
         self._mac = mac
         self._attr_unique_id = f"{entry.entry_id}_{mac}_preview_rotation"
-        self._attr_entity_registry_visible_default = self._preview_enabled
 
     @property
     def _preview_enabled(self) -> bool:
@@ -184,27 +220,6 @@ class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
     @property
     def current_option(self) -> str:
         return rotation_for(self._entry.options, self._mac)
-
-    @callback
-    def _sync_visibility(self) -> None:
-        if not self.coordinator.last_update_success:
-            return
-        registry = er.async_get(self.hass)
-        item = registry.async_get(self.entity_id)
-        if item is None or item.hidden_by == er.RegistryEntryHider.USER:
-            return
-        hidden_by = None if self._preview_enabled else er.RegistryEntryHider.INTEGRATION
-        if item.hidden_by != hidden_by:
-            registry.async_update_entity(self.entity_id, hidden_by=hidden_by)
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        self._sync_visibility()
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self._sync_visibility()
-        super()._handle_coordinator_update()
 
     async def async_select_option(self, option: str) -> None:
         if option not in ROTATION_OPTIONS:
