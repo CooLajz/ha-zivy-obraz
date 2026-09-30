@@ -97,6 +97,11 @@
     }
   },
   "entity": {
+    "image": {
+      "preview": {
+        "name": "Screen preview"
+      }
+    },
     "number": {
       "import_refresh_interval": {
         "name": "Import refresh interval"
@@ -129,6 +134,9 @@
       },
       "ota": {
         "name": "OTA firmware updates"
+      },
+      "preview": {
+        "name": "Share screen preview"
       },
       "refresh_screen": {
         "name": "Refresh display"
@@ -367,6 +375,10 @@
         "ota": {
           "name": "OTA firmware updates",
           "description": "Enable or disable OTA firmware updates."
+        },
+        "preview": {
+          "name": "Screen preview sharing",
+          "description": "Enable, regenerate, or disable the public screen preview link. Anyone with the link can view the device screen."
         },
         "refresh_screen": {
           "name": "Refresh display",

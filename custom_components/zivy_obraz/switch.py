@@ -28,6 +28,7 @@ from .config_helpers import (
 from .const import (
     ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_OTA,
+    ATTR_PREVIEW,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
     ATTR_SHOW_AP_CONNECT_SCREEN,
@@ -127,6 +128,14 @@ COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
         command_property=ATTR_OTA,
         data_key="ota",
         icon="mdi:cellphone-arrow-down",
+        entity_category=EntityCategory.CONFIG,
+    ),
+    ZivyObrazCommandSwitchDescription(
+        key="preview",
+        translation_key="preview",
+        command_property=ATTR_PREVIEW,
+        data_key="preview_url",
+        icon="mdi:image-lock",
         entity_category=EntityCategory.CONFIG,
     ),
     ZivyObrazCommandSwitchDescription(
@@ -429,6 +438,8 @@ class ZivyObrazCommandSwitch(
     @property
     def is_on(self) -> bool:
         """Return current command state."""
+        if self.entity_description.command_property == ATTR_PREVIEW:
+            return bool(self._device_data.get(self.entity_description.data_key))
         return coerce_bool_state(
             self._device_data.get(self.entity_description.data_key)
         )
@@ -452,10 +463,13 @@ class ZivyObrazCommandSwitch(
     async def _async_set_command_value(self, value: bool) -> None:
         """Apply one device command."""
         target = f"device:{self._mac}"
-        properties = {self.entity_description.command_property: value}
+        command_value: bool | str = value
+        if self.entity_description.command_property == ATTR_PREVIEW:
+            command_value = "enable" if value else "disable"
+        properties = {self.entity_description.command_property: command_value}
 
         try:
-            await self.coordinator.async_send_command(
+            command_response = await self.coordinator.async_send_command(
                 self._command_key,
                 target,
                 properties,
@@ -469,6 +483,7 @@ class ZivyObrazCommandSwitch(
             target,
             target,
             properties,
+            command_response,
         )
 
         if self._mac not in affected_macs:

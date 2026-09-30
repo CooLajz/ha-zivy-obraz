@@ -113,6 +113,7 @@ Z těchto dat se automaticky vytvoří entity:
 Po zadání `Command key` integrace vytvoří u každého panelu ovládací entity:
 
 - `OTA firmware updates`
+- `Sdílení náhledu displeje`
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
@@ -147,8 +148,19 @@ data:
 ```
 
 Služba podporuje vlastnosti `caption`, `note`, `pin_key`, `invert_screen`,
-`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`force_wifi_full_scan`, `ota`, `preview`, `refresh_screen`, `rotate_180`,
 `show_ap_connect_screen` a `sleep_forced`.
+
+Hodnota `preview` přijímá `enable`, `regenerate` nebo `disable`. Zapnutí vytvoří
+veřejný odkaz, regenerace okamžitě zneplatní starý odkaz a vypnutí sdílení
+odkaz odstraní. Obrazovku může zobrazit kdokoliv, kdo má aktuální odkaz.
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "group:6"
+  preview: enable
+```
 
 Možné cíle:
 
@@ -599,6 +611,14 @@ garaz
 
 # Použití
 
+## Náhled displeje
+
+Každý panel má obrázkovou entitu **Náhled displeje**. Je dostupná, pokud Export API vrací `preview_url`. Entitu lze zobrazit na dashboardu pomocí obrázkové karty. Pokud je nastavený Command key, sdílení lze zapnout nebo vypnout přepínačem **Sdílení náhledu displeje** u zařízení. Kdokoli s veřejným odkazem může obrazovku zobrazit; vypnutím sdílení se odkaz zneplatní.
+
+Obrázek se stahuje až při zobrazení a zůstává v paměťové cache HA. Další požadavek na server vznikne pouze po změně `last_contact` nebo preview URL, nejdříve za 60 sekund od předchozího požadavku. Integrace používá `ETag` / `If-None-Match` (případně `Last-Modified` / `If-Modified-Since`), takže nezměněný obrázek se při odpovědi `304` znovu nepřenáší. Souběžné požadavky na stejný náhled se sloučí.
+
+Při chybě se náhled nezobrazuje; další pokus je možný po změně kontaktu nebo URL. Vypnutí sdílení vymaže uložený obrázek. Cache se neukládá na disk, takže po restartu či znovunačtení integrace se první zobrazený náhled stáhne znovu.
+
 1. Nainstalujte integraci.
 2. Zadejte **Export key**.
 3. Volitelně zadejte **Import key**.
@@ -718,6 +738,7 @@ After a `Command key` is configured, the integration creates control entities
 for every panel:
 
 - `OTA firmware updates`
+- `Share screen preview`
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
@@ -753,8 +774,19 @@ data:
 ```
 
 The service supports `caption`, `note`, `pin_key`, `invert_screen`,
-`force_wifi_full_scan`, `ota`, `refresh_screen`, `rotate_180`,
+`force_wifi_full_scan`, `ota`, `preview`, `refresh_screen`, `rotate_180`,
 `show_ap_connect_screen`, and `sleep_forced`.
+
+The `preview` field accepts `enable`, `regenerate`, or `disable`. Enabling creates
+a public link, regenerating immediately revokes the previous link, and disabling
+removes the link. Anyone with the current link can view the device screen.
+
+```yaml
+action: zivy_obraz.command
+data:
+  target: "group:6"
+  preview: enable
+```
 
 Supported targets:
 
@@ -1190,6 +1222,14 @@ garaz
 ---
 
 # Usage
+
+## Screen preview
+
+Each panel has a **Screen preview** image entity, available when Export API provides `preview_url`. Use the image entity in a dashboard picture card. When a Command key is configured, preview sharing can be enabled or disabled with the device's **Share screen preview** switch. Anyone with the public link can view the screen; disabling sharing revokes the link.
+
+Images are fetched on demand and cached in HA memory. Only a changed `last_contact` or preview URL permits another request, with a minimum interval of 60 seconds. Conditional requests use `ETag` / `If-None-Match`, falling back to `Last-Modified` / `If-Modified-Since`; a `304` response reuses existing bytes. Concurrent requests share the same download.
+
+A failed preview is not displayed or retried until the contact or URL changes. Disabling sharing clears the image. The cache is not persisted: the first preview displayed after a restart or integration reload is downloaded again.
 
 1. Install the integration.
 2. Enter the **Export key**.

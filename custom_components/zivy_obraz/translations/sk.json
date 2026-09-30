@@ -97,6 +97,11 @@
     }
   },
   "entity": {
+    "image": {
+      "preview": {
+        "name": "Náhľad displeja"
+      }
+    },
     "number": {
       "import_refresh_interval": {
         "name": "Interval obnovy importu"
@@ -129,6 +134,9 @@
       },
       "ota": {
         "name": "OTA aktualizácie firmvéru"
+      },
+      "preview": {
+        "name": "Zdieľanie náhľadu displeja"
       },
       "refresh_screen": {
         "name": "Obnovovanie displeja"
@@ -367,6 +375,10 @@
         "ota": {
           "name": "OTA aktualizácie firmvéru",
           "description": "Zapne alebo vypne OTA aktualizácie firmvéru."
+        },
+        "preview": {
+          "name": "Zdieľanie náhľadu displeja",
+          "description": "Zapne, obnoví alebo vypne verejný odkaz náhľadu displeja. Obrazovku môže zobraziť ktokoľvek, kto má odkaz."
         },
         "refresh_screen": {
           "name": "Obnovovanie displeja",

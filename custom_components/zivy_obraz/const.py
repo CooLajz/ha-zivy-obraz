@@ -66,7 +66,7 @@ ZIVY_OBRAZ_CLIENT_HEADERS = {
 
 MAX_PUSH_URL_LENGTH = 1800
 
-PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "button"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "button", "image"]
 
 SERVICE_PUSH = "push"
 SERVICE_PUSH_VALUES = "push_values"
@@ -84,6 +84,7 @@ ATTR_CAPTION = "caption"
 ATTR_NOTE = "note"
 ATTR_OTA = "ota"
 ATTR_PIN_KEY = "pin_key"
+ATTR_PREVIEW = "preview"
 ATTR_FORCE_WIFI_FULL_SCAN = "force_wifi_full_scan"
 ATTR_INVERT_SCREEN = "invert_screen"
 ATTR_ROTATE_180 = "rotate_180"

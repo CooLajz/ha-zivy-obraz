@@ -129,6 +129,18 @@ command:
       description: Enable or disable OTA firmware updates.
       selector:
         boolean:
+    preview:
+      name: Screen preview sharing
+      description: Enable, regenerate, or disable the public screen preview link. Anyone with the link can view the device screen.
+      selector:
+        select:
+          options:
+            - label: Enable
+              value: enable
+            - label: Regenerate link
+              value: regenerate
+            - label: Disable
+              value: disable
     refresh_screen:
       name: Refresh display
       description: Enable or disable display refresh.

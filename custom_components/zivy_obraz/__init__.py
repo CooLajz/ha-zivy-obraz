@@ -30,6 +30,7 @@ from .const import (
     ATTR_NOTE,
     ATTR_OTA,
     ATTR_PIN_KEY,
+    ATTR_PREVIEW,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
     ATTR_SEND_ALL,
@@ -144,6 +145,7 @@ COMMAND_SERVICE_SCHEMA = vol.Schema(
             cv.boolean,
         ),
         vol.Optional(ATTR_OTA): cv.boolean,
+        vol.Optional(ATTR_PREVIEW): vol.In({"enable", "regenerate", "disable"}),
         vol.Optional(ATTR_REFRESH_SCREEN): cv.boolean,
         vol.Optional(ATTR_ROTATE_180): cv.boolean,
         vol.Optional(ATTR_SHOW_AP_CONNECT_SCREEN): cv.boolean,
@@ -161,6 +163,7 @@ COMMAND_PROPERTY_KEYS = (
     ATTR_FORCE_WIFI_FULL_SCAN,
     ATTR_INVERT_SCREEN,
     ATTR_OTA,
+    ATTR_PREVIEW,
     ATTR_REFRESH_SCREEN,
     ATTR_ROTATE_180,
     ATTR_SHOW_AP_CONNECT_SCREEN,
@@ -661,6 +664,7 @@ async def _async_command_entry(
         requested_target,
         target,
         properties,
+        command_response,
     )
 
     return {
