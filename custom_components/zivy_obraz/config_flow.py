@@ -10,6 +10,7 @@ from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import build_export_url, normalize_export_payload
+from .preview_rotation import CONF_PREVIEW_ROTATIONS
 from .const import (
     CONF_COMMAND_KEY,
     CONF_EXPORT_KEY,
@@ -910,6 +911,10 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "unknown"
             else:
                 prepared_input[CONF_PREFIX_OVERRIDE] = True
+                if CONF_PREVIEW_ROTATIONS in self._config_entry.options:
+                    prepared_input[CONF_PREVIEW_ROTATIONS] = self._config_entry.options[
+                        CONF_PREVIEW_ROTATIONS
+                    ]
                 self._update_unique_id(prepared_input)
                 return self.async_create_entry(title="", data=prepared_input)
 

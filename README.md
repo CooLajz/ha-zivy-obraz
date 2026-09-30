@@ -613,6 +613,8 @@ garaz
 
 ## Náhled displeje
 
+Při zapnutém sdílení náhledu se u panelu objeví select **Otočení náhledu** s volbami 0°, 90°, 180° a 270° po směru hodinových ručiček. Rotace probíhá lokálně v HA nad obrázkem v cache, bez dalšího stahování ze ŽO, a nemění fyzický displej. Při vypnutí sdílení se select skryje a znepřístupní; úhel zůstane uložený i po restartu. Skrytá entita zůstává v registru; ručně přidané karty na dashboardu potřebují vlastní podmínku viditelnosti.
+
 Každý panel má obrázkovou entitu **Náhled displeje**. Je dostupná, pokud Export API vrací `preview_url`. Entitu lze zobrazit na dashboardu pomocí obrázkové karty. Pokud je nastavený Command key, sdílení lze zapnout nebo vypnout přepínačem **Sdílení náhledu displeje** u zařízení. Kdokoli s veřejným odkazem může obrazovku zobrazit; vypnutím sdílení se odkaz zneplatní.
 
 Obrázek se stahuje až při zobrazení a zůstává v paměťové cache HA. Další požadavek na server vznikne pouze po změně `last_contact` nebo preview URL, nejdříve za 60 sekund od předchozího požadavku. Integrace používá `ETag` / `If-None-Match` (případně `Last-Modified` / `If-Modified-Since`), takže nezměněný obrázek se při odpovědi `304` znovu nepřenáší. Souběžné požadavky na stejný náhled se sloučí.
@@ -1224,6 +1226,8 @@ garaz
 # Usage
 
 ## Screen preview
+
+While preview sharing is enabled, each panel offers a **Preview rotation** select: 0°, 90°, 180° or 270° clockwise. Rotation uses the locally cached image without additional Živý Obraz requests and does not alter the physical display. Disabling sharing hides and makes the select unavailable while retaining its angle across restarts. The hidden entity remains registered; manually configured dashboard cards require their own visibility condition.
 
 Each panel has a **Screen preview** image entity, available when Export API provides `preview_url`. Use the image entity in a dashboard picture card. When a Command key is configured, preview sharing can be enabled or disabled with the device's **Share screen preview** switch. Anyone with the public link can view the screen; disabling sharing revokes the link.
 

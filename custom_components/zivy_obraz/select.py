@@ -17,7 +17,11 @@ from .command import (
     coerce_bool_state,
     command_entity_unique_id,
 )
-from .config_helpers import get_config_value, migrate_entry_entity_unique_ids
+from .config_helpers import (
+    async_update_option,
+    get_config_value,
+    migrate_entry_entity_unique_ids,
+)
 from .const import (
     ATTR_INVERT_SCREEN,
     CONF_COMMAND_KEY,
@@ -26,6 +30,7 @@ from .const import (
 )
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
+from .preview_rotation import CONF_PREVIEW_ROTATIONS, ROTATION_OPTIONS, rotation_for
 
 INVERT_SCREEN_DEFAULT = "default"
 INVERT_SCREEN_ENABLED = "invert"
@@ -49,6 +54,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Živý Obraz command select entities."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
+    _setup_preview_rotation(hass, entry, async_add_entities)
     command_key = str(
         get_config_value(entry, CONF_COMMAND_KEY, DEFAULT_COMMAND_KEY) or ""
     ).strip()
@@ -106,6 +112,107 @@ async def async_setup_entry(
         coordinator.async_add_new_device_listener(_handle_new_devices)
     )
     entry.async_on_unload(coordinator.async_add_listener(_handle_coordinator_update))
+
+
+@callback
+def _setup_preview_rotation(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Add local rotation controls once preview sharing has been enabled."""
+    coordinator = entry.runtime_data
+    registry = er.async_get(hass)
+    prefix = f"{entry.entry_id}_"
+    suffix = "_preview_rotation"
+    registered = {
+        item.unique_id[len(prefix):-len(suffix)]
+        for item in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if item.domain == "select"
+        and item.unique_id.startswith(prefix)
+        and item.unique_id.endswith(suffix)
+    }
+    known: set[str] = set()
+
+    @callback
+    def add_rotations() -> None:
+        eligible = {
+            mac for mac, data in (coordinator.data or {}).items()
+            if data.get("preview_url")
+        } | registered
+        new = eligible - known
+        if new:
+            known.update(new)
+            async_add_entities([
+                ZivyObrazPreviewRotationSelect(coordinator, entry, mac)
+                for mac in sorted(new)
+            ])
+
+    add_rotations()
+    entry.async_on_unload(coordinator.async_add_listener(add_rotations))
+
+
+class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
+    """Persist a local preview angle and hide the control while sharing is off."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "preview_rotation"
+    _attr_icon = "mdi:rotate-right"
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_options = ROTATION_OPTIONS
+
+    def __init__(self, coordinator, entry: ConfigEntry, mac: str) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._mac = mac
+        self._attr_unique_id = f"{entry.entry_id}_{mac}_preview_rotation"
+        self._attr_entity_registry_visible_default = self._preview_enabled
+
+    @property
+    def _preview_enabled(self) -> bool:
+        # Match the preview switch, whose server state is the URL's presence.
+        return bool((self.coordinator.data or {}).get(self._mac, {}).get("preview_url"))
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._preview_enabled
+
+    @property
+    def device_info(self):
+        return build_device_info(
+            self._mac, (self.coordinator.data or {}).get(self._mac, {})
+        )
+
+    @property
+    def current_option(self) -> str:
+        return rotation_for(self._entry.options, self._mac)
+
+    @callback
+    def _sync_visibility(self) -> None:
+        if not self.coordinator.last_update_success:
+            return
+        registry = er.async_get(self.hass)
+        item = registry.async_get(self.entity_id)
+        if item is None or item.hidden_by == er.RegistryEntryHider.USER:
+            return
+        hidden_by = None if self._preview_enabled else er.RegistryEntryHider.INTEGRATION
+        if item.hidden_by != hidden_by:
+            registry.async_update_entity(self.entity_id, hidden_by=hidden_by)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._sync_visibility()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._sync_visibility()
+        super()._handle_coordinator_update()
+
+    async def async_select_option(self, option: str) -> None:
+        if option not in ROTATION_OPTIONS:
+            raise HomeAssistantError(f"Unsupported preview rotation: {option}")
+        rotations = dict(self._entry.options.get(CONF_PREVIEW_ROTATIONS, {}))
+        rotations[self._mac] = option
+        await async_update_option(self.hass, self._entry, CONF_PREVIEW_ROTATIONS, rotations)
+        self.async_write_ha_state()
 
 
 @callback

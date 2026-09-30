@@ -149,6 +149,15 @@
       }
     },
     "select": {
+      "preview_rotation": {
+        "name": "Otočení náhledu",
+        "state": {
+          "0": "0°",
+          "90": "90°",
+          "180": "180°",
+          "270": "270°"
+        }
+      },
       "invert_screen": {
         "name": "Invertování barev displeje",
         "state": {

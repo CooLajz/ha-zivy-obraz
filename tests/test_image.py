@@ -22,7 +22,7 @@ async def test_state_changes_only_for_contact_or_url(tmp_path, monkeypatch):
         "preview_url": "https://example.test/preview?k=private",
         "last_contact": "2026-09-30 12:00:00",
     }
-    coordinator = SimpleNamespace(data={"panel": data}, last_update_success=True)
+    coordinator = SimpleNamespace(data={"panel": data}, last_update_success=True, config_entry=SimpleNamespace(options={}))
     entity = ZivyObrazPreview(hass, coordinator, "panel")
     entity.async_write_ha_state = Mock()
     original = entity.state
@@ -52,6 +52,7 @@ async def test_cooldown_wakes_frontend_and_timer_is_removed(tmp_path, monkeypatc
     coordinator = SimpleNamespace(
         data={"panel": {"preview_url": "https://example.test/preview"}},
         last_update_success=True, session=Mock(), timeout=5,
+        config_entry=SimpleNamespace(options={}),
     )
     entity = ZivyObrazPreview(hass, coordinator, "panel")
     entity.hass = hass
