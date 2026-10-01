@@ -136,7 +136,7 @@
         "name": "OTA aktualizácie firmvéru"
       },
       "preview": {
-        "name": "Zdieľanie náhľadu displeja"
+        "name": "Zdieľanie náhľadu obrazovky"
       },
       "refresh_screen": {
         "name": "Obnovovanie displeja"
@@ -386,7 +386,7 @@
           "description": "Zapne alebo vypne OTA aktualizácie firmvéru."
         },
         "preview": {
-          "name": "Zdieľanie náhľadu displeja",
+          "name": "Zdieľanie náhľadu obrazovky",
           "description": "Zapne, obnoví alebo vypne verejný odkaz náhľadu displeja. Obrazovku môže zobraziť ktokoľvek, kto má odkaz."
         },
         "refresh_screen": {

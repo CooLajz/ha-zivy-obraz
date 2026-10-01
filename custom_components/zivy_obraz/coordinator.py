@@ -25,7 +25,7 @@ from .command import (
     build_command_payload,
     command_properties_for_local_data,
     command_target_macs,
-    preview_urls_from_command_response,
+    preview_data_from_command_response,
 )
 from .const import (
     DEFAULT_SCAN_INTERVAL,
@@ -461,12 +461,12 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             requested_target=requested_target,
         )
         local_properties = command_properties_for_local_data(properties)
-        preview_urls = preview_urls_from_command_response(
+        preview_data = preview_data_from_command_response(
             current_data,
             command_response,
         )
 
-        if not affected_macs or (not local_properties and not preview_urls):
+        if not affected_macs or (not local_properties and not preview_data):
             return affected_macs
 
         updated_data = dict(current_data)
@@ -475,8 +475,7 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         for mac in affected_macs:
             device_data = dict(updated_data.get(mac, {}))
             device_data.update(local_properties)
-            if mac in preview_urls:
-                device_data["preview_url"] = preview_urls[mac]
+            device_data.update(preview_data.get(mac, {}))
             updated_data[mac] = device_data
             updated_devices[mac] = device_data
 

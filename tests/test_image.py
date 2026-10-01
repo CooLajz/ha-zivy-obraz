@@ -19,11 +19,12 @@ async def test_state_changes_only_for_contact_or_url(tmp_path, monkeypatch):
         "homeassistant.components.image.get_async_client", lambda *a, **kw: Mock()
     )
     data = {
+        "preview_enabled": True,
         "preview_url": "https://example.test/preview?k=private",
         "last_contact": "2026-09-30 12:00:00",
     }
     coordinator = SimpleNamespace(data={"panel": data}, last_update_success=True, config_entry=SimpleNamespace(options={}))
-    entity = ZivyObrazPreview(hass, coordinator, "panel")
+    entity = ZivyObrazPreview(hass, coordinator, "panel", b"placeholder")
     entity.async_write_ha_state = Mock()
     original = entity.state
     assert entity.available and not entity.should_poll
@@ -38,9 +39,11 @@ async def test_state_changes_only_for_contact_or_url(tmp_path, monkeypatch):
     data["preview_url"] = "https://example.test/preview?k=rotated"
     entity._handle_coordinator_update()
     assert entity.state != original
+    data["preview_enabled"] = False
     data["preview_url"] = None
     entity._handle_coordinator_update()
-    assert not entity.available
+    assert entity.available
+    assert await entity.async_image() == b"placeholder"
 
 
 @pytest.mark.asyncio
@@ -50,11 +53,16 @@ async def test_cooldown_wakes_frontend_and_timer_is_removed(tmp_path, monkeypatc
         "homeassistant.components.image.get_async_client", lambda *a, **kw: Mock()
     )
     coordinator = SimpleNamespace(
-        data={"panel": {"preview_url": "https://example.test/preview"}},
+        data={
+            "panel": {
+                "preview_enabled": True,
+                "preview_url": "https://example.test/preview",
+            }
+        },
         last_update_success=True, session=Mock(), timeout=5,
         config_entry=SimpleNamespace(options={}),
     )
-    entity = ZivyObrazPreview(hass, coordinator, "panel")
+    entity = ZivyObrazPreview(hass, coordinator, "panel", b"placeholder")
     entity.hass = hass
     entity.async_write_ha_state = Mock()
     entity._preview.async_image = AsyncMock(return_value=b"cached")
@@ -76,8 +84,10 @@ async def test_cooldown_wakes_frontend_and_timer_is_removed(tmp_path, monkeypatc
 async def test_setup_discovers_devices_after_initial_empty_data():
     coordinator = SimpleNamespace(data={}, async_add_listener=Mock())
     entry = SimpleNamespace(runtime_data=coordinator, async_on_unload=Mock())
+    hass = Mock()
+    hass.async_add_executor_job = AsyncMock(return_value=b"placeholder")
     add_entities = Mock()
-    await async_setup_entry(Mock(), entry, add_entities)
+    await async_setup_entry(hass, entry, add_entities)
     add_entities.assert_not_called()
     listener = coordinator.async_add_listener.call_args.args[0]
     coordinator.data = {"new_panel": {}}

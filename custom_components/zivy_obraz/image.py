@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+from pathlib import Path
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
@@ -13,12 +14,16 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .config_helpers import options_update_signal
 from .const import ZIVY_OBRAZ_CLIENT_HEADERS
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
 from .preview import PreviewCache
-from .config_helpers import options_update_signal
 from .preview_rotation import CONF_PREVIEW_ROTATIONS, rotate_preview, rotation_for
+
+PREVIEW_UNAVAILABLE_PATH = (
+    Path(__file__).parent / "assets" / "preview_unavailable.png"
+)
 
 
 async def async_setup_entry(
@@ -28,6 +33,7 @@ async def async_setup_entry(
 ) -> None:
     """Create previews, including devices discovered on later refreshes."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
+    placeholder = await hass.async_add_executor_job(PREVIEW_UNAVAILABLE_PATH.read_bytes)
     known: set[str] = set()
 
     @callback
@@ -36,7 +42,8 @@ async def async_setup_entry(
         if new:
             known.update(new)
             async_add_entities(
-                ZivyObrazPreview(hass, coordinator, mac) for mac in sorted(new)
+                ZivyObrazPreview(hass, coordinator, mac, placeholder)
+                for mac in sorted(new)
             )
 
     add_devices()
@@ -51,11 +58,16 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
     _attr_icon = "mdi:image-outline"
 
     def __init__(
-        self, hass: HomeAssistant, coordinator: ZivyObrazCoordinator, mac: str
+        self,
+        hass: HomeAssistant,
+        coordinator: ZivyObrazCoordinator,
+        mac: str,
+        placeholder: bytes,
     ) -> None:
         CoordinatorEntity.__init__(self, coordinator)
         ImageEntity.__init__(self, hass, verify_ssl=True)
         self._mac = mac
+        self._placeholder = placeholder
         self._attr_unique_id = f"{mac}_preview"
         self._preview = PreviewCache()
         self._rotation = rotation_for(coordinator.config_entry.options, mac)
@@ -87,14 +99,15 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and bool(self._preview.url)
+        return super().available and self._mac in (self.coordinator.data or {})
 
     @callback
     def _sync_preview(self) -> None:
         data = (self.coordinator.data or {}).get(self._mac, {})
         self._attr_device_info = build_device_info(self._mac, data)
-        url = data.get("preview_url") or None
-        contact = data.get("last_contact") or None
+        preview_enabled = data.get("preview_enabled") is True
+        url = (data.get("preview_url") or None) if preview_enabled else None
+        contact = (data.get("last_contact") or None) if preview_enabled else None
         if not self._preview.update(url, contact):
             return
         if not url or (self._rendered_key and self._preview.content is None):
@@ -131,6 +144,10 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
             return await self._async_render_image()
 
     async def _async_render_image(self) -> bytes | None:
+        data = (self.coordinator.data or {}).get(self._mac, {})
+        if data.get("preview_enabled") is not True or not self._preview.url:
+            self._attr_content_type = "image/png"
+            return self._placeholder
         url = self._preview.url
         content = await self._preview.async_image(
             self.coordinator.session,

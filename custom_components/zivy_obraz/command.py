@@ -180,10 +180,10 @@ def command_properties_for_local_data(
     return local_properties
 
 
-def preview_urls_from_command_response(
+def preview_data_from_command_response(
     devices: dict[str, dict[str, Any]],
     response: dict[str, Any] | None,
-) -> dict[str, str | None]:
+) -> dict[str, dict[str, Any]]:
     """Map Command API preview results to locally known device MACs."""
     if not isinstance(response, dict):
         return {}
@@ -198,7 +198,7 @@ def preview_urls_from_command_response(
         for key in DEVICE_ID_KEYS
         if device_data.get(key) is not None
     }
-    preview_urls: dict[str, str | None] = {}
+    preview_data: dict[str, dict[str, Any]] = {}
 
     for result in preview_results:
         if not isinstance(result, dict):
@@ -206,12 +206,18 @@ def preview_urls_from_command_response(
         mac = str(result.get("mac") or "").lower()
         if mac not in devices:
             mac = device_ids.get(str(result.get("id")), "")
-        if mac not in devices or "preview_url" not in result:
+        if mac not in devices:
             continue
-        preview_url = result.get("preview_url")
-        preview_urls[mac] = str(preview_url) if preview_url else None
+        values: dict[str, Any] = {}
+        if "preview_enabled" in result:
+            values["preview_enabled"] = bool(result["preview_enabled"])
+        if "preview_url" in result:
+            preview_url = result.get("preview_url")
+            values["preview_url"] = str(preview_url) if preview_url else None
+        if values:
+            preview_data[mac] = values
 
-    return preview_urls
+    return preview_data
 
 
 def command_properties_for_response(properties: dict[str, Any]) -> dict[str, Any]:

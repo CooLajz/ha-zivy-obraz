@@ -46,10 +46,11 @@ async def test_rotation_reuses_http_and_render_caches(tmp_path, monkeypatch):
     entry = SimpleNamespace(options={}, entry_id="entry")
     coordinator = SimpleNamespace(
         config_entry=entry, last_update_success=True, session=Mock(), timeout=5,
-        data={"panel": {"preview_url": "https://example.test/image",
+        data={"panel": {"preview_enabled": True,
+                        "preview_url": "https://example.test/image",
                         "last_contact": "2026-09-30 12:00:00"}},
     )
-    entity = ZivyObrazPreview(hass, coordinator, "panel")
+    entity = ZivyObrazPreview(hass, coordinator, "panel", b"placeholder")
     entity.hass = hass
     entity.async_write_ha_state = Mock()
     original = sample_image()
@@ -74,7 +75,8 @@ async def test_rotation_reuses_http_and_render_caches(tmp_path, monkeypatch):
 async def test_select_visibility_and_saved_angle(tmp_path, monkeypatch):
     hass = HomeAssistant(str(tmp_path))
     entry = SimpleNamespace(entry_id="entry", options={}, data={})
-    data = {"panel": {"preview_url": "https://example.test/image"}}
+    data = {"panel": {"preview_enabled": True,
+                      "preview_url": "https://example.test/image"}}
     coordinator = SimpleNamespace(data=data, last_update_success=True)
     select = ZivyObrazPreviewRotationSelect(coordinator, entry, "panel")
     select.hass = hass
@@ -130,6 +132,7 @@ async def test_select_removed_and_recreated_with_saved_angle(tmp_path, monkeypat
     await _setup_preview_rotation(hass, entry, platform)
     assert not created and not items
     listener = coordinator.async_add_listener.call_args.args[0]
+    coordinator.data["panel"]["preview_enabled"] = True
     coordinator.data["panel"]["preview_url"] = "https://example.test/image"
     listener()
     await hass.async_block_till_done()
@@ -141,6 +144,7 @@ async def test_select_removed_and_recreated_with_saved_angle(tmp_path, monkeypat
 
     # Failed polling is not equivalent to turning sharing off.
     coordinator.last_update_success = False
+    coordinator.data["panel"]["preview_enabled"] = False
     coordinator.data["panel"]["preview_url"] = None
     listener()
     await hass.async_block_till_done()
@@ -151,6 +155,7 @@ async def test_select_removed_and_recreated_with_saved_angle(tmp_path, monkeypat
     assert not items and not platform.entities
     created[0].async_remove.assert_awaited_once_with(force_remove=True)
 
+    coordinator.data["panel"]["preview_enabled"] = True
     coordinator.data["panel"]["preview_url"] = "https://example.test/image"
     listener()
     await hass.async_block_till_done()
@@ -169,7 +174,8 @@ async def test_startup_removes_old_hidden_rotation_select(tmp_path, monkeypatch)
     monkeypatch.setattr(er, "async_get", lambda _: registry)
     monkeypatch.setattr(er, "async_entries_for_config_entry", lambda *a: [item])
     coordinator = SimpleNamespace(
-        data={"panel": {"preview_url": None}}, last_update_success=True,
+        data={"panel": {"preview_enabled": False, "preview_url": None}},
+        last_update_success=True,
         async_add_listener=Mock(),
     )
     entry = SimpleNamespace(runtime_data=coordinator, entry_id="entry", async_on_unload=Mock())

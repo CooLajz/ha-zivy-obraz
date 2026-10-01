@@ -138,7 +138,7 @@ async def _setup_preview_rotation(
                 return
             eligible = {
                 mac for mac, data in (coordinator.data or {}).items()
-                if data.get("preview_url")
+                if data.get("preview_enabled") is True
             }
             for mac in set(entities) - eligible:
                 entity = entities.pop(mac)
@@ -204,8 +204,9 @@ class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
 
     @property
     def _preview_enabled(self) -> bool:
-        # Match the preview switch, whose server state is the URL's presence.
-        return bool((self.coordinator.data or {}).get(self._mac, {}).get("preview_url"))
+        return (self.coordinator.data or {}).get(self._mac, {}).get(
+            "preview_enabled"
+        ) is True
 
     @property
     def available(self) -> bool:

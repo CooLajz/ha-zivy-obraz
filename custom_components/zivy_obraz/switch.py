@@ -134,7 +134,7 @@ COMMAND_SWITCH_DESCRIPTIONS: tuple[ZivyObrazCommandSwitchDescription, ...] = (
         key="preview",
         translation_key="preview",
         command_property=ATTR_PREVIEW,
-        data_key="preview_url",
+        data_key="preview_enabled",
         icon="mdi:image-lock",
         entity_category=EntityCategory.CONFIG,
     ),
@@ -438,8 +438,6 @@ class ZivyObrazCommandSwitch(
     @property
     def is_on(self) -> bool:
         """Return current command state."""
-        if self.entity_description.command_property == ATTR_PREVIEW:
-            return bool(self._device_data.get(self.entity_description.data_key))
         return coerce_bool_state(
             self._device_data.get(self.entity_description.data_key)
         )
