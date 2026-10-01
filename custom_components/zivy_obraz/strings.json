@@ -150,7 +150,7 @@
     },
     "select": {
       "preview_rotation": {
-        "name": "Preview rotation",
+        "name": "Screen preview rotation",
         "state": {
           "0": "0°",
           "90": "90°",
