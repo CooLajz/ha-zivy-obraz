@@ -60,3 +60,24 @@ def test_preview_response_maps_urls_by_mac_and_device_id():
             "preview_url": None,
         },
     }
+
+
+def test_preview_response_coerces_boolean_strings():
+    """String booleans must not turn a disabled preview into enabled state."""
+    devices = {"aa:bb:cc:dd:ee:01": {"device_id": "101"}}
+    response = {
+        "previews": [
+            {
+                "id": 101,
+                "preview_enabled": "false",
+                "preview_url": None,
+            }
+        ]
+    }
+
+    assert preview_data_from_command_response(devices, response) == {
+        "aa:bb:cc:dd:ee:01": {
+            "preview_enabled": False,
+            "preview_url": None,
+        }
+    }

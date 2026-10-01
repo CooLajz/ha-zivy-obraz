@@ -210,7 +210,9 @@ def preview_data_from_command_response(
             continue
         values: dict[str, Any] = {}
         if "preview_enabled" in result:
-            values["preview_enabled"] = bool(result["preview_enabled"])
+            preview_enabled = coerce_bool_state(result["preview_enabled"])
+            if preview_enabled is not None:
+                values["preview_enabled"] = preview_enabled
         if "preview_url" in result:
             preview_url = result.get("preview_url")
             values["preview_url"] = str(preview_url) if preview_url else None

@@ -50,7 +50,9 @@ async def test_rotation_reuses_http_and_render_caches(tmp_path, monkeypatch):
                         "preview_url": "https://example.test/image",
                         "last_contact": "2026-09-30 12:00:00"}},
     )
-    entity = ZivyObrazPreview(hass, coordinator, "panel", b"placeholder")
+    entity = ZivyObrazPreview(
+        hass, coordinator, entry.entry_id, "panel", b"placeholder"
+    )
     entity.hass = hass
     entity.async_write_ha_state = Mock()
     original = sample_image()

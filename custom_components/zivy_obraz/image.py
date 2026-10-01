@@ -14,7 +14,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .config_helpers import options_update_signal
+from .config_helpers import migrate_entry_entity_unique_ids, options_update_signal
 from .const import ZIVY_OBRAZ_CLIENT_HEADERS
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
@@ -33,6 +33,7 @@ async def async_setup_entry(
 ) -> None:
     """Create previews, including devices discovered on later refreshes."""
     coordinator: ZivyObrazCoordinator = entry.runtime_data
+    migrate_entry_entity_unique_ids(hass, entry, "image", {"_preview"})
     placeholder = await hass.async_add_executor_job(PREVIEW_UNAVAILABLE_PATH.read_bytes)
     known: set[str] = set()
 
@@ -42,7 +43,9 @@ async def async_setup_entry(
         if new:
             known.update(new)
             async_add_entities(
-                ZivyObrazPreview(hass, coordinator, mac, placeholder)
+                ZivyObrazPreview(
+                    hass, coordinator, entry.entry_id, mac, placeholder
+                )
                 for mac in sorted(new)
             )
 
@@ -61,6 +64,7 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
         self,
         hass: HomeAssistant,
         coordinator: ZivyObrazCoordinator,
+        entry_id: str,
         mac: str,
         placeholder: bytes,
     ) -> None:
@@ -68,7 +72,7 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
         ImageEntity.__init__(self, hass, verify_ssl=True)
         self._mac = mac
         self._placeholder = placeholder
-        self._attr_unique_id = f"{mac}_preview"
+        self._attr_unique_id = f"{entry_id}_{mac}_preview"
         self._preview = PreviewCache()
         self._rotation = rotation_for(coordinator.config_entry.options, mac)
         self._render_lock = asyncio.Lock()
