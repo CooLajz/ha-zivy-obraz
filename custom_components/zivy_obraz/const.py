@@ -55,6 +55,7 @@ MAX_TIMEOUT = 120
 MIN_OVERDUE_TOLERANCE = 0
 MAX_OVERDUE_TOLERANCE = 10080
 
+ZIVY_OBRAZ_API_KEYS_URL = "https://zivyobraz.eu/muj-ucet/api-klice"
 ZIVY_OBRAZ_EXPORT_URL = "https://out.zivyobraz.eu/"
 ZIVY_OBRAZ_PUSH_URL = "https://in.zivyobraz.eu/"
 ZIVY_OBRAZ_COMMAND_URL = "https://cmd.zivyobraz.eu/"

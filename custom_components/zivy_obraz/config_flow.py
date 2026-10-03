@@ -53,6 +53,7 @@ from .const import (
     MIN_PUSH_INTERVAL,
     MIN_SCAN_INTERVAL,
     MIN_TIMEOUT,
+    ZIVY_OBRAZ_API_KEYS_URL,
     ZIVY_OBRAZ_CLIENT_HEADERS,
     ZIVY_OBRAZ_COMMAND_URL,
 )
@@ -477,6 +478,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors=errors,
             last_step=False,
         )
@@ -510,6 +512,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="import",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors={},
             last_step=False,
         )
@@ -558,6 +561,7 @@ class ZivyObrazConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="command",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors=errors,
             last_step=True,
         )
@@ -707,6 +711,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors=errors,
             last_step=False,
         )
@@ -735,6 +740,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="import",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors=errors,
             last_step=False,
         )
@@ -755,6 +761,7 @@ class ZivyObrazOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="command",
             data_schema=schema,
+            description_placeholders={"api_keys_url": ZIVY_OBRAZ_API_KEYS_URL},
             errors=errors,
             last_step=True,
         )

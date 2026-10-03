@@ -3,29 +3,38 @@
     "step": {
       "user": {
         "title": "Načítanie dát / Export API",
-        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.",
         "data": {
           "name": "Názov inštancie",
           "export_key": "Export key",
           "group_id": "ID skupiny",
           "timeout": "HTTP timeout (s)"
+        },
+        "data_description": {
+          "export_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       },
       "import": {
         "title": "Odosielanie dát / Import API",
-        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.",
         "data": {
           "import_key": "Import key",
           "label": "Štítok entít na odosielanie",
           "prefix": "Prefix názvu premenných",
           "invalid_state_fallback": "Náhradná hodnota pre neplatné stavy"
+        },
+        "data_description": {
+          "import_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       },
       "command": {
         "title": "Ovládanie zariadení / Command API",
-        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.",
         "data": {
           "command_key": "Command key"
+        },
+        "data_description": {
+          "command_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       }
     },
@@ -51,32 +60,41 @@
     "step": {
       "init": {
         "title": "Načítanie dát / Export API",
-        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Export key nájdete na webe Živého obrazu v sekcii Účet. Vyplnené ID skupiny načíta len panely v tejto skupine; prázdne pole načíta všetko pod účtom.",
         "data": {
           "name": "Názov inštancie",
           "export_key": "Export key",
           "change_export_key": "Zmeniť Export key",
           "group_id": "ID skupiny",
           "timeout": "HTTP timeout (s)"
+        },
+        "data_description": {
+          "export_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       },
       "import": {
         "title": "Odosielanie dát / Import API",
-        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Import key nájdete na webe Živého obrazu v sekcii Účet. Je voliteľný; vyplňte ho len vtedy, ak chcete odosielať hodnoty z Home Assistanta do Živého obrazu.",
         "data": {
           "import_key": "Import key",
           "change_import_key": "Zmeniť alebo odobrať Import key",
           "label": "Štítok entít na odosielanie",
           "prefix": "Prefix názvu premenných",
           "invalid_state_fallback": "Náhradná hodnota pre neplatné stavy"
+        },
+        "data_description": {
+          "import_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       },
       "command": {
         "title": "Ovládanie zariadení / Command API",
-        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.\n\n[Nájsť API kľúče](https://zivyobraz.eu/muj-ucet/api-klice)",
+        "description": "Command key sa používa na ovládanie zariadení Živého obrazu cez Command API.",
         "data": {
           "command_key": "Command key",
           "change_command_key": "Zmeniť alebo odobrať Command key"
+        },
+        "data_description": {
+          "command_key": "[Nájsť API kľúče]({api_keys_url})"
         }
       }
     },
