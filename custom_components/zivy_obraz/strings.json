@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Data download / Export API",
-        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
@@ -13,7 +13,7 @@
       },
       "import": {
         "title": "Data upload / Import API",
-        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "import_key": "Import key",
           "label": "Entity label for push",
@@ -23,7 +23,7 @@
       },
       "command": {
         "title": "Device control / Command API",
-        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "command_key": "Command key"
         }
@@ -51,7 +51,7 @@
     "step": {
       "init": {
         "title": "Data download / Export API",
-        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.",
+        "description": "Export key is available on the Živý Obraz website in Account. Fill Group ID to load only panels in that group; leave it empty to load all panels in the account.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "name": "Instance name",
           "export_key": "Export key",
@@ -62,7 +62,7 @@
       },
       "import": {
         "title": "Data upload / Import API",
-        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.",
+        "description": "Import key is available on the Živý Obraz website in Account. It is optional; fill it only when you want to send Home Assistant values to Živý Obraz.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "import_key": "Import key",
           "change_import_key": "Change or remove Import key",
@@ -73,7 +73,7 @@
       },
       "command": {
         "title": "Device control / Command API",
-        "description": "Command key is used for controlling Živý Obraz devices through Command API.",
+        "description": "Command key is used for controlling Živý Obraz devices through Command API.\n\n[Find API keys](https://zivyobraz.eu/muj-ucet/api-klice)",
         "data": {
           "command_key": "Command key",
           "change_command_key": "Change or remove Command key"
