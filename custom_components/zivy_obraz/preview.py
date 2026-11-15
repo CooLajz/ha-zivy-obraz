@@ -3,12 +3,29 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from time import monotonic
 
 from aiohttp import ClientError, ClientSession
 
 MIN_REQUEST_INTERVAL = 60
 IMAGE_TYPES = {"image/png", "image/bmp", "image/x-ms-bmp", "image/webp"}
+
+
+def screen_url_expiry(value: object) -> float | None:
+    """Read the optional link expiry as Unix seconds or an ISO timestamp."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        try:
+            expiry = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        return expiry.timestamp()
 
 
 class PreviewCache:

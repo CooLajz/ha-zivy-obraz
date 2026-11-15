@@ -113,7 +113,6 @@ Z těchto dat se automaticky vytvoří entity:
 Po zadání `Command key` integrace vytvoří u každého panelu ovládací entity:
 
 - `OTA firmware updates`
-- `Sdílení náhledu obrazovky`
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
@@ -613,13 +612,13 @@ garaz
 
 ## Náhled displeje
 
-Při zapnutém sdílení náhledu se u panelu objeví select **Otočení náhledu obrazovky** s volbami 0°, 90°, 180° a 270° po směru hodinových ručiček. Rotace probíhá lokálně v HA nad obrázkem v cache, bez dalšího stahování ze ŽO, a nemění fyzický displej. Při vypnutí sdílení se select odebere z HA i registru entit; úhel zůstane uložený i po restartu. Po zapnutí se select znovu vytvoří s uloženým úhlem. Ručně přidané karty na dashboardu potřebují vlastní podmínku viditelnosti.
+Entitu **Náhled displeje** můžete přidat na dashboard jako obrázkovou kartu. Používá podepsaný odkaz `screen_url` z Export API. Command key ani veřejné sdílení nejsou potřeba. Pokud export odkaz pro panel neobsahuje, zobrazí se informační obrázek. Veřejný odkaz můžete nadále spravovat akcí `zivy_obraz.command` s parametrem `preview`.
 
-Každý panel má stále dostupnou obrázkovou entitu **Náhled displeje**, kterou lze zobrazit na dashboardu pomocí obrázkové karty. Pokud je sdílení vypnuté, entita zobrazí lokální informační obrázek. Pokud je nastavený Command key, sdílení lze zapnout nebo vypnout přepínačem **Sdílení náhledu obrazovky** u zařízení. Kdokoli s veřejným odkazem může obrazovku zobrazit; vypnutím sdílení se odkaz zneplatní.
+S nastaveným Command key můžete veřejné sdílení ovládat přepínačem **Sdílení náhledu obrazovky**. Při zapnutém sdílení najdete veřejný odkaz v atributu `preview_url` přepínače, pokud ho služba poskytla. Odkaz může otevřít kdokoli, kdo ho zná.
 
-Obrázek se stahuje až při zobrazení a zůstává v paměťové cache HA. Další požadavek na server vznikne pouze po změně `last_contact` nebo preview URL, nejdříve za 60 sekund od předchozího požadavku. Integrace používá `ETag` / `If-None-Match` (případně `Last-Modified` / `If-Modified-Since`), takže nezměněný obrázek se při odpovědi `304` znovu nepřenáší. Souběžné požadavky na stejný náhled se sloučí.
+Pokud je odkaz dostupný, můžete náhled lokálně otočit o 0°, 90°, 180° nebo 270° bez změny fyzického displeje. Nastavení otočení zůstane uložené i po zmizení odkazu.
 
-Při chybě se náhled nezobrazuje; další pokus je možný po změně kontaktu nebo URL. Vypnutí sdílení vymaže uložený obrázek. Cache se neukládá na disk, takže po restartu či znovunačtení integrace se první zobrazený náhled stáhne znovu.
+Obrázek se stahuje na vyžádání a ukládá do paměti HA. Pokud při otevření náhledu platnost odkazu vypršela, integrace požádá o obnovu exportu.
 
 1. Nainstalujte integraci.
 2. Zadejte **Export key**.
@@ -740,7 +739,6 @@ After a `Command key` is configured, the integration creates control entities
 for every panel:
 
 - `OTA firmware updates`
-- `Screen preview sharing`
 - `Refresh display`
 - `Rotate display 180 degrees`
 - `Show AP connect screen`
@@ -1227,13 +1225,13 @@ garaz
 
 ## Screen preview
 
-While preview sharing is enabled, each panel offers a **Screen preview rotation** select: 0°, 90°, 180° or 270° clockwise. Rotation uses the locally cached image without additional Živý Obraz requests and does not alter the physical display. Disabling sharing removes the select from HA and the entity registry while retaining its angle across restarts. Enabling sharing recreates the select with the saved angle. Manually configured dashboard cards require their own visibility condition.
+You can display the **Screen preview** entity in a dashboard picture card. It uses the signed `screen_url` from the Export API and works without a Command key or public sharing. If the export does not provide a link for the panel, the entity shows an information image. You can still manage public links with the `preview` parameter of the `zivy_obraz.command` action.
 
-Each panel has an always-available **Screen preview** image entity for use in a dashboard picture card. When sharing is disabled, the entity displays a local information image. When a Command key is configured, sharing can be enabled or disabled with the device's **Screen preview sharing** switch. Anyone with the public link can view the screen; disabling sharing revokes the link.
+With a Command key configured, you can control public sharing using the **Screen preview sharing** switch. When sharing is on, the switch exposes the public link in its `preview_url` attribute if the service provides one. Anyone with the link can open it.
 
-Images are fetched on demand and cached in HA memory. Only a changed `last_contact` or preview URL permits another request, with a minimum interval of 60 seconds. Conditional requests use `ETag` / `If-None-Match`, falling back to `Last-Modified` / `If-Modified-Since`; a `304` response reuses existing bytes. Concurrent requests share the same download.
+When a link is available, you can rotate the preview locally by 0°, 90°, 180°, or 270° without changing the physical display. The saved rotation is retained if the link disappears.
 
-A failed preview is not displayed or retried until the contact or URL changes. Disabling sharing clears the image. The cache is not persisted: the first preview displayed after a restart or integration reload is downloaded again.
+Images are fetched on demand and cached in HA memory. If the link has expired when you open the preview, the integration requests a fresh export.
 
 1. Install the integration.
 2. Enter the **Export key**.

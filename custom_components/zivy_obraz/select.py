@@ -122,7 +122,7 @@ async def async_setup_entry(
 async def _setup_preview_rotation(
     hass: HomeAssistant, entry: ConfigEntry, platform: EntityPlatform
 ) -> None:
-    """Keep rotation controls registered only while preview sharing is enabled."""
+    """Keep rotation controls registered only while a screen URL is present."""
     coordinator = entry.runtime_data
     registry = er.async_get(hass)
     prefix = f"{entry.entry_id}_"
@@ -138,7 +138,7 @@ async def _setup_preview_rotation(
                 return
             eligible = {
                 mac for mac, data in (coordinator.data or {}).items()
-                if data.get("preview_enabled") is True
+                if data.get("screen_url")
             }
             for mac in set(entities) - eligible:
                 entity = entities.pop(mac)
@@ -203,14 +203,14 @@ class ZivyObrazPreviewRotationSelect(CoordinatorEntity, SelectEntity):
         self._attr_unique_id = f"{entry.entry_id}_{mac}_preview_rotation"
 
     @property
-    def _preview_enabled(self) -> bool:
-        return (self.coordinator.data or {}).get(self._mac, {}).get(
-            "preview_enabled"
-        ) is True
+    def _preview_available(self) -> bool:
+        return bool(
+            (self.coordinator.data or {}).get(self._mac, {}).get("screen_url")
+        )
 
     @property
     def available(self) -> bool:
-        return super().available and self._preview_enabled
+        return super().available and self._preview_available
 
     @property
     def device_info(self):

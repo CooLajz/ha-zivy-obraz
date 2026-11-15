@@ -20,7 +20,7 @@ async def test_state_changes_only_for_contact_or_url(tmp_path, monkeypatch):
     )
     data = {
         "preview_enabled": True,
-        "preview_url": "https://example.test/preview?k=private",
+        "screen_url": "https://example.test/preview?k=private",
         "last_contact": "2026-09-30 12:00:00",
     }
     coordinator = SimpleNamespace(data={"panel": data}, last_update_success=True, config_entry=SimpleNamespace(options={}))
@@ -39,11 +39,11 @@ async def test_state_changes_only_for_contact_or_url(tmp_path, monkeypatch):
     entity._handle_coordinator_update()
     assert entity.state != original
     original = entity.state
-    data["preview_url"] = "https://example.test/preview?k=rotated"
+    data["screen_url"] = "https://example.test/preview?k=rotated"
     entity._handle_coordinator_update()
     assert entity.state != original
-    data["preview_enabled"] = False
-    data["preview_url"] = None
+    del data["screen_url"]
+    data["preview_url"] = "https://example.test/public"
     entity._handle_coordinator_update()
     assert entity.available
     assert await entity.async_image() == b"placeholder"
@@ -59,7 +59,7 @@ async def test_cooldown_wakes_frontend_and_timer_is_removed(tmp_path, monkeypatc
         data={
             "panel": {
                 "preview_enabled": True,
-                "preview_url": "https://example.test/preview",
+                "screen_url": "https://example.test/preview",
             }
         },
         last_update_success=True, session=Mock(), timeout=5,
@@ -83,6 +83,48 @@ async def test_cooldown_wakes_frontend_and_timer_is_removed(tmp_path, monkeypatc
     timer = entity._refresh_timer
     await entity.async_will_remove_from_hass()
     assert timer.cancelled()
+
+
+@pytest.mark.asyncio
+async def test_expired_screen_url_refreshes_export_without_sharing(tmp_path, monkeypatch):
+    hass = HomeAssistant(str(tmp_path))
+    monkeypatch.setattr(
+        "homeassistant.components.image.get_async_client", lambda *a, **kw: Mock()
+    )
+    coordinator = SimpleNamespace(
+        data={"panel": {
+            "screen_url": "https://example.test/expired",
+            "screen_url_expires": 1,
+            "preview_enabled": False,
+        }},
+        last_update_success=True,
+        session=Mock(),
+        timeout=5,
+        config_entry=SimpleNamespace(options={}),
+    )
+    entity = ZivyObrazPreview(
+        hass, coordinator, "entry-id", "panel", b"placeholder"
+    )
+    entity.async_write_ha_state = Mock()
+
+    async def refresh_export():
+        coordinator.data["panel"].update(
+            screen_url="https://example.test/current",
+            screen_url_expires=4102444800,
+        )
+        entity._handle_coordinator_update()
+
+    async def download(*args):
+        assert entity._preview.url == "https://example.test/current"
+        entity._preview._completed_revision = entity._preview._revision
+        return b"export-preview"
+
+    coordinator.async_request_refresh = AsyncMock(side_effect=refresh_export)
+    entity._preview.async_image = AsyncMock(side_effect=download)
+
+    assert await entity.async_image() == b"export-preview"
+    coordinator.async_request_refresh.assert_awaited_once()
+    entity._preview.async_image.assert_awaited_once()
 
 
 @pytest.mark.asyncio

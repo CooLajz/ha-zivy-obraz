@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from pathlib import Path
+from time import monotonic
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
@@ -18,7 +19,7 @@ from .config_helpers import migrate_entry_entity_unique_ids, options_update_sign
 from .const import ZIVY_OBRAZ_CLIENT_HEADERS
 from .coordinator import ZivyObrazCoordinator
 from .device import build_device_info
-from .preview import PreviewCache
+from .preview import MIN_REQUEST_INTERVAL, PreviewCache, screen_url_expiry
 from .preview_rotation import CONF_PREVIEW_ROTATIONS, rotate_preview, rotation_for
 
 PREVIEW_UNAVAILABLE_PATH = (
@@ -79,6 +80,7 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
         self._rendered_key: tuple[bytes, str] | None = None
         self._rendered_content: bytes | None = None
         self._refresh_timer: asyncio.TimerHandle | None = None
+        self._next_export_refresh = 0.0
         self._sync_preview()
 
     async def async_added_to_hass(self) -> None:
@@ -109,9 +111,8 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
     def _sync_preview(self) -> None:
         data = (self.coordinator.data or {}).get(self._mac, {})
         self._attr_device_info = build_device_info(self._mac, data)
-        preview_enabled = data.get("preview_enabled") is True
-        url = (data.get("preview_url") or None) if preview_enabled else None
-        contact = (data.get("last_contact") or None) if preview_enabled else None
+        url = data.get("screen_url") or None
+        contact = (data.get("last_contact") or None) if url else None
         if not self._preview.update(url, contact):
             return
         if not url or (self._rendered_key and self._preview.content is None):
@@ -148,8 +149,13 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
             return await self._async_render_image()
 
     async def _async_render_image(self) -> bytes | None:
-        data = (self.coordinator.data or {}).get(self._mac, {})
-        if data.get("preview_enabled") is not True or not self._preview.url:
+        if self._preview.url and self._screen_url_expired():
+            if monotonic() >= self._next_export_refresh:
+                self._next_export_refresh = monotonic() + MIN_REQUEST_INTERVAL
+                await self.coordinator.async_request_refresh()
+            if self._preview.url and self._screen_url_expired():
+                return None
+        if not self._preview.url:
             self._attr_content_type = "image/png"
             return self._placeholder
         url = self._preview.url
@@ -185,6 +191,11 @@ class ZivyObrazPreview(CoordinatorEntity[ZivyObrazCoordinator], ImageEntity):
             self._attr_content_type = "image/png"
             return rendered
         return content
+
+    def _screen_url_expired(self) -> bool:
+        data = (self.coordinator.data or {}).get(self._mac, {})
+        expiry = screen_url_expiry(data.get("screen_url_expires"))
+        return expiry is not None and expiry <= dt_util.utcnow().timestamp()
 
     async def async_will_remove_from_hass(self) -> None:
         if self._refresh_timer is not None:

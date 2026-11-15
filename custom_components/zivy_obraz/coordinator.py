@@ -250,10 +250,9 @@ class ZivyObrazCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         try:
             return json.loads(raw_text)
         except json.JSONDecodeError as err:
-            preview = raw_text[:200].replace("\n", " ").replace("\r", " ")
             raise UpdateFailed(
                 f"{endpoint_name} did not return valid JSON. "
-                f"First 200 chars: {preview}"
+                f"Parse error at line {err.lineno}, column {err.colno}"
             ) from err
 
     async def _async_fetch_export_json(self) -> dict[str, Any]:

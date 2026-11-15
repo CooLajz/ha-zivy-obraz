@@ -442,6 +442,14 @@ class ZivyObrazCommandSwitch(
             self._device_data.get(self.entity_description.data_key)
         )
 
+    @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Expose the opt-in public link while sharing is on."""
+        if self.entity_description.command_property != ATTR_PREVIEW or not self.is_on:
+            return None
+        url = self._device_data.get("preview_url")
+        return {"preview_url": url} if isinstance(url, str) and url else None
+
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the command property on."""
         await self._async_set_command_value(True)
