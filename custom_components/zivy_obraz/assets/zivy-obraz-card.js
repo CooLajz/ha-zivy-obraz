@@ -15,10 +15,35 @@ const device = (hass, entry) => hass?.devices?.[entry?.device_id];
 const title = (hass, entry) => {
   const panel = device(hass, entry);
   return panel?.name_by_user || panel?.name
-    || hass?.states[entry?.entity_id]?.attributes.friendly_name || entry?.entity_id || BRAND;
+    || hass?.states?.[entry?.entity_id]?.attributes?.friendly_name || entry?.entity_id || BRAND;
+};
+
+const formatMetric = (hass, key, value) => {
+  if (key === "contact") {
+    const date = new Date(value.state);
+    if (!Number.isNaN(date.getTime())) {
+      return new Intl.DateTimeFormat(hass.locale?.language ?? hass.language, {
+        year: "numeric", month: "numeric", day: "numeric",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: hass.locale?.time_zone === "server" ? hass.config?.time_zone : undefined,
+      }).format(date);
+    }
+  }
+  return hass.formatEntityState?.(value)
+    ?? [value.state, value.attributes.unit_of_measurement].filter(Boolean).join(" ");
+};
+
+const hasDarkBackground = (card) => {
+  const background = getComputedStyle(card).backgroundColor;
+  const rgb = background.match(/^rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)$/);
+  if (!rgb || (rgb[4] !== undefined && Number(rgb[4]) < 0.5)) return false;
+  const [, red, green, blue] = rgb;
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) < 128;
 };
 
 class ZivyObrazCard extends HTMLElement {
+  #hass;
+  #themeFrame;
   static getConfigElement() {
     return document.createElement(`${TYPE}-editor`);
   }
@@ -39,12 +64,12 @@ class ZivyObrazCard extends HTMLElement {
         img.inverted { filter: invert(1); }
         [hidden] { display: none !important; }
         p { margin: 0; padding: 12px 16px; color: var(--secondary-text-color); }
-        dl { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0; padding: 12px 16px; }
+        dl { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 10px 16px; }
         dl:empty { display: none; }
-        dl div { flex: 1 1 85px; min-width: 0; }
-        dt { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--secondary-text-color); }
-        ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; }
-        dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+        dl div { max-width: 100%; }
+        dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+        ha-icon { --mdc-icon-size: 16px; flex-shrink: 0; color: var(--secondary-text-color); }
+        dd { display: flex; align-items: center; gap: 5px; margin: 0; overflow-wrap: anywhere; }
       </style>
       <ha-card>
         <header><a></a></header>
@@ -70,14 +95,34 @@ class ZivyObrazCard extends HTMLElement {
   }
 
   set hass(hass) {
-    this.context = hass;
+    this.#hass = hass;
     this.update();
+  }
+
+  connectedCallback() {
+    this.updateTheme();
+  }
+
+  disconnectedCallback() {
+    cancelAnimationFrame(this.#themeFrame);
+    this.#themeFrame = undefined;
+  }
+
+  updateTheme() {
+    if (!this.isConnected || this.#themeFrame !== undefined) return;
+    this.#themeFrame = requestAnimationFrame(() => {
+      this.#themeFrame = undefined;
+      const inverted = this.config?.invert_in_dark_mode === true
+        && (this.#hass?.themes?.darkMode === true
+          || hasDarkBackground(this.shadowRoot.querySelector("ha-card")));
+      this.image.classList.toggle("inverted", inverted);
+    });
   }
 
   getCardSize() { return 5; }
 
   update() {
-    const hass = this.context;
+    const hass = this.#hass;
     if (!hass || !this.config) return;
     const id = this.config.entity;
     const entry = hass.entities?.[id];
@@ -90,8 +135,7 @@ class ZivyObrazCard extends HTMLElement {
       heading.removeAttribute("href");
     }
     this.image.alt = heading.textContent;
-    this.image.classList.toggle("inverted",
-      this.config.invert_in_dark_mode === true && hass.themes?.darkMode === true);
+    this.updateTheme();
     const picture = state?.attributes.entity_picture;
     const source = state?.state !== "unavailable" && typeof picture === "string"
       && picture.startsWith("/api/image_proxy/")
@@ -125,13 +169,13 @@ class ZivyObrazCard extends HTMLElement {
       if (!value) return [];
       const item = document.createElement("div");
       const label = document.createElement("dt");
+      label.textContent = text(hass, ...labels);
+      item.title = label.textContent;
       const symbol = document.createElement("ha-icon");
       symbol.setAttribute("icon", icon);
       symbol.setAttribute("aria-hidden", "true");
-      label.append(symbol, text(hass, ...labels));
       const reading = document.createElement("dd");
-      reading.textContent = hass.formatEntityState?.(value)
-        ?? [value.state, value.attributes.unit_of_measurement].filter(Boolean).join(" ");
+      reading.append(symbol, formatMetric(hass, key, value));
       item.append(label, reading);
       return [item];
     }));
@@ -139,6 +183,8 @@ class ZivyObrazCard extends HTMLElement {
 }
 
 class ZivyObrazCardEditor extends HTMLElement {
+  #hass;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" }).innerHTML = `
@@ -161,6 +207,7 @@ class ZivyObrazCardEditor extends HTMLElement {
         detail: { config: this.config }, bubbles: true, composed: true,
       }));
     });
+    this.update();
   }
 
   setConfig(config) {
@@ -169,16 +216,16 @@ class ZivyObrazCardEditor extends HTMLElement {
   }
 
   set hass(hass) {
-    this.context = hass;
+    this.#hass = hass;
     this.update();
   }
 
   update() {
-    if (!this.config || !this.context) return;
-    const hass = this.context;
+    const hass = this.#hass;
+    const config = this.config ?? {};
     const select = this.shadowRoot.querySelector("select");
     const entries = previewEntries(hass);
-    const selected = this.config.entity ?? "";
+    const selected = config.entity ?? "";
     const options = [new Option(text(hass, "Select an ePaper", "Vyberte ePaper", "Vyberte ePaper"), "")];
     for (const entry of entries) options.push(new Option(title(hass, entry), entry.entity_id));
     if (selected && !entries.some((entry) => entry.entity_id === selected)) {
@@ -196,7 +243,7 @@ class ZivyObrazCardEditor extends HTMLElement {
     });
     for (const input of this.shadowRoot.querySelectorAll("input")) {
       input.checked = input.name === "invert_in_dark_mode"
-        ? this.config[input.name] === true : this.config[input.name] !== false;
+        ? config[input.name] === true : config[input.name] !== false;
     }
   }
 }
