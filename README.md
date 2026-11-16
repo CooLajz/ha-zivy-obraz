@@ -630,9 +630,9 @@ Po restartu Home Assistantu a obnovení stránky přidejte na dashboard kartu
 poslední kontakt nebo signál Wi-Fi. Pro signál Wi-Fi musí být povolený
 diagnostický senzor RSSI.
 
-Volba **Invertovat barvy v tmavém režimu** je výchozím nastavením vypnutá.
-Po zapnutí se obrázek invertuje jen v rozhraní, kde je právě aktivní tmavý
-režim Home Assistantu. Nastavení nemění fyzický displej ani jiné karty.
+Volba **Barvy podle motivu** je ve výchozím stavu vypnutá. Po zapnutí se
+náhled v tmavém motivu invertuje a jeho nejsvětlejší odstín se přizpůsobí
+barvě textu motivu. Nastavení nemění fyzický displej ani jiné karty.
 
 ## Veřejné sdílení náhledu
 
@@ -1259,9 +1259,9 @@ card to your dashboard. Select an ePaper and choose whether to show battery,
 last contact, or Wi-Fi signal. Wi-Fi signal requires the RSSI diagnostic
 sensor to be enabled.
 
-**Invert colors in dark mode** is off by default. When enabled, the image is
-inverted only in an interface currently using Home Assistant's dark mode.
-This does not affect the physical display or other cards.
+**Match theme colors** is off by default. When enabled with a dark theme,
+the preview is inverted and its brightest tone matches the theme's text
+color. This does not affect the physical display or other cards.
 
 ## Public preview sharing
 

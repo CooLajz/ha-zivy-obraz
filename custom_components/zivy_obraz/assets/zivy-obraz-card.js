@@ -61,7 +61,8 @@ class ZivyObrazCard extends HTMLElement {
         a { color: inherit; text-decoration: none; }
         a:hover { text-decoration: underline; }
         img { display: block; width: 100%; height: auto; }
-        img.inverted { filter: invert(1); }
+        .preview.themed { isolation: isolate; background: var(--primary-text-color, white); }
+        .preview.themed img { filter: invert(1); mix-blend-mode: multiply; }
         [hidden] { display: none !important; }
         p { margin: 0; padding: 12px 16px; color: var(--secondary-text-color); }
         dl { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 10px 16px; }
@@ -73,7 +74,7 @@ class ZivyObrazCard extends HTMLElement {
       </style>
       <ha-card>
         <header><a></a></header>
-        <img loading="lazy" decoding="async" hidden>
+        <div class="preview"><img loading="lazy" decoding="async" hidden></div>
         <p role="status" hidden></p>
         <dl></dl>
       </ha-card>`;
@@ -115,7 +116,7 @@ class ZivyObrazCard extends HTMLElement {
       const inverted = this.config?.invert_in_dark_mode === true
         && (this.#hass?.themes?.darkMode === true
           || hasDarkBackground(this.shadowRoot.querySelector("ha-card")));
-      this.image.classList.toggle("inverted", inverted);
+      this.image.parentElement.classList.toggle("themed", inverted);
     });
   }
 
@@ -235,7 +236,7 @@ class ZivyObrazCardEditor extends HTMLElement {
     select.value = selected;
     const labels = [
       "ePaper",
-      text(hass, "Invert colors in dark mode", "Invertovat barvy v tmavém režimu", "Invertovať farby v tmavom režime"),
+      text(hass, "Match theme colors", "Barvy podle motivu", "Farby podľa motívu"),
       ...METRICS.map((metric) => text(hass, ...metric.slice(3))),
     ];
     this.shadowRoot.querySelectorAll("label span").forEach((label, index) => {
