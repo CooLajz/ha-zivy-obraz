@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+from hashlib import sha256
 import logging
+from pathlib import Path
 from typing import TypeAlias
 
+from homeassistant.components import frontend
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import (
     CALLBACK_TYPE,
@@ -199,6 +203,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration."""
     hass.data.setdefault(DOMAIN, {})
     await async_preload_runtime_translations(hass)
+    card = Path(__file__).with_name("assets") / "zivy-obraz-card.js"
+    card_url = f"/{DOMAIN}/zivy-obraz-card.js"
+    content = await hass.async_add_executor_job(card.read_bytes)
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(card_url, str(card), False)]
+    )
+    frontend.add_extra_js_url(hass, f"{card_url}?v={sha256(content).hexdigest()[:12]}")
 
     async def _async_handle_push_service(call: ServiceCall) -> dict:
         return await _async_handle_manual_push(hass, call)
