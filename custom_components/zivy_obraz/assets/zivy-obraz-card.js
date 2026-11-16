@@ -23,8 +23,8 @@ class ZivyObrazCard extends HTMLElement {
     return document.createElement(`${TYPE}-editor`);
   }
 
-  static getStubConfig(hass) {
-    return { entity: previewEntries(hass)[0]?.entity_id ?? "", invert_in_dark_mode: false };
+  static getStubConfig() {
+    return { invert_in_dark_mode: false };
   }
 
   constructor() {
@@ -81,7 +81,7 @@ class ZivyObrazCard extends HTMLElement {
     if (!hass || !this.config) return;
     const id = this.config.entity;
     const entry = hass.entities?.[id];
-    const state = hass.states[id];
+    const state = hass.states?.[id];
     const heading = this.shadowRoot.querySelector("a");
     heading.textContent = title(hass, entry ?? { entity_id: id });
     if (entry?.device_id) {
