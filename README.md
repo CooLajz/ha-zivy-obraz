@@ -1,10 +1,10 @@
 # Home Assistant – Živý obraz Integration
 
-[![HACS](https://img.shields.io/badge/HACS-Default-blue.svg)](https://hacs.xyz)
+[![Home Assistant Marketplace](https://img.shields.io/badge/Home_Assistant-Marketplace-blue.svg)](https://www.home-assistant.io/integrations/marketplace/)
 [![GitHub release](https://img.shields.io/github/release/CooLajz/ha-zivy-obraz.svg)](https://github.com/CooLajz/ha-zivy-obraz/releases)
 [![License](https://img.shields.io/github/license/CooLajz/ha-zivy-obraz.svg)](LICENSE)
 ![Hassfest](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hassfest.yaml/badge.svg)
-![HACS Validation](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hacs.yaml/badge.svg)
+![Marketplace validation](https://github.com/CooLajz/ha-zivy-obraz/actions/workflows/hacs.yaml/badge.svg)
 
 Home Assistant integrace pro službu [**Živý Obraz**](https://zivyobraz.eu/?page=o-sluzbe)
 
@@ -42,52 +42,49 @@ Díky tomu lze zobrazovat data z Home Assistant na e-paper displejích napojený
 
 ## Screenshoty
 
-**Seznam zařízení ze služby Živý obraz v Home Assistant**
+Ukázky z Home Assistantu 2026.11.1 s integrací Živý Obraz v2.0.2 a fiktivními daty.
 
-<img width="1029" height="463" alt="image" src="https://github.com/user-attachments/assets/e7f070e5-5b02-4f0d-b973-71722696f1d4" />
+**Seznam zařízení integrace Živý Obraz**
 
-**Detail zařízení**
+![Seznam tří ukázkových panelů a zařízení instance v Home Assistantu](docs/screenshots/devices.png)
 
-<img width="1013" height="965" alt="image" src="https://github.com/user-attachments/assets/7d26f9a6-aba8-48db-96e7-f59afe7de7e8" />
+**Detail panelu Předsíň**
+
+![Detail panelu Předsíň se senzory a ovládáním z Command API](docs/screenshots/device.png)
 
 ---
 
 # Instalace
 
-## Instalace přes HACS (doporučeno)
+## Instalace přes Marketplace (doporučeno)
 
-1. Nainstalujte **HACS**
-2. Otevřete **HACS → Integrations**
-3. Vyhledejte **Živý Obraz**
-4. Klikněte **Install**
-5. Restartujte Home Assistant
-6. Jděte do
+Marketplace je součástí Home Assistantu od verze **2026.11** a nahrazuje
+samostatný HACS. Pro instalaci z katalogu nepotřebujete účet na GitHubu.
 
-```
-Settings → Devices & Services → Add Integration
-```
+1. Jako správce otevřete **Nastavení → Marketplace**. Při prvním otevření potvrďte upozornění.
+2. Vyhledejte **Živý Obraz**, otevřete jeho stránku a zvolte **Nainstalovat**.
+3. Potvrďte instalaci. Pokud si Home Assistant vyžádá restart, restartujte jej.
+4. Dokončete nastavení v průvodci. Pokud se neotevře automaticky, vyberte
+   **Nastavení → Zařízení a služby → Přidat integraci → Živý Obraz**.
+5. Zadejte povinný **Export key**. **Import key** a **Command key** jsou volitelné.
+   Klíče najdete pod odkazem [API klíče v účtu Živý Obraz](https://zivyobraz.eu/muj-ucet/api-klice).
 
-7. Vyhledejte **Živý Obraz**
+Pokud už máte Živý Obraz nainstalovaný přes HACS, Home Assistant při přechodu
+na verzi 2026.11 instalaci automaticky převezme do Marketplace včetně
+aktualizační entity. Stávající konfigurace integrace zůstane zachovaná.
+Další verze integrace najdete v **Nastavení → Aktualizace**. Po aktualizaci
+integrace restartujte Home Assistant.
 
----
+Podrobnosti najdete v [dokumentaci Marketplace](https://www.home-assistant.io/integrations/marketplace/).
 
-## Manuální instalace
+## Ruční instalace
 
-1. Stáhněte nebo naklonujte tento repozitář
-2. Zkopírujte složku
-
-```
-custom_components/zivy_obraz
-```
-
-do adresáře `custom_components`
-
-3. Restartujte Home Assistant
-4. Přidejte integraci přes
-
-```
-Settings → Devices & Services → Add Integration
-```
+1. Stáhněte zdrojový kód z [posledního vydání](https://github.com/CooLajz/ha-zivy-obraz/releases/latest) a rozbalte jej.
+2. Zkopírujte složku `custom_components/zivy_obraz` do adresáře `custom_components`
+   ve složce s konfigurací Home Assistantu.
+3. Restartujte Home Assistant.
+4. Vyberte **Nastavení → Zařízení a služby → Přidat integraci → Živý Obraz**
+   a dokončete nastavení klíčů API.
 
 ---
 
@@ -98,7 +95,7 @@ Settings → Devices & Services → Add Integration
 Integrace načítá data z exportního API:
 
 ```
-http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+https://out.zivyobraz.eu/?export_key=XXXX&epapers=json
 ```
 
 Z těchto dat se automaticky vytvoří entity:
@@ -462,7 +459,7 @@ Stačí přidat label:
 ZivyObraz
 ```
 
-<img width="558" height="784" alt="image" src="https://github.com/user-attachments/assets/dfb035d7-e665-4a0b-bf30-1e6fcca13994" />
+![Štítek ZivyObraz přiřazený ukázkové entitě Teplota na terase](docs/screenshots/entity-label.png)
 
 Integrace automaticky odešle všechny entity s tímto labelem.
 
@@ -521,7 +518,8 @@ nastaveného času. Ruční tlačítka naopak časovače neposouvají.
 # Konfigurace
 
 Nastavení integrace je rozdělené na stránky pro Export API, Import API a
-Command API.
+Command API. U každého pole s klíčem je odkaz **Najít API klíče**, který
+vede na [stránku klíčů v účtu Živý Obraz](https://zivyobraz.eu/muj-ucet/api-klice).
 
 ## Načítání dat / Export API
 
@@ -529,7 +527,7 @@ Command API.
 sekci **Účet**.
 
 ```
-http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+https://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 ```
 
 Pokud vyplníte `Group ID`, načtou se pouze panely z této skupiny. Pokud pole
@@ -612,24 +610,33 @@ garaz
 
 ## Náhled displeje
 
-Entitu **Náhled displeje** můžete přidat na dashboard jako obrázkovou kartu. Používá podepsaný odkaz `screen_url` z Export API. Command key ani veřejné sdílení nejsou potřeba. Pokud export odkaz pro panel neobsahuje, zobrazí se informační obrázek. Veřejný odkaz můžete nadále spravovat akcí `zivy_obraz.command` s parametrem `preview`.
+Entitu **Náhled displeje** můžete zobrazit na nástěnce v obrázkové kartě.
+Home Assistant si obrázek stáhne na vyžádání z podepsaného odkazu `screen_url`
+z Export API a uloží jej do paměti. Náhled funguje i bez Command key a při
+vypnutém veřejném sdílení. Když platnost odkazu vyprší, integrace při otevření
+náhledu požádá Export API o nový. Pokud Export API odkaz pro panel neposkytuje,
+entita zobrazí informační obrázek.
 
-S nastaveným Command key můžete veřejné sdílení ovládat přepínačem **Sdílení náhledu obrazovky**. Při zapnutém sdílení najdete veřejný odkaz v atributu `preview_url` přepínače, pokud ho služba poskytla. Odkaz může otevřít kdokoli, kdo ho zná.
+![Náhled displeje panelu Předsíň s ukázkovými hodnotami teploty a vlhkosti](docs/screenshots/screen-preview.png)
 
-Pokud je odkaz dostupný, můžete náhled lokálně otočit o 0°, 90°, 180° nebo 270° bez změny fyzického displeje. Nastavení otočení zůstane uložené i po zmizení odkazu.
+Pokud je odkaz k dispozici, můžete náhled v Home Assistantu otočit o 0°, 90°,
+180° nebo 270° pomocí entity **Otočení náhledu obrazovky**. Úhel náhledu se
+ukládá pro každý panel.
 
-Obrázek se stahuje na vyžádání a ukládá do paměti HA. Pokud při otevření náhledu platnost odkazu vypršela, integrace požádá o obnovu exportu.
+## Veřejné sdílení náhledu
 
-1. Nainstalujte integraci.
-2. Zadejte **Export key**.
-3. Volitelně zadejte **Import key**.
-4. Volitelně zadejte **Command key**.
-5. Přidejte label `ZivyObraz` k entitám odesílaným přes Import API.
-6. Hotovo.
+S nastaveným Command key můžete sdílení zapnout nebo vypnout přepínačem
+**Sdílení náhledu obrazovky**. Při zapnutém sdílení najdete veřejný odkaz v
+atributu `preview_url` přepínače, pokud jej služba poskytla. Po vypnutí sdílení
+atribut zmizí. Odkaz může otevřít kdokoli, kdo ho zná. V automatizacích můžete
+sdílení ovládat nebo odkaz obnovit akcí `zivy_obraz.command` s parametrem
+`preview`.
 
-Pokud je vyplněný Import key a zapnuté automatické odesílání, integrace začne
-automaticky odesílat hodnoty. Provozní nastavení lze následně měnit přes entity
-na zařízení instance.
+## Automatické odesílání hodnot
+
+Pokud jste zadali Import key a zapnuli automatické odesílání, přidejte štítek
+`ZivyObraz` k entitám, jejichž hodnoty chcete odesílat. Provozní nastavení
+můžete měnit přes entity na zařízení instance.
 
 ---
 
@@ -679,40 +686,36 @@ device settings → Export API state synchronization
 
 ## Installation
 
-### Install via HACS (recommended)
+### Install from the Marketplace (recommended)
 
-1. Install **HACS**
-2. Open **HACS → Integrations**
-3. Search for **Živý Obraz**
-4. Click **Install**
-5. Restart Home Assistant
-6. Go to
+The Marketplace is built into Home Assistant starting with **2026.11** and
+replaces the standalone HACS installation. You can install from the catalog
+without a GitHub account.
 
-```
-Settings → Devices & Services → Add Integration
-```
+1. As an administrator, open **Settings → Marketplace**. Accept the warning when prompted.
+2. Search for **Živý Obraz**, open its page, and select **Install**.
+3. Confirm the installation. Restart Home Assistant if prompted.
+4. Complete the setup wizard. If it does not open automatically, select
+   **Settings → Devices & services → Add integration → Živý Obraz**.
+5. Enter the required **Export key**. The **Import key** and **Command key** are
+   optional. You can find them on the [API keys page in your Živý Obraz account](https://zivyobraz.eu/muj-ucet/api-klice).
 
-7. Search for **Živý Obraz**
+If you already installed Živý Obraz through HACS, Home Assistant automatically
+migrates the installation and its update entity to the Marketplace when you
+upgrade to 2026.11. Your existing integration configuration is preserved.
+Find future integration releases under **Settings → Updates**. Restart
+Home Assistant after updating the integration.
 
----
+See the [Marketplace documentation](https://www.home-assistant.io/integrations/marketplace/) for details.
 
-## Manual installation
+### Manual installation
 
-1. Download or clone this repository
-2. Copy folder
-
-```
-custom_components/zivy_obraz
-```
-
-into `custom_components`
-
-3. Restart Home Assistant
-4. Add integration via
-
-```
-Settings → Devices & Services → Add Integration
-```
+1. Download and extract the source code from the [latest release](https://github.com/CooLajz/ha-zivy-obraz/releases/latest).
+2. Copy the `custom_components/zivy_obraz` folder into `custom_components`
+   in your Home Assistant configuration directory.
+3. Restart Home Assistant.
+4. Select **Settings → Devices & services → Add integration → Živý Obraz**
+   and finish setting up the API keys.
 
 ---
 
@@ -723,7 +726,7 @@ Settings → Devices & Services → Add Integration
 The integration reads panel data from:
 
 ```
-http://out.zivyobraz.eu/?export_key=XXXX&epapers=json
+https://out.zivyobraz.eu/?export_key=XXXX&epapers=json
 ```
 
 Entities created automatically:
@@ -1137,7 +1140,8 @@ scheduled timers.
 # Configuration
 
 The integration setup contains separate pages for the Export API, Import API,
-and Command API.
+and Command API. Each key field includes a **Find API keys** link to the
+[API keys page in your Živý Obraz account](https://zivyobraz.eu/muj-ucet/api-klice).
 
 ## Data download / Export API
 
@@ -1145,7 +1149,7 @@ and Command API.
 website in **Account**.
 
 ```
-http://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
+https://out.zivyobraz.eu/?export_key=EXPORT_KEY&epapers=json
 ```
 
 Fill `Group ID` to load only panels in that group. Leave it empty to load all
@@ -1225,24 +1229,32 @@ garaz
 
 ## Screen preview
 
-You can display the **Screen preview** entity in a dashboard picture card. It uses the signed `screen_url` from the Export API and works without a Command key or public sharing. If the export does not provide a link for the panel, the entity shows an information image. You can still manage public links with the `preview` parameter of the `zivy_obraz.command` action.
+You can display the **Screen preview** entity in a dashboard picture card.
+Home Assistant fetches the image on demand from the signed `screen_url`
+provided by the Export API and caches it in memory. The preview works without
+a Command key and while public sharing is off. If the link has expired, the
+integration requests a new one from the Export API when you open the preview.
+If the Export API does not provide a link for the panel, the entity shows an
+information image.
 
-With a Command key configured, you can control public sharing using the **Screen preview sharing** switch. When sharing is on, the switch exposes the public link in its `preview_url` attribute if the service provides one. Anyone with the link can open it.
+When the link is available, use the **Screen preview rotation** entity to
+rotate the preview in Home Assistant by 0°, 90°, 180°, or 270°. The preview
+angle is saved per panel.
 
-When a link is available, you can rotate the preview locally by 0°, 90°, 180°, or 270° without changing the physical display. The saved rotation is retained if the link disappears.
+## Public preview sharing
 
-Images are fetched on demand and cached in HA memory. If the link has expired when you open the preview, the integration requests a fresh export.
+With a Command key configured, use the **Screen preview sharing** switch to
+turn sharing on or off. While sharing is on, the switch exposes the public
+link in its `preview_url` attribute if the service provides one. Turning
+sharing off removes the attribute. Anyone with the link can open it. In
+automations, use the `preview` parameter of the `zivy_obraz.command` action
+to control sharing or regenerate the link.
 
-1. Install the integration.
-2. Enter the **Export key**.
-3. Optionally enter the **Import key**.
-4. Optionally enter the **Command key**.
-5. Add the `ZivyObraz` label to entities sent through the Import API.
-6. Done.
+## Automatic upload
 
-If an Import key is configured and automatic push is enabled, the integration
-will automatically start sending values. Runtime settings can then be changed
-through entities on the instance device.
+If you entered an Import key and enabled automatic push, add the `ZivyObraz`
+label to the entities whose values you want to send. You can change runtime
+settings through the entities on the instance device.
 
 ---
 
