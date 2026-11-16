@@ -623,17 +623,6 @@ Pokud je odkaz k dispozici, můžete náhled v Home Assistantu otočit o 0°, 90
 180° nebo 270° pomocí entity **Otočení náhledu obrazovky**. Úhel náhledu se
 ukládá pro každý panel.
 
-## Karta Živý Obraz
-
-Po restartu Home Assistantu a obnovení stránky přidejte na dashboard kartu
-**Živý Obraz**. Vyberte ePaper a údaje, které chcete zobrazit: baterii,
-poslední kontakt nebo signál Wi-Fi. Pro signál Wi-Fi musí být povolený
-diagnostický senzor RSSI.
-
-Volba **Barvy podle motivu** je ve výchozím stavu vypnutá. Po zapnutí se
-náhled v tmavém motivu invertuje a jeho nejsvětlejší odstín se přizpůsobí
-barvě textu motivu. Nastavení nemění fyzický displej ani jiné karty.
-
 ## Veřejné sdílení náhledu
 
 S nastaveným Command key můžete sdílení zapnout nebo vypnout přepínačem
@@ -1251,17 +1240,6 @@ information image.
 When the link is available, use the **Screen preview rotation** entity to
 rotate the preview in Home Assistant by 0°, 90°, 180°, or 270°. The preview
 angle is saved per panel.
-
-## Živý Obraz dashboard card
-
-After restarting Home Assistant and reloading the page, add the **Živý Obraz**
-card to your dashboard. Select an ePaper and choose whether to show battery,
-last contact, or Wi-Fi signal. Wi-Fi signal requires the RSSI diagnostic
-sensor to be enabled.
-
-**Match theme colors** is off by default. When enabled with a dark theme,
-the preview is inverted and its brightest tone matches the theme's text
-color. This does not affect the physical display or other cards.
 
 ## Public preview sharing
 

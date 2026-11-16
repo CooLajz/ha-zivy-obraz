@@ -5,7 +5,6 @@
     "@CooLajz"
   ],
   "config_flow": true,
-  "dependencies": ["frontend"],
   "documentation": "https://github.com/CooLajz/ha-zivy-obraz",
   "integration_type": "service",
   "iot_class": "cloud_polling",
