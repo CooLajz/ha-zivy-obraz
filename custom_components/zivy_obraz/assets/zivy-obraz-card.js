@@ -205,7 +205,7 @@ if (!customElements.get(TYPE)) {
   customElements.define(TYPE, ZivyObrazCard);
   customElements.define(`${TYPE}-editor`, ZivyObrazCardEditor);
   (window.customCards ??= []).push({
-    type: TYPE, name: BRAND, preview: true,
+    type: TYPE, name: BRAND, preview: false,
     description: "ePaper screen preview and device status",
   });
 }
